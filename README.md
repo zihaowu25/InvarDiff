@@ -39,7 +39,7 @@ Built on feature invariance in deterministic sampling, InvarDiff generates a **b
 ![speed_quality_curves](assets/speed_quality_curves.jpg)
 
 - Each point shows latency and LPIPS for one operating point (35 total, calibration averages 5 prompts). 
-- Each polyline fixes $\tau_{\mathrm{step}}\!\in\!\{0.40,0.50,0.60,0.70,0.75\}$ and sweeps seven preset threshold bundles. A bundle is $\bigl(\tau_{\texttt{warm-up}}, \tau_{\texttt{dual\_attn}}, \tau_{\texttt{dual\_ff}}, \tau_{\texttt{dual\_context\_ff}}, \tau_{\texttt{single\_attn}}, \tau_{\texttt{single\_ff}}\bigr)$. 
+- Each polyline fixes $\tau_{\mathrm{step}}\!\in\!\{0.40,0.50,0.60,0.70,0.75\}$ and sweeps seven preset threshold bundles. A bundle is $\bigl(\tau_{\texttt{warm-up}}, \tau_{\texttt{dual\_attn}}, \tau_{\texttt{dual\_ff}}, \tau_{\texttt{dual\_context\_ff}}, \tau_{\texttt{single\_attn}}, \tau_{\texttt{single\_ff}}\bigr)$.
 
 - Bundle order is aligned across polylines, only $\tau_{\mathrm{step}}$ changes.
 
