@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.env
+outputs/
+runs/
+logs/
+checkpoints/
+weights/
+*.safetensors
+*.pt
+*.ckpt
+.ipynb_checkpoints/
+*.aux *.log *.out *.toc *.bbl *.blg *.synctex.gz
+.DS_Store
