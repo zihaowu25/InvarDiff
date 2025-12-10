@@ -17,22 +17,22 @@
 
 ## Introduction
 
-**InvarDiff** is a **training-free acceleration framework** for diffusion models.
+*InvarDiff* is a training-free acceleration framework for diffusion models.
 
-Built on feature invariance in deterministic sampling, InvarDiff generates a **binary reuse plan** across timesteps and layers and applies a **step-first, then layer-wise** caching policy at inference, reducing redundant compute while preserving fidelity. The method is validated on **FLUX.1-dev** and **DiT-XL/2**.
+Built on feature invariance in deterministic sampling, InvarDiff generates a binary reuse plan across timesteps and layers and applies a step-first, then layer-wise caching policy at inference, reducing redundant compute while preserving fidelity. The method is validated on FLUX.1-dev and DiT-XL/2.
 
 ### Core contributions
 
 - **Cross-scale invariance identification**
-  Quantile-based change metrics measure stability at the **timestep** and **layer/module** levels, producing an interpretable **binary cache matrix** `C[t, l, s]` and a **step gate** `c[t]`.
+  Quantile-based change metrics measure stability at the timestep and layer/module levels, producing an interpretable binary cache matrix `C[t, l, s]` and a step gate `c[t]`.
 - **Two-phase calibration with resampling correction**
-  A few deterministic runs generate the initial thresholds; a second pass applies **resampling correction** to mitigate drift under **consecutive reuse**, yielding robust plans for deployment.
+  A few deterministic runs generate the initial thresholds; a second pass applies **resampling correction** to mitigate drift under consecutive reuse, yielding robust plans for deployment.
 - **Deterministic execution: step-first, layer-wise next**
   At runtime, InvarDiff first decides whether an entire step can be reused, otherwise it selectively reuses modules/layers. The schedule is fixed and predictable, requiring no model retraining.
 - **Strong end-to-end speedups with minimal quality loss**
-  Under paper settings, InvarDiff reaches **up to 3.31×** e2e speedup on **FLUX.1-dev (T=28)** and **up to 2.86×** on **DiT-XL/2 (T=50)**, with minimal impact on standard quality metrics and qualitatively near-identical results to full computation.
+  Under paper settings, InvarDiff reaches up to 3.31× e2e speedup on FLUX.1-dev (T=28) and up to 2.86× on DiT-XL/2 (T=50), with minimal impact on standard quality metrics and qualitatively near-identical results to full computation.
 - **Practical and easy to reproduce**
-  A three-step workflow: **calibrate → build plan → accelerated sampling**, with small calibration sets, JSON plans that can be versioned, and scripts for benchmarking and visualization.
+  A three-step workflow: calibrate → build plan → accelerated sampling, with small calibration sets, JSON plans that can be versioned, and scripts for benchmarking and visualization.
 
 ### Speed–Quality tradeoff on FLUX.1-dev (A800, $T{=}28$)
 
