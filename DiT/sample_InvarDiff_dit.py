@@ -528,7 +528,7 @@ def main(args):
     #     base_DiT.reset() #pass
 
     # if len(times) > 0:
-    #     times = np.array(times[:])
+    #     times = np.array(times[1:])
     #     avg_ddim_time = np.mean(times)
     #     print("DDIM sampling time: {:.3f}±{:.3f} s".format(avg_ddim_time, np.std(times)))
     
@@ -615,12 +615,12 @@ if __name__ == "__main__":
         '--seed', '0',
         '--sample-times', '6',
         '--nonskip-rate', '0',
-        '--step-thres', '0.61',
-        '--msa-thres', '0.2',
-        '--mlp-thres', '0.2',
+        '--step-thres', '0.63',
+        '--msa-thres', '0.22',
+        '--mlp-thres', '0.22',
         '--num-analysis', '16',
         # '--generate-cache-books', 
     ]
     
-    args = parser.parse_args()
+    args = parser.parse_args(debug_args)
     main(args)
