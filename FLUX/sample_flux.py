@@ -19,6 +19,43 @@ def compute_rate(x_prev:torch.Tensor, x:torch.Tensor, x_post:torch.Tensor) -> to
     slope = diff_post.norm(p=1)/diff_prev.norm(p=1)
     return slope
 
+# def compute_rate(
+#     x_prev: torch.Tensor,
+#     x: torch.Tensor,
+#     x_post: torch.Tensor,
+# ) -> torch.Tensor:
+#     a = (x - x_prev).reshape(-1)
+#     b = (x_post - x).reshape(-1)
+
+#     if a.dtype in (torch.float16, torch.bfloat16):
+#         a = a.float()
+#         b = b.float()
+
+#     return torch.dot(a, b)
+
+# def compute_rate(
+#     x_prev: torch.Tensor,
+#     x: torch.Tensor,
+#     x_post: torch.Tensor,
+# ) -> torch.Tensor:
+#     a = (x - x_prev).reshape(-1)
+#     b = (x_post - x).reshape(-1)
+
+#     if a.dtype in (torch.float16, torch.bfloat16):
+#         a = a.float()
+#         b = b.float()
+
+#     a_sq_norm = torch.sum(a.square())
+#     b_sq_norm = torch.sum(b.square())
+#     inner_product = torch.sum(a * b)
+
+#     wedge_sq = (
+#         a_sq_norm * b_sq_norm
+#         - inner_product.square()
+#     ).clamp_min(0.0)
+
+#     return torch.sqrt(wedge_sq)
+
 def compute_norm(x_prev:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     diff = x - x_prev + 1e-8
     return diff.norm(p=1)
@@ -391,6 +428,9 @@ def threshold_analyse(
 
     step_threshold_value = torch.quantile(avg_step_rates[1:-1], step_thres)
     step_cache_bool = avg_step_rates < step_threshold_value
+    # step_threshold_value = torch.quantile(avg_step_rates[1:-1], 1.0 - step_thres,)
+    # step_cache_bool = avg_step_rates > step_threshold_value
+
     step_cache_bool[0:num_nonskip] = False
     step_cache_bool[-1] = False
 
@@ -627,14 +667,14 @@ def main():
     ## slow(2.5x): nonskip_rate=0.22, step_thres=0.72, attn_thres=0.68, ff_thres=0.66, context_ff_thres=0, Single_attn_thres=0.68, Single_mlp_thres=0.62
     num_inference_steps = 28
     nonskip_rate = 0.1
-    step_thres = 0.7 # Clearly affects the acceleration ratio and reduce the proportion of finegrained cache.
+    step_thres = 0 # Clearly affects the acceleration ratio and reduce the proportion of finegrained cache.
 
-    attn_thres=0.68
-    ff_thres= 0.68 # This threshold sometimes cause blemishes on the image.
-    context_ff_thres=0.68
+    attn_thres=0.5
+    ff_thres= 0.5 # This threshold sometimes cause blemishes on the image.
+    context_ff_thres=0.5
 
-    Single_attn_thres=0.68
-    Single_mlp_thres=0.68 # Lowering this threshold can reduce "moiré patterns".
+    Single_attn_thres=0.5
+    Single_mlp_thres=0.5 # Lowering this threshold can reduce "moiré patterns".
 
     dynamic_model = DynamicFluxTransformer2DModel(
         original_transformer,

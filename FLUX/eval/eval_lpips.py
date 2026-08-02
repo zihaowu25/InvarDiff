@@ -11,7 +11,7 @@ from load_imgs import load_prompts, generate_dataset, load_image_as_tensor
 import sys
 sys.path.append("..")
 from dynamic_flux import DynamicFluxTransformer2DModel
-from sample_InvarDiff_flux import load_cache_books
+from sample_flux import load_cache_books
 
 def calculate_lpips_dataset(
     original_dir="./original",
