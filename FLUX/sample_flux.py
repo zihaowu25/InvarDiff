@@ -15,50 +15,17 @@ os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
 def compute_rate(x_prev:torch.Tensor, x:torch.Tensor, x_post:torch.Tensor) -> torch.Tensor:
     diff_prev = x - x_prev + 1e-8
-    diff_post = x_post - x + 1e-8
+    diff_post = x_post - x_prev + 1e-8
     slope = diff_post.norm(p=1)/diff_prev.norm(p=1)
     return slope
-
-# def compute_rate(
-#     x_prev: torch.Tensor,
-#     x: torch.Tensor,
-#     x_post: torch.Tensor,
-# ) -> torch.Tensor:
-#     a = (x - x_prev).reshape(-1)
-#     b = (x_post - x).reshape(-1)
-
-#     if a.dtype in (torch.float16, torch.bfloat16):
-#         a = a.float()
-#         b = b.float()
-
-#     return torch.dot(a, b)
-
-# def compute_rate(
-#     x_prev: torch.Tensor,
-#     x: torch.Tensor,
-#     x_post: torch.Tensor,
-# ) -> torch.Tensor:
-#     a = (x - x_prev).reshape(-1)
-#     b = (x_post - x).reshape(-1)
-
-#     if a.dtype in (torch.float16, torch.bfloat16):
-#         a = a.float()
-#         b = b.float()
-
-#     a_sq_norm = torch.sum(a.square())
-#     b_sq_norm = torch.sum(b.square())
-#     inner_product = torch.sum(a * b)
-
-#     wedge_sq = (
-#         a_sq_norm * b_sq_norm
-#         - inner_product.square()
-#     ).clamp_min(0.0)
-
-#     return torch.sqrt(wedge_sq)
 
 def compute_norm(x_prev:torch.Tensor, x:torch.Tensor) -> torch.Tensor:
     diff = x - x_prev + 1e-8
     return diff.norm(p=1)
+
+def compute_layer_rate(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    """Compute a layer score from the previous and current difference norms."""
+    return b / a
 
 def register_hooks(model):
     Transformer_blocks = {"attn":{}, "context_attn":{}, "ip_attn":{}, "ff":{}, "context_ff":{}}
@@ -187,7 +154,10 @@ class FeatureChangeAnalyzer:
                         self.current_Transformer[key][block_idx],
                         transformer_features[key][block_idx]
                     )
-                    rate = curr_norm / self.prev_Transformer_norm[key][block_idx]
+                    rate = compute_layer_rate(
+                        self.prev_Transformer_norm[key][block_idx],
+                        curr_norm,
+                    )
                     rates.append(rate.item())
                     norms.append(curr_norm.item())
                 else: # ip-adapter = None
@@ -206,7 +176,10 @@ class FeatureChangeAnalyzer:
                     self.current_SingleTransformer[key][block_idx],
                     singleTransformer_features[key][block_idx]
                 ) 
-                rate = curr_norm / self.prev_SingleTransformer_norm[key][block_idx]
+                rate = compute_layer_rate(
+                    self.prev_SingleTransformer_norm[key][block_idx],
+                    curr_norm,
+                )
                 rates.append(rate.item())
                 norms.append(curr_norm.item())
 
@@ -282,7 +255,10 @@ class FeatureChangeAnalyzer:
                         self.current_Transformer[key][block_idx],
                         transformer_features[key][block_idx]
                     )
-                    rate = curr_norm / self.prev_Transformer_norm[key][block_idx]
+                    rate = compute_layer_rate(
+                        self.prev_Transformer_norm[key][block_idx],
+                        curr_norm,
+                    )
                     rates.append(rate.item())
                 else: # ip-adapter = None
                     rates.append(float('nan'))
@@ -307,7 +283,10 @@ class FeatureChangeAnalyzer:
                     self.current_SingleTransformer[key][block_idx],
                     singleTransformer_features[key][block_idx]
                 )
-                rate = curr_norm / self.prev_SingleTransformer_norm[key][block_idx]
+                rate = compute_layer_rate(
+                    self.prev_SingleTransformer_norm[key][block_idx],
+                    curr_norm,
+                )
                 rates.append(rate.item())
 
                 if not single_cache_state[key][timestep_idx-1][block_idx]:
@@ -669,12 +648,12 @@ def main():
     nonskip_rate = 0.1
     step_thres = 0 # Clearly affects the acceleration ratio and reduce the proportion of finegrained cache.
 
-    attn_thres=0.5
-    ff_thres= 0.5 # This threshold sometimes cause blemishes on the image.
-    context_ff_thres=0.5
+    attn_thres=0.7
+    ff_thres= 0.7 # This threshold sometimes cause blemishes on the image.
+    context_ff_thres=0.7
 
-    Single_attn_thres=0.5
-    Single_mlp_thres=0.5 # Lowering this threshold can reduce "moiré patterns".
+    Single_attn_thres=0.7
+    Single_mlp_thres=0.7 # Lowering this threshold can reduce "moiré patterns".
 
     dynamic_model = DynamicFluxTransformer2DModel(
         original_transformer,
@@ -687,7 +666,7 @@ def main():
         # pipe.enable_model_cpu_offload() ## when GPU RAM not enough
         pipe.to("cuda")
         ## There is no necessary correlation between the measure prompts and the test prompts.
-        measure_prompts = [
+        measure_prompts = [ 
             "A cinematic shot of a baby raccoon wearing an intricate italian priest robe.",
             "A futuristic cityscape with flying cars and neon lights.",
             "An astronaut riding a horse on the moon.",
