@@ -304,7 +304,7 @@ class SimilarityAnalyzer:
     @staticmethod
     def compute_rate(x_prev:torch.Tensor, x:torch.Tensor, x_post:torch.Tensor) -> torch.Tensor:
         diff_prev = x - x_prev + 1e-8
-        diff_post = x_post - x + 1e-8
+        diff_post = x_post - x_prev + 1e-8
         rate = diff_post.norm(p=1)/diff_prev.norm(p=1)
 
         return rate
