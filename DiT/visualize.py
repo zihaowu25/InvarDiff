@@ -9,7 +9,7 @@ from download import find_model
 
 from models.dynamic_cache import DiT_models
 from diffusion import create_diffusion
-from sample_InvarDiff_dit import register_hooks, FeatureChangeAnalyzer, threshold_ananlyse
+from sample_dit import register_hooks, FeatureChangeAnalyzer, threshold_ananlyse
 
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
