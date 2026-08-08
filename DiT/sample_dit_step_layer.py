@@ -15,6 +15,11 @@ import json
 
 from models.dynamic_cache import DiT_models, DynamicDiT, SimilarityAnalyzer
 
+
+CACHE_SCOPE = "step_layer"
+RATE_METHOD = "three_point_l1"
+POLICY_VARIANT = "stplayer"
+
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -395,6 +400,32 @@ def compute_skip_ratio(msa_cache_bool, mlp_cache_bool, num_layers):
           f"MSA skip ratio: {msa_skip_ratio:.2f}%\n"
           f"MLP skip ratio: {mlp_skip_ratio:.2f}%")
 
+def cache_book_config(
+    num_timesteps,
+    nonskip_rate,
+    step_thres,
+    msa_thres,
+    mlp_thres,
+):
+    return {
+        "policy": POLICY_VARIANT,
+        "steps": num_timesteps,
+        "nonskip": nonskip_rate,
+        "step": step_thres,
+        "msa": msa_thres,
+        "mlp": mlp_thres,
+    }
+
+
+def cache_book_name(config):
+    fmt = lambda value: format(float(value), "g")
+    return (
+        f"cache_book_stplayer_steps{config['steps']}_ns{fmt(config['nonskip'])}"
+        f"_stepth{fmt(config['step'])}"
+        f"_msath{fmt(config['msa'])}_mlpth{fmt(config['mlp'])}.json"
+    )
+
+
 def save_cache_books(
     step_cache_book, 
     msa_cache_book, 
@@ -406,28 +437,46 @@ def save_cache_books(
     mlp_thres,
     cache_book_path="./cache_books"
 ):
+    config = cache_book_config(
+        num_timesteps,
+        nonskip_rate,
+        step_thres,
+        msa_thres,
+        mlp_thres,
+    )
     cache_books = {
+        "cache_scope": CACHE_SCOPE,
+        "config": config,
+        "rate_method": RATE_METHOD,
         "step_cache_book": step_cache_book.tolist() if torch.is_tensor(step_cache_book) else step_cache_book,
         "msa_cache_book": msa_cache_book.tolist() if torch.is_tensor(msa_cache_book) else msa_cache_book,
         "mlp_cache_book": mlp_cache_book.tolist() if torch.is_tensor(mlp_cache_book) else mlp_cache_book
     }
     
     os.makedirs(cache_book_path, exist_ok=True)
-    thres_str = (
-        f"stp{num_timesteps}_n{nonskip_rate}_sth{step_thres}"
-        f"_msa{msa_thres}_mlp{mlp_thres}"
-    )
-    cache_book_file = f"{cache_book_path}/cache_books_{thres_str}.json"
+    cache_book_file = cache_book_name(config)
+    cache_book_full_path = os.path.join(cache_book_path, cache_book_file)
     
-    with open(cache_book_file, "w") as f:
+    with open(cache_book_full_path, "w") as f:
         json.dump(cache_books, f, indent=2)
     
-    print(f"\nCache books saved: {cache_book_file}")
+    print(f"\nCache books saved: {cache_book_full_path}")
     return cache_book_file
 
 def load_cache_books(cache_book_path, cache_book_file):
     with open(os.path.join(cache_book_path, cache_book_file), "r") as f:
         cache_books = json.load(f)
+
+    if cache_books.get("cache_scope") != CACHE_SCOPE:
+        raise ValueError(
+            f"Expected cache scope {CACHE_SCOPE!r}, "
+            f"found {cache_books.get('cache_scope')!r}."
+        )
+    if cache_books.get("rate_method") != RATE_METHOD:
+        raise ValueError(
+            f"Expected rate method {RATE_METHOD!r}, "
+            f"found {cache_books.get('rate_method')!r}."
+        )
     
     step_cache_book = torch.tensor(cache_books["step_cache_book"], dtype=torch.bool)
     msa_cache_book = torch.tensor(cache_books["msa_cache_book"], dtype=torch.bool)
@@ -486,11 +535,14 @@ def main(args):
             cache_book_path=args.cache_book_path
         )
     else:
-        thres_str = (
-            f"stp{num_timesteps}_n{args.nonskip_rate}_sth{args.step_thres}"
-            f"_msa{args.msa_thres}_mlp{args.mlp_thres}"
+        config = cache_book_config(
+            num_timesteps,
+            args.nonskip_rate,
+            args.step_thres,
+            args.msa_thres,
+            args.mlp_thres,
         )
-        cache_book_file = f"cache_books_{thres_str}.json"
+        cache_book_file = cache_book_name(config)
         
         step_cache_book, msa_cache_book, mlp_cache_book = load_cache_books(
             cache_book_path=args.cache_book_path,

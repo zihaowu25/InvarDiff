@@ -29,7 +29,7 @@ TRANSFORMER_MODULES = (
     "context_ff",
 )
 SINGLE_TRANSFORMER_MODULES = ("attn", "mlp")
-POLICY_VARIANT = "fullcorr_threepoint_l1"
+POLICY_VARIANT = "stplayer"
 RATE_METHOD = "three_point_l1"
 RATE_CHUNK_SIZE = 1_048_576
 
@@ -1025,7 +1025,7 @@ def load_cache_books(
         cache_books["single_transformer_cache_book"],
     )
 
-def _cache_book_name(
+def _cache_book_config(
     num_inference_steps,
     nonskip_rate,
     step_thres,
@@ -1035,11 +1035,28 @@ def _cache_book_name(
     single_attn_thres,
     single_mlp_thres,
 ):
+    return {
+        "policy": POLICY_VARIANT,
+        "steps": num_inference_steps,
+        "nonskip": nonskip_rate,
+        "step": step_thres,
+        "attn": attn_thres,
+        "ff": ff_thres,
+        "context_ff": context_ff_thres,
+        "single_attn": single_attn_thres,
+        "single_mlp": single_mlp_thres,
+    }
+
+
+def _cache_book_name(config):
+    fmt = lambda value: format(float(value), "g")
     return (
-        f"cache_books_{POLICY_VARIANT}_stp{num_inference_steps}"
-        f"_n{nonskip_rate}_th{step_thres}"
-        f"_attn{attn_thres}_ff{ff_thres}_ctxff{context_ff_thres}"
-        f"_sattn{single_attn_thres}_smlp{single_mlp_thres}.json"
+        f"cache_book_stplayer_steps{config['steps']}_ns{fmt(config['nonskip'])}"
+        f"_stepth{fmt(config['step'])}"
+        f"_attnth{fmt(config['attn'])}_ffth{fmt(config['ff'])}"
+        f"_ctxffth{fmt(config['context_ff'])}"
+        f"_sattnth{fmt(config['single_attn'])}"
+        f"_smlpth{fmt(config['single_mlp'])}.json"
     )
 
 
@@ -1087,7 +1104,7 @@ def main():
     calibration_model_cpu_offload = True
 
     cache_book_path = "./cache_books"
-    cache_book_file = _cache_book_name(
+    cache_config = _cache_book_config(
         num_inference_steps,
         nonskip_rate,
         step_thres,
@@ -1097,6 +1114,7 @@ def main():
         single_attn_thres,
         single_mlp_thres,
     )
+    cache_book_file = _cache_book_name(cache_config)
     cache_book_full_path = os.path.join(cache_book_path, cache_book_file)
 
     if run_calibration:
@@ -1134,6 +1152,7 @@ def main():
         )
 
         cache_books = {
+            "config": cache_config,
             "rate_method": RATE_METHOD,
             "step_cache_book": step_cache_book,
             "transformer_cache_book": transformer_cache_book,

@@ -29,7 +29,7 @@ torch.backends.cudnn.allow_tf32 = True
 LAYER_MODULES = ("msa", "mlp")
 RATE_METHOD = "three_point_l1"
 CACHE_SCOPE = "layer_only"
-POLICY_VARIANT = "dit_layeronly_threepoint_l1"
+POLICY_VARIANT = "layer"
 RATE_CHUNK_SIZE = 1_048_576
 
 
@@ -534,15 +534,26 @@ def compute_skip_ratio(msa_cache_book, mlp_cache_book, num_layers):
     )
 
 
-def cache_book_name(
+def cache_book_config(
     num_timesteps,
     nonskip_rate,
     msa_thres,
     mlp_thres,
 ):
+    return {
+        "policy": POLICY_VARIANT,
+        "steps": num_timesteps,
+        "nonskip": nonskip_rate,
+        "msa": msa_thres,
+        "mlp": mlp_thres,
+    }
+
+
+def cache_book_name(config):
+    fmt = lambda value: format(float(value), "g")
     return (
-        f"cache_books_{POLICY_VARIANT}_stp{num_timesteps}"
-        f"_n{nonskip_rate}_msa{msa_thres}_mlp{mlp_thres}.json"
+        f"cache_book_layer_steps{config['steps']}_ns{fmt(config['nonskip'])}"
+        f"_msath{fmt(config['msa'])}_mlpth{fmt(config['mlp'])}.json"
     )
 
 
@@ -556,20 +567,22 @@ def save_cache_books(
     mlp_thres,
     cache_book_path="./cache_books",
 ):
+    config = cache_book_config(
+        num_timesteps,
+        nonskip_rate,
+        msa_thres,
+        mlp_thres,
+    )
     cache_books = {
         "cache_scope": CACHE_SCOPE,
+        "config": config,
         "rate_method": RATE_METHOD,
         "step_cache_book": step_cache_book.tolist(),
         "msa_cache_book": msa_cache_book.tolist(),
         "mlp_cache_book": mlp_cache_book.tolist(),
     }
     os.makedirs(cache_book_path, exist_ok=True)
-    cache_book_file = cache_book_name(
-        num_timesteps,
-        nonskip_rate,
-        msa_thres,
-        mlp_thres,
-    )
+    cache_book_file = cache_book_name(config)
     cache_book_full_path = os.path.join(cache_book_path, cache_book_file)
     with open(cache_book_full_path, "w") as file:
         json.dump(cache_books, file, indent=2)
@@ -634,12 +647,13 @@ def main(args):
     class_labels = [207, 992, 387, 37, 142, 979, 417, 279]
     measure_labels = random.sample(all_classes, args.num_analysis)
 
-    cache_file = cache_book_name(
+    cache_config = cache_book_config(
         num_timesteps,
         args.nonskip_rate,
         args.msa_thres,
         args.mlp_thres,
     )
+    cache_file = cache_book_name(cache_config)
     if args.generate_cache_books:
         (
             step_cache_book,

@@ -15,3 +15,6 @@ weights/
 .locks/
 models--black-forest-labs--FLUX.1-dev/
 images/
+# Generated cache books at any directory depth.
+**/cache_books/
+raw_cache_books/

@@ -35,7 +35,7 @@ TRANSFORMER_RATE_MODULES = (
 )
 SINGLE_TRANSFORMER_MODULES = ("attn", "mlp")
 RATE_METHOD = "three_point_l1"
-POLICY_VARIANT = "layeronly_threepoint_l1"
+POLICY_VARIANT = "layer"
 RATE_CHUNK_SIZE = 1_048_576
 
 
@@ -793,6 +793,37 @@ def print_skip_ratio(
         ratio = (count / (num_timesteps * num_single_layers)) * 100
         print(f"  {module_name:15s}: {ratio:5.2f}%")
 
+def cache_book_config(
+    num_inference_steps,
+    nonskip_rate,
+    attn_thres,
+    ff_thres,
+    context_ff_thres,
+    single_attn_thres,
+    single_mlp_thres,
+):
+    return {
+        "policy": POLICY_VARIANT,
+        "steps": num_inference_steps,
+        "nonskip": nonskip_rate,
+        "attn": attn_thres,
+        "ff": ff_thres,
+        "context_ff": context_ff_thres,
+        "single_attn": single_attn_thres,
+        "single_mlp": single_mlp_thres,
+    }
+
+
+def cache_book_name(config):
+    fmt = lambda value: format(float(value), "g")
+    return (
+        f"cache_book_layer_steps{config['steps']}_ns{fmt(config['nonskip'])}"
+        f"_attnth{fmt(config['attn'])}_ffth{fmt(config['ff'])}"
+        f"_ctxffth{fmt(config['context_ff'])}"
+        f"_sattnth{fmt(config['single_attn'])}"
+        f"_smlpth{fmt(config['single_mlp'])}.json"
+    )
+
 def load_cache_books(
     cache_book_path,
     cache_book_file,
@@ -855,12 +886,25 @@ def main():
     # Cross-step cache threshold is intentionally disabled:
     # step_thres = 0
 
-    attn_thres = 0.5
-    ff_thres = 0.5 # This threshold sometimes causes blemishes.
-    context_ff_thres = 0.5
+    attn_thres = 0.4
+    ff_thres = 0.4 # This threshold sometimes causes blemishes.
+    context_ff_thres = 0.4
 
-    Single_attn_thres = 0.5
-    Single_mlp_thres = 0.5  # Lowering this can reduce moire patterns.
+    Single_attn_thres = 0.4
+    Single_mlp_thres = 0.4  # Lowering this can reduce moire patterns.
+
+    cache_config = cache_book_config(
+        num_inference_steps,
+        nonskip_rate,
+        attn_thres,
+        ff_thres,
+        context_ff_thres,
+        Single_attn_thres,
+        Single_mlp_thres,
+    )
+    cache_book_path = "./cache_books"
+    cache_book_file = cache_book_name(cache_config)
+    cache_book_full_path = os.path.join(cache_book_path, cache_book_file)
 
     dynamic_model = DynamicFluxTransformer2DModel(
         original_transformer,
@@ -881,10 +925,10 @@ def main():
         ## There is no necessary correlation between the measure prompts and the test prompts.
         measure_prompts = [
             "A cinematic shot of a baby raccoon wearing an intricate italian priest robe.",
-            "A futuristic cityscape with flying cars and neon lights.",
-            "An astronaut riding a horse on the moon.",
-            "A bouquet of wildflowers in a glass vase, watercolor style.",
-            "A majestic lion sitting on a rock, golden mane, sunset.",
+            # "A futuristic cityscape with flying cars and neon lights.",
+            # "An astronaut riding a horse on the moon.",
+            # "A bouquet of wildflowers in a glass vase, watercolor style.",
+            # "A majestic lion sitting on a rock, golden mane, sunset.",
             # "A serene landscape with mountains and a lake at sunset.",
             # "A cute cat playing with a ball of yarn.",
             # "A portrait of a woman in Renaissance style, oil painting.",
@@ -918,34 +962,21 @@ def main():
         )
         cache_books = {
             "cache_scope": "layer_only",
+            "config": cache_config,
             "rate_method": RATE_METHOD,
             "step_cache_book": step_cache_book,
             "transformer_cache_book": transformer_cache_book,
             "single_transformer_cache_book": single_transformer_cache_book
         }
-        cache_book_path = "./cache_books"
         os.makedirs(cache_book_path, exist_ok=True)
-
-        thres_str = (
-            f"{POLICY_VARIANT}_stp{num_inference_steps}_n{nonskip_rate}"
-            f"_attn{attn_thres}_ff{ff_thres}_ctxff{context_ff_thres}"
-            f"_sattn{Single_attn_thres}_smlp{Single_mlp_thres}"
-        )
-        cache_book_file = f"{cache_book_path}/cache_books_{thres_str}.json"
-        with open(cache_book_file, "w") as f:
+        with open(cache_book_full_path, "w") as f:
             json.dump(cache_books, f, indent=2)
 
-        print(f"\nCache books saved: {cache_book_file}")
+        print(f"\nCache books saved: {cache_book_full_path}")
 
     else:
-        cache_book_file = (
-            f"cache_books_{POLICY_VARIANT}_stp{num_inference_steps}"
-            f"_n{nonskip_rate}"
-            f"_attn{attn_thres}_ff{ff_thres}_ctxff{context_ff_thres}"
-            f"_sattn{Single_attn_thres}_smlp{Single_mlp_thres}.json"
-        )
         step_cache_book, transformer_cache_book, single_transformer_cache_book = load_cache_books(
-            cache_book_path="./cache_books",
+            cache_book_path=cache_book_path,
             cache_book_file=cache_book_file,
             expected_rate_method=RATE_METHOD,
             expected_cache_scope="layer_only",
