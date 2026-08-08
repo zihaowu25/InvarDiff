@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.dynamic_cache import DiT_models
 from diffusion import create_diffusion
 from download import find_model
-from sample_dit import register_hooks, FeatureChangeAnalyzer
+from sample_dit_step_layer import register_hooks, FeatureChangeAnalyzer
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 

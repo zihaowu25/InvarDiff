@@ -850,23 +850,17 @@ def main():
     )
     original_transformer = pipe.transformer
 
-    ## default measure 5 prompts, the number of measure prompts will have a slight impact on the speedup ratio.
-    ## The following whole-step settings are legacy references only; cross-step cache is disabled.
-    ## fast(3.3x): nonskip_rate=0.1, step_thres = 0.7, attn_thres=ff_thres=context_ff_thres=Single_attn_thres=Single_mlp_thres= 0.68 (measure 5 prompts)
-    ## medium-1(2.9x): nonskip_rate=0.1, step_thres = 0.7, attn_thres=0.68, ff_thres=0, context_ff_thres=0, Single_attn_thres=0.68, Single_mlp_thres=0
-    ## medium-2(2.6x): nonskip_rate=0.15, step_thres=0.7, attn_thres=0.68, ff_thres=0, context_ff_thres=0, Single_attn_thres=0.7, Single_mlp_thres=0
-    ## slow(2.5x): nonskip_rate=0.22, step_thres=0.72, attn_thres=0.68, ff_thres=0.66, context_ff_thres=0, Single_attn_thres=0.68, Single_mlp_thres=0.62
     num_inference_steps = 28
     nonskip_rate = 0.1
     # Cross-step cache threshold is intentionally disabled:
     # step_thres = 0
 
-    attn_thres = 0.68
-    ff_thres = 0.68  # This threshold sometimes causes blemishes.
-    context_ff_thres = 0.68
+    attn_thres = 0.5
+    ff_thres = 0.5 # This threshold sometimes causes blemishes.
+    context_ff_thres = 0.5
 
-    Single_attn_thres = 0.68
-    Single_mlp_thres = 0.68  # Lowering this can reduce moire patterns.
+    Single_attn_thres = 0.5
+    Single_mlp_thres = 0.5  # Lowering this can reduce moire patterns.
 
     dynamic_model = DynamicFluxTransformer2DModel(
         original_transformer,
