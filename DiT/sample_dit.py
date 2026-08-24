@@ -9,6 +9,7 @@ import argparse
 import json
 import os
 import random
+import sys
 import time
 from typing import Optional
 
@@ -644,8 +645,11 @@ def main(args):
     base_dit.eval()
 
     all_classes = list(range(args.num_classes))
-    class_labels = [207, 992, 387, 37, 142, 979, 417, 279]
-    measure_labels = random.sample(all_classes, args.num_analysis)
+    class_labels = [207, 992, 387, 37, 142, 979, 417, 279][:args.num_sample_classes]
+    if args.num_analysis <= 1:
+        measure_labels = [class_labels[0]]
+    else:
+        measure_labels = random.sample(all_classes, min(args.num_analysis, len(all_classes)))
 
     cache_config = cache_book_config(
         num_timesteps,
@@ -681,6 +685,8 @@ def main(args):
             args.mlp_thres,
             args.cache_book_path,
         )
+        if args.calibration_only:
+            return
     else:
         step_cache_book, msa_cache_book, mlp_cache_book = load_cache_books(
             args.cache_book_path,
@@ -747,10 +753,11 @@ def main(args):
     samples, _ = samples.chunk(2, dim=0)
     samples = vae.decode(samples / 0.18215).sample
 
-    os.makedirs("images", exist_ok=True)
+    output_dir = args.output_dir
+    os.makedirs(output_dir, exist_ok=True)
     timestamp = time.strftime("%m%d_%H%M%S")
     save_name = (
-        f"images/{POLICY_VARIANT}_NFE{num_timesteps}"
+        f"{output_dir}/{POLICY_VARIANT}_NFE{num_timesteps}"
         f"_CFG{args.cfg_scale}_msa{args.msa_thres:.2f}"
         f"_mlp{args.mlp_thres:.2f}_seed{args.seed}_{timestamp}.png"
     )
@@ -801,26 +808,29 @@ if __name__ == "__main__":
     )
     # Cross-step threshold argument is intentionally disabled:
     # parser.add_argument("--step-thres", type=float, default=0.61)
-    parser.add_argument("--msa-thres", type=float, default=0.2)
-    parser.add_argument("--mlp-thres", type=float, default=0.2)
+    # Fast layer-only preset selected from the 512x512 single-class sweep.
+    parser.add_argument("--msa-thres", type=float, default=0.4)
+    parser.add_argument("--mlp-thres", type=float, default=0.4)
     parser.add_argument("--num-analysis", type=int, default=16)
+    parser.add_argument("--output-dir", type=str, default="images")
+    parser.add_argument("--calibration-only", action="store_true")
 
     debug_args = [
         "--model", "DiT-XL/2",
-        "--image-size", "256",
+        "--image-size", "512",
         "--num-classes", "1000",
         "--num-timesteps", "50",
-        "--dit-ckpt", "./pretrained_models/DiT-XL-2-256x256.pt",
-        "--num-sample-classes", "8",
+        "--dit-ckpt", "./pretrained_models/DiT-XL-2-512x512.pt",
+        "--num-sample-classes", "1",
         "--cfg-scale", "4.0",
         "--seed", "0",
-        "--sample-times", "6",
+        "--sample-times", "1",
         "--nonskip-rate", "0",
-        "--msa-thres", "0.5",
-        "--mlp-thres", "0.5",
-        "--num-analysis", "16",
+        "--msa-thres", "0.4",
+        "--mlp-thres", "0.4",
+        "--num-analysis", "1",
         "--generate-cache-books",
     ]
 
-    args = parser.parse_args(debug_args)
+    args = parser.parse_args() if len(sys.argv) > 1 else parser.parse_args(debug_args)
     main(args)

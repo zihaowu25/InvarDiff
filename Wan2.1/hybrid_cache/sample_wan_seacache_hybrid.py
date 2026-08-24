@@ -1067,9 +1067,11 @@ def _parse_args(cli_args=None):
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
     parser.add_argument("--cache_book_file", type=str, default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    parser.add_argument("--self_attn_thres", type=float, default=0.5)
-    parser.add_argument("--cross_attn_thres", type=float, default=0.5)
-    parser.add_argument("--ffn_thres", type=float, default=0.5)
+    # Wan hybrid fast preset: q=0.20 is the conservative value validated
+    # against the official SeaCache step-only trajectory.
+    parser.add_argument("--self_attn_thres", type=float, default=0.2)
+    parser.add_argument("--cross_attn_thres", type=float, default=0.2)
+    parser.add_argument("--ffn_thres", type=float, default=0.2)
     parser.add_argument("--disable_step_cache", action="store_true", default=False)
     parser.add_argument("--disable_progress_bar", action="store_true", default=False)
     parser.add_argument(

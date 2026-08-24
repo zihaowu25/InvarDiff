@@ -6,6 +6,7 @@ import random
 import numpy as np
 import time
 import argparse
+import sys
 from diffusion import create_diffusion
 from download import find_model
 from torchvision.utils import save_image
@@ -505,13 +506,16 @@ def main(args):
     base_DiT.eval()
     all_classes = list(range(args.num_classes))
     # class_labels = random.sample(all_classes, args.num_sample_classes)
-    class_labels = [207, 992, 387, 37, 142, 979, 417, 279]
+    class_labels = [207, 992, 387, 37, 142, 979, 417, 279][:args.num_sample_classes]
 
     # class_labels = [11, 96, 130, 285, 208, 388, 323, 14]
     # class_labels = [970, 972, 975, 977, 980, 937, 947, 919]
     # class_labels = [402, 579, 760, 541, 504, 850, 892, 522]
     # class_labels = [9, 84, 292, 291, 355, 105, 88, 309]
-    measure_labels = random.sample(all_classes, args.num_analysis)
+    if args.num_analysis <= 1:
+        measure_labels = [class_labels[0]]
+    else:
+        measure_labels = random.sample(all_classes, min(args.num_analysis, len(all_classes)))
 
     if args.generate_cache_books:
         step_cache_book, msa_cache_book, mlp_cache_book, avg_msa_differences, avg_mlp_differences = threshold_ananlyse(
@@ -534,6 +538,8 @@ def main(args):
             mlp_thres=args.mlp_thres,
             cache_book_path=args.cache_book_path
         )
+        if args.calibration_only:
+            return
     else:
         config = cache_book_config(
             num_timesteps,
@@ -601,6 +607,8 @@ def main(args):
         times = np.array(times[1:])
         avg_accel_time = np.mean(times)
         print("Accelerated sampling time: {:.3f}±{:.3f} s".format(avg_accel_time, np.std(times)))
+    elif times:
+        print("Accelerated sampling time: {:.3f} s".format(times[0]))
 
         # speedup_ratio = avg_ddim_time / avg_accel_time
         # print(f"Speedup ratio: {speedup_ratio:.3f}x")
@@ -608,9 +616,10 @@ def main(args):
     samples, _ = samples.chunk(2, dim=0)
     samples = vae.decode(samples / 0.18215).sample
 
-    os.makedirs("images", exist_ok=True)
+    output_dir = args.output_dir
+    os.makedirs(output_dir, exist_ok=True)
     timestamp = time.strftime("%m%d_%H%M%S")
-    save_name = f"images/NFE{num_timesteps}_CFG{args.cfg_scale}_th{args.step_thres:.2f}_{args.msa_thres:.2f}_{args.mlp_thres:.2f}_seed{args.seed}_{timestamp}.png"
+    save_name = f"{output_dir}/NFE{num_timesteps}_CFG{args.cfg_scale}_th{args.step_thres:.2f}_{args.msa_thres:.2f}_{args.mlp_thres:.2f}_seed{args.seed}_{timestamp}.png"
     save_image(samples, save_name, nrow=8, normalize=True, value_range=(-1, 1))
     print(f"Samples save to {save_name}.")
 
@@ -645,34 +654,37 @@ if __name__ == "__main__":
     
     parser.add_argument('--nonskip-rate', type=float, default=0, # little effect on DiT
                         help="Proportion of initial timesteps that are forced not to be skipped")
-    parser.add_argument('--step-thres', type=float, default=0.61,
+    # Fast step+layer preset; layer-only remains the primary default.
+    parser.add_argument('--step-thres', type=float, default=0.30,
                         help="Quantile threshold for step skipping.")
-    parser.add_argument('--msa-thres', type=float, default=0.2, 
+    parser.add_argument('--msa-thres', type=float, default=0.22,
                         help='Quantile threshold for MSA module skipping.')
-    parser.add_argument('--mlp-thres', type=float, default=0.2, 
+    parser.add_argument('--mlp-thres', type=float, default=0.22,
                         help='Quantile threshold for MLP module skipping.')
-    parser.add_argument('--num-analysis', type=int, default=16, 
+    parser.add_argument('--num-analysis', type=int, default=16,
                         help='Number of sampling runs for stable feature analysis.')
+    parser.add_argument('--output-dir', type=str, default='images')
+    parser.add_argument('--calibration-only', action='store_true')
     
     # fast(2.8x): nonskip-rate=0, step-thres=0.63, msa-thres = 0.22, mlp-thres = 0.22
     # slow(2.5x): nonskip-rate=0, step-thres=0.61, msa-thres = 0.2, mlp-thres = 0.2
     debug_args = [
         '--model', 'DiT-XL/2',
-        '--image-size', '256',
+        '--image-size', '512',
         '--num-classes', '1000',
         '--num-timesteps', '50',
-        '--dit-ckpt', './pretrained_models/DiT-XL-2-256x256.pt',
-        '--num-sample-classes', '8',
+        '--dit-ckpt', './pretrained_models/DiT-XL-2-512x512.pt',
+        '--num-sample-classes', '1',
         '--cfg-scale', '4.0',
         '--seed', '0',
-        '--sample-times', '6',
+        '--sample-times', '1',
         '--nonskip-rate', '0',
-        '--step-thres', '0.63',
+        '--step-thres', '0.30',
         '--msa-thres', '0.22',
         '--mlp-thres', '0.22',
-        '--num-analysis', '16',
+        '--num-analysis', '1',
         # '--generate-cache-books', 
     ]
     
-    args = parser.parse_args(debug_args)
+    args = parser.parse_args() if len(sys.argv) > 1 else parser.parse_args(debug_args)
     main(args)

@@ -971,9 +971,11 @@ def _parse_args(cli_args=None):
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
     parser.add_argument("--cache_book_file", type=str, default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    parser.add_argument("--self_attn_thres", type=float, default=0.5)
-    parser.add_argument("--cross_attn_thres", type=float, default=0.5)
-    parser.add_argument("--ffn_thres", type=float, default=0.5)
+    # Wan hybrid fast preset: q=0.20 is the conservative value validated
+    # against the official TeaCache step-only trajectory.
+    parser.add_argument("--self_attn_thres", type=float, default=0.2)
+    parser.add_argument("--cross_attn_thres", type=float, default=0.2)
+    parser.add_argument("--ffn_thres", type=float, default=0.2)
     parser.add_argument("--disable_step_cache", action="store_true", default=False)
     parser.add_argument("--disable_progress_bar", action="store_true", default=False)
     parser.add_argument(
@@ -989,7 +991,7 @@ def _parse_args(cli_args=None):
     parser.add_argument(
         "--runtime_cache_gpu_reserve_gib", type=float, default=2.0
     )
-    parser.add_argument("--teacache_thresh", type=float, default=0.2)
+    parser.add_argument("--teacache_thresh", type=float, default=0.08)
     parser.add_argument("--use_ret_steps", action="store_true", default=False)
 
     args = parser.parse_args(cli_args)

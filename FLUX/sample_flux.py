@@ -6,6 +6,8 @@ experiments. Runtime step cache decisions are always False.
 
 import json
 import os
+import argparse
+import sys
 import time
 from typing import Dict, List, Optional, Tuple
 
@@ -867,31 +869,31 @@ def load_cache_books(
         cache_books["single_transformer_cache_book"],
     )
 
-def main():
-    seed = 42
+def main(args):
+    seed = args.seed
     torch.set_grad_enabled(False)
 
     print("Loading FLUX pipeline...")
     print("Cache scope: layer only")
     print(f"Rate method: {RATE_METHOD}")
     pipe = FluxPipeline.from_pretrained(
-        "black-forest-labs/FLUX.1-dev",
+        args.model_path,
         torch_dtype=torch.bfloat16,
-        cache_dir="/root/autodl-tmp/InvarDiff/FLUX",
+        cache_dir=args.cache_dir,
     )
     original_transformer = pipe.transformer
 
-    num_inference_steps = 28
-    nonskip_rate = 0.1
+    num_inference_steps = args.num_inference_steps
+    nonskip_rate = args.nonskip_rate
     # Cross-step cache threshold is intentionally disabled:
     # step_thres = 0
 
-    attn_thres = 0.4
-    ff_thres = 0.4 # This threshold sometimes causes blemishes.
-    context_ff_thres = 0.4
+    attn_thres = args.attn_thres
+    ff_thres = args.ff_thres
+    context_ff_thres = args.context_ff_thres
 
-    Single_attn_thres = 0.4
-    Single_mlp_thres = 0.4  # Lowering this can reduce moire patterns.
+    Single_attn_thres = args.single_attn_thres
+    Single_mlp_thres = args.single_mlp_thres
 
     cache_config = cache_book_config(
         num_inference_steps,
@@ -902,8 +904,8 @@ def main():
         Single_attn_thres,
         Single_mlp_thres,
     )
-    cache_book_path = "./cache_books"
-    cache_book_file = cache_book_name(cache_config)
+    cache_book_path = args.cache_book_path
+    cache_book_file = args.cache_book_file or cache_book_name(cache_config)
     cache_book_full_path = os.path.join(cache_book_path, cache_book_file)
 
     dynamic_model = DynamicFluxTransformer2DModel(
@@ -913,7 +915,7 @@ def main():
     dynamic_model.eval()
     pipe.transformer = dynamic_model
 
-    run_calibration = 0
+    run_calibration = args.generate_cache_books
     calibration_model_cpu_offload = True
 
     if run_calibration:
@@ -945,6 +947,8 @@ def main():
             # "A steaming bowl of ramen on a wooden counter, food photography.",
             # "A snowy forest with sunlight filtering through the trees.",
         ]
+        # Single-prompt calibration is the default for low-cost threshold tuning.
+        measure_prompts = [args.calibration_prompt]
         step_cache_book, transformer_cache_book, single_transformer_cache_book, \
         avg_transformer_rates, avg_single_transformer_rates = threshold_analyse(
             model=dynamic_model,
@@ -973,6 +977,12 @@ def main():
             json.dump(cache_books, f, indent=2)
 
         print(f"\nCache books saved: {cache_book_full_path}")
+        if args.calibration_only:
+            return
+        # Keep the standalone CLI convenient: a no-argument fast run performs
+        # calibration once and then re-enters the normal generation path.
+        args.generate_cache_books = False
+        return main(args)
 
     else:
         step_cache_book, transformer_cache_book, single_transformer_cache_book = load_cache_books(
@@ -1001,6 +1011,7 @@ def main():
             # "a photo of a white sandwich",
             # "a photo of a person"
         ]
+        prompts = [args.prompt]
         images = []
         times = []
 
@@ -1009,6 +1020,7 @@ def main():
             image = pipe(
                 prompt,
                 num_inference_steps=num_inference_steps,
+                guidance_scale=args.guidance_scale,
                 generator=torch.Generator(device="cpu").manual_seed(seed)
                 ).images[0]
             times.append(time.time() - start_time)
@@ -1027,10 +1039,10 @@ def main():
         for idx, img in enumerate(images):
             combined.paste(img, (idx * width, 0))
 
-        os.makedirs("images", exist_ok=True)
+        os.makedirs(args.output_dir, exist_ok=True)
         timestamp = time.strftime("%m%d_%H%M%S")
         save_name = (
-            f"images/imgs_{POLICY_VARIANT}_stp{num_inference_steps}"
+            f"{args.output_dir}/imgs_{POLICY_VARIANT}_stp{num_inference_steps}"
             f"_n{nonskip_rate}"
             f"_attn{attn_thres}_ff{ff_thres}"
             f"_ctxff{context_ff_thres}"
@@ -1041,4 +1053,24 @@ def main():
         print(f"Images saved to {save_name}")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="FLUX layer-only sampler")
+    parser.add_argument("--model-path", default="black-forest-labs/FLUX.1-dev")
+    parser.add_argument("--cache-dir", default="/root/autodl-tmp/InvarDiff/FLUX")
+    parser.add_argument("--num-inference-steps", type=int, default=28)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--prompt", default="A cinematic photograph of a red fox sitting beside a moss-covered tree in a sunlit forest, natural colors, detailed fur, soft depth of field.")
+    parser.add_argument("--calibration-prompt", default="A cinematic photograph of a red fox sitting beside a moss-covered tree in a sunlit forest, natural colors, detailed fur, soft depth of field.")
+    parser.add_argument("--output-dir", default="images")
+    parser.add_argument("--cache-book-path", default="./cache_books")
+    parser.add_argument("--cache-book-file", default=None)
+    parser.add_argument("--nonskip-rate", type=float, default=0.1)
+    # Fast layer-only preset selected from the single-prompt 1024px sweep.
+    parser.add_argument("--attn-thres", type=float, default=0.2)
+    parser.add_argument("--ff-thres", type=float, default=0.2)
+    parser.add_argument("--context-ff-thres", type=float, default=0.2)
+    parser.add_argument("--single-attn-thres", type=float, default=0.2)
+    parser.add_argument("--single-mlp-thres", type=float, default=0.2)
+    parser.add_argument("--guidance-scale", type=float, default=3.5)
+    parser.add_argument("--generate-cache-books", action="store_true")
+    parser.add_argument("--calibration-only", action="store_true")
+    main(parser.parse_args())

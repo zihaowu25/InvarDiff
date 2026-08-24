@@ -1055,16 +1055,16 @@ def parse_args():
     )
     parser.add_argument("--cache-book-file")
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
-    parser.add_argument("--attn-thres", type=float, default=0.4)
-    parser.add_argument("--ff-thres", type=float, default=0.4)
-    parser.add_argument("--context-ff-thres", type=float, default=0.4)
-    parser.add_argument("--single-attn-thres", type=float, default=0.4)
-    parser.add_argument("--single-mlp-thres", type=float, default=0.4)
+    parser.add_argument("--attn-thres", type=float, default=0.2)
+    parser.add_argument("--ff-thres", type=float, default=0.2)
+    parser.add_argument("--context-ff-thres", type=float, default=0.2)
+    parser.add_argument("--single-attn-thres", type=float, default=0.2)
+    parser.add_argument("--single-mlp-thres", type=float, default=0.2)
     parser.add_argument("--disable-step-cache", action="store_true")
     parser.add_argument("--disable-progress-bar", action="store_true")
-    parser.add_argument("--magcache-k", type=int, default=5)
+    parser.add_argument("--magcache-k", type=int, default=4)
     parser.add_argument("--magcache-thresh", type=float, default=0.24)
-    parser.add_argument("--retention-ratio", type=float, default=0.1)
+    parser.add_argument("--retention-ratio", type=float, default=0.2)
     parser.add_argument(
         "--calibration-cpu-offload",
         action=argparse.BooleanOptionalAction,

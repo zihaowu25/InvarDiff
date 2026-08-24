@@ -7,6 +7,7 @@ standalone apart from the shared dynamic FLUX runtime.
 
 import json
 import os
+import argparse
 import time
 from typing import Dict, List, Optional, Tuple
 
@@ -1060,17 +1061,17 @@ def _cache_book_name(config):
     )
 
 
-def main():
-    seed = 42
+def main(args):
+    seed = args.seed
     torch.set_grad_enabled(False)
 
     print("Loading FLUX pipeline...")
     print("Calibration variant: three-point step + layer correction")
     print(f"Rate method: {RATE_METHOD}")
     pipe = FluxPipeline.from_pretrained(
-        "black-forest-labs/FLUX.1-dev",
+        args.model_path,
         torch_dtype=torch.bfloat16,
-        cache_dir="/root/autodl-tmp/InvarDiff/FLUX",
+        cache_dir=args.cache_dir,
     )
     original_transformer = pipe.transformer
     ## default measure 5 prompts(seed=42), the number of measure prompts will have a slight impact on the speedup ratio.
@@ -1081,15 +1082,15 @@ def main():
     ## slow(2.5x): nonskip_rate=0.22, step_thres=0.72, attn_thres=0.68, ff_thres=0.66, context_ff_thres=0, Single_attn_thres=0.68, Single_mlp_thres=0.62
 
     # Experiment controls are local to this standalone comparison script.
-    num_inference_steps = 28
-    nonskip_rate = 0.1
-    step_thres = 0.6
+    num_inference_steps = args.num_inference_steps
+    nonskip_rate = args.nonskip_rate
+    step_thres = args.step_thres
 
-    attn_thres = 0.5
-    ff_thres = 0.5
-    context_ff_thres = 0.5
-    single_attn_thres = 0.5
-    single_mlp_thres = 0.5
+    attn_thres = args.attn_thres
+    ff_thres = args.ff_thres
+    context_ff_thres = args.context_ff_thres
+    single_attn_thres = args.single_attn_thres
+    single_mlp_thres = args.single_mlp_thres
 
     dynamic_model = DynamicFluxTransformer2DModel(
         original_transformer,
@@ -1100,10 +1101,10 @@ def main():
 
     # Match the baseline debugging style: switch this flag to True to generate
     # the corrected cache book, then set it back to False for timed inference.
-    run_calibration = 0
+    run_calibration = args.generate_cache_books
     calibration_model_cpu_offload = True
 
-    cache_book_path = "./cache_books"
+    cache_book_path = args.cache_book_path
     cache_config = _cache_book_config(
         num_inference_steps,
         nonskip_rate,
@@ -1114,7 +1115,7 @@ def main():
         single_attn_thres,
         single_mlp_thres,
     )
-    cache_book_file = _cache_book_name(cache_config)
+    cache_book_file = args.cache_book_file or _cache_book_name(cache_config)
     cache_book_full_path = os.path.join(cache_book_path, cache_book_file)
 
     if run_calibration:
@@ -1130,6 +1131,7 @@ def main():
             # "A bouquet of wildflowers in a glass vase, watercolor style.",
             # "A majestic lion sitting on a rock, golden mane, sunset.",
         ]
+        measure_prompts = [args.calibration_prompt]
 
         (
             step_cache_book,
@@ -1163,7 +1165,8 @@ def main():
             json.dump(cache_books, file, indent=2)
 
         print(f"\nCache books saved: {cache_book_full_path}")
-        return
+        if args.calibration_only:
+            return
 
     (
         step_cache_book,
@@ -1192,6 +1195,7 @@ def main():
         "A vintage sports car speeding down a coastal highway at sunset.",
         "A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. She wears a black leather jacket, a long red dress, and black boots, and carries a black purse. She wears sunglasses and red lipstick. She walks confidently and casually. The street is damp and reflective, creating a mirror effect of the colorful lights. Many pedestrians walk about.",
     ]
+    prompts = [args.prompt]
 
     images = []
     times = []
@@ -1199,7 +1203,8 @@ def main():
         start_time = time.time()
         image = pipe(
             prompt,
-            num_inference_steps=num_inference_steps,
+                num_inference_steps=num_inference_steps,
+                guidance_scale=args.guidance_scale,
             generator=torch.Generator(device="cpu").manual_seed(seed),
         ).images[0]
         times.append(time.time() - start_time)
@@ -1219,10 +1224,10 @@ def main():
     for image_idx, image in enumerate(images):
         combined.paste(image, (image_idx * width, 0))
 
-    os.makedirs("images", exist_ok=True)
+    os.makedirs(args.output_dir, exist_ok=True)
     timestamp = time.strftime("%m%d_%H%M%S")
     save_name = (
-        f"images/imgs_{POLICY_VARIANT}_stp{num_inference_steps}"
+        f"{args.output_dir}/imgs_{POLICY_VARIANT}_stp{num_inference_steps}"
         f"_n{nonskip_rate}_th{step_thres}"
         f"_attn{attn_thres}_ff{ff_thres}_ctxff{context_ff_thres}"
         f"_sattn{single_attn_thres}_smlp{single_mlp_thres}"
@@ -1233,4 +1238,29 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="FLUX step + layer sampler")
+    parser.add_argument("--model-path", default="black-forest-labs/FLUX.1-dev")
+    parser.add_argument("--cache-dir", default="/root/autodl-tmp/InvarDiff/FLUX")
+    parser.add_argument("--num-inference-steps", type=int, default=28)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--prompt", default="A cinematic photograph of a red fox sitting beside a moss-covered tree in a sunlit forest, natural colors, detailed fur, soft depth of field.")
+    parser.add_argument("--calibration-prompt", default="A cinematic photograph of a red fox sitting beside a moss-covered tree in a sunlit forest, natural colors, detailed fur, soft depth of field.")
+    parser.add_argument("--output-dir", default="images")
+    parser.add_argument("--cache-book-path", default="./cache_books")
+    parser.add_argument("--cache-book-file", default=None)
+    parser.add_argument("--nonskip-rate", type=float, default=0.1)
+    # Fast step+layer preset.  Module thresholds reuse the measured
+    # layer-only fast point so the two policies can be compared directly.
+    parser.add_argument("--step-thres", type=float, default=0.30)
+    # The default step+layer preset reuses the measured layer-only fast
+    # threshold.  The step threshold remains the separately selected
+    # whole-step fast point.
+    parser.add_argument("--attn-thres", type=float, default=0.20)
+    parser.add_argument("--ff-thres", type=float, default=0.20)
+    parser.add_argument("--context-ff-thres", type=float, default=0.20)
+    parser.add_argument("--single-attn-thres", type=float, default=0.20)
+    parser.add_argument("--single-mlp-thres", type=float, default=0.20)
+    parser.add_argument("--guidance-scale", type=float, default=3.5)
+    parser.add_argument("--generate-cache-books", action="store_true")
+    parser.add_argument("--calibration-only", action="store_true")
+    main(parser.parse_args())

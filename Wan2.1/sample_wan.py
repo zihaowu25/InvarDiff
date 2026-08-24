@@ -685,6 +685,7 @@ def _parse_args(cli_args=None):
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
     parser.add_argument("--cache_book_file", type=str, default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
+    # Fast layer-only preset selected on the fixed 1.3B/81-frame sweep.
     parser.add_argument("--self_attn_thres", type=float, default=0.5)
     parser.add_argument("--cross_attn_thres", type=float, default=0.5)
     parser.add_argument("--ffn_thres", type=float, default=0.5)
@@ -1261,7 +1262,7 @@ if __name__ == "__main__":
     debug_args = [
     ## Core task/model
     "--task", "t2v-1.3B",
-    "--ckpt_dir", "./Wan2.1-T2V-1.3B",
+    "--ckpt_dir", "/root/autodl-tmp/Wan2.1/Wan2.1-T2V-1.3B",
 
     ## Output controls
     "--size", "832*480",
@@ -1273,10 +1274,10 @@ if __name__ == "__main__":
     "--sample_steps", "30",
     "--sample_shift", "5.0",
     "--sample_guide_scale", "5.0",
-    "--base_seed", "0",
+    "--base_seed", "42",
 
     ## Prompt
-    "--prompt", "Two anthropomorphic cats in comfy boxing gear and bright gloves fight intensely on a spotlighted stage.",
+    "--prompt", "A red fox walks slowly through a snowy forest at dawn. The camera tracks smoothly from left to right, its breath is visible, gentle snow is falling, and the lighting remains natural and cinematic.",
     # "--use_prompt_extend",
     # "--prompt_extend_method", "local_qwen",   # or dashscope
     # "--prompt_extend_model", "Qwen2.5-7B-Instruct",
