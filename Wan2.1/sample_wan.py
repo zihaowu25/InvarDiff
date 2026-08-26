@@ -685,10 +685,12 @@ def _parse_args(cli_args=None):
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
     parser.add_argument("--cache_book_file", type=str, default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    # Fast layer-only preset selected on the fixed 1.3B/81-frame sweep.
-    parser.add_argument("--self_attn_thres", type=float, default=0.5)
-    parser.add_argument("--cross_attn_thres", type=float, default=0.5)
-    parser.add_argument("--ffn_thres", type=float, default=0.5)
+    # fast (default): self_attn=0.20, cross_attn=0.10, ffn=0.01;
+    # balanced: self_attn=0.10, cross_attn=0.10, ffn=0.00;
+    # slow: self_attn=0.10, cross_attn=0.00, ffn=0.00.
+    parser.add_argument("--self_attn_thres", type=float, default=0.20)
+    parser.add_argument("--cross_attn_thres", type=float, default=0.10)
+    parser.add_argument("--ffn_thres", type=float, default=0.01)
 
     args = parser.parse_args(cli_args)
     _validate_args(args)
@@ -1300,9 +1302,9 @@ if __name__ == "__main__":
     # "--cache_book_file", "cache_book_layer_t2v-1.3B_832x480_f81_steps30_ns0.1_sattnth0.5_cattnth0.5_ffnth0.5.json",
 
     "--nonskip_rate", "0.1",
-    "--self_attn_thres", "0.5",
-    "--cross_attn_thres", "0.5",
-    "--ffn_thres", "0.5",
+    "--self_attn_thres", "0.20",
+    "--cross_attn_thres", "0.10",
+    "--ffn_thres", "0.01",
     ]
     cli_args = _parse_args(debug_args if len(sys.argv) == 1 else None)
     generate(cli_args)

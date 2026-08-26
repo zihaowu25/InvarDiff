@@ -658,7 +658,7 @@ class HybridFluxTransformer(nn.Module):
 def threshold_config(args):
     return {
         "double.attn": args.attn_thres,
-        "double.context_attn": args.attn_thres,
+        "double.context_attn": args.context_attn_thres,
         "double.ff": args.ff_thres,
         "double.context_ff": args.context_ff_thres,
         "single.attn": args.single_attn_thres,
@@ -834,6 +834,7 @@ def default_cache_name(args):
         f"cache_book_hybrid_seacache_steps{args.num_inference_steps}"
         f"_ns{fmt(args.nonskip_rate)}_seath{fmt(args.seacache_thresh)}"
         f"_attnth{fmt(args.attn_thres)}_ffth{fmt(args.ff_thres)}"
+        f"_cattnth{fmt(args.context_attn_thres)}"
         f"_ctxffth{fmt(args.context_ff_thres)}"
         f"_sattnth{fmt(args.single_attn_thres)}"
         f"_smlpth{fmt(args.single_mlp_thres)}.json"
@@ -1056,11 +1057,16 @@ def parse_args():
     )
     parser.add_argument("--cache-book-file")
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
-    parser.add_argument("--attn-thres", type=float, default=0.2)
-    parser.add_argument("--ff-thres", type=float, default=0.2)
-    parser.add_argument("--context-ff-thres", type=float, default=0.2)
-    parser.add_argument("--single-attn-thres", type=float, default=0.2)
-    parser.add_argument("--single-mlp-thres", type=float, default=0.2)
+    # fast (default): attn=0.30, context_attn=0.30, single_attn=0.12,
+    # ff=0.22, context_ff=0.40, single_mlp=0.20;
+    # balanced: 0.30, 0.30, 0.12, 0.22, 0.40, 0.11;
+    # slow: 0.30, 0.30, 0.06, 0.21, 0.40, 0.06.
+    parser.add_argument("--attn-thres", type=float, default=0.30)
+    parser.add_argument("--context-attn-thres", type=float, default=0.30)
+    parser.add_argument("--ff-thres", type=float, default=0.22)
+    parser.add_argument("--context-ff-thres", type=float, default=0.40)
+    parser.add_argument("--single-attn-thres", type=float, default=0.12)
+    parser.add_argument("--single-mlp-thres", type=float, default=0.20)
     parser.add_argument("--disable-step-cache", action="store_true")
     parser.add_argument("--disable-progress-bar", action="store_true")
     parser.add_argument("--seacache-thresh", type=float, default=0.3)

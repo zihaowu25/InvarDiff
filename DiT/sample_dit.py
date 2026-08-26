@@ -806,11 +806,10 @@ if __name__ == "__main__":
         default=0,
         help="Initial timestep ratio forced to recompute layer modules.",
     )
-    # Cross-step threshold argument is intentionally disabled:
-    # parser.add_argument("--step-thres", type=float, default=0.61)
-    # Fast layer-only preset selected from the 512x512 single-class sweep.
-    parser.add_argument("--msa-thres", type=float, default=0.4)
-    parser.add_argument("--mlp-thres", type=float, default=0.4)
+    # fast (default): msa=0.45, mlp=0.20; balanced: msa=0.45, mlp=0.13;
+    # slow: msa=0.30, mlp=0.10.
+    parser.add_argument("--msa-thres", type=float, default=0.45)
+    parser.add_argument("--mlp-thres", type=float, default=0.20)
     parser.add_argument("--num-analysis", type=int, default=16)
     parser.add_argument("--output-dir", type=str, default="images")
     parser.add_argument("--calibration-only", action="store_true")
@@ -826,8 +825,8 @@ if __name__ == "__main__":
         "--seed", "0",
         "--sample-times", "1",
         "--nonskip-rate", "0",
-        "--msa-thres", "0.4",
-        "--mlp-thres", "0.4",
+        "--msa-thres", "0.45",
+        "--mlp-thres", "0.20",
         "--num-analysis", "1",
         "--generate-cache-books",
     ]

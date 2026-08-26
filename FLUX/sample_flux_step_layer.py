@@ -656,6 +656,7 @@ def _build_module_cache_books(
     transformer_scores: Dict[str, torch.Tensor],
     single_scores: Dict[str, torch.Tensor],
     attn_thres: float,
+    context_attn_thres: float,
     ff_thres: float,
     context_ff_thres: float,
     single_attn_thres: float,
@@ -667,7 +668,7 @@ def _build_module_cache_books(
 ) -> Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]]:
     transformer_thresholds = {
         "attn": attn_thres,
-        "context_attn": attn_thres,
+        "context_attn": context_attn_thres,
         "ff": ff_thres,
         "context_ff": context_ff_thres,
     }
@@ -789,6 +790,7 @@ def threshold_analyse(
     nonskip_rate=0.1,
     step_thres=0.5,
     attn_thres=0.5,
+    context_attn_thres=0.5,
     ff_thres=0.5,
     context_ff_thres=0.5,
     Single_attn_thres=0.5,
@@ -804,7 +806,7 @@ def threshold_analyse(
 
     transformer_thresholds = {
         "attn": attn_thres,
-        "context_attn": attn_thres,
+        "context_attn": context_attn_thres,
         "ff": ff_thres,
         "context_ff": context_ff_thres,
     }
@@ -848,6 +850,7 @@ def threshold_analyse(
             initial_transformer_scores,
             initial_single_scores,
             attn_thres,
+            context_attn_thres,
             ff_thres,
             context_ff_thres,
             Single_attn_thres,
@@ -895,6 +898,7 @@ def threshold_analyse(
         corrected_transformer_scores,
         corrected_single_scores,
         attn_thres,
+        context_attn_thres,
         ff_thres,
         context_ff_thres,
         Single_attn_thres,
@@ -1006,6 +1010,7 @@ def load_cache_books(
     cache_book_path,
     cache_book_file,
     expected_rate_method=None,
+    expected_config=None,
 ):
     with open(os.path.join(cache_book_path, cache_book_file), "r") as file:
         cache_books = json.load(file)
@@ -1020,6 +1025,12 @@ def load_cache_books(
             f"expected {expected_rate_method!r}, found {saved_rate_method!r}."
         )
 
+    if expected_config is not None and cache_books.get("config") != expected_config:
+        raise ValueError(
+            "Cache-book configuration mismatch: "
+            f"expected {expected_config!r}, found {cache_books.get('config')!r}."
+        )
+
     return (
         cache_books["step_cache_book"],
         cache_books["transformer_cache_book"],
@@ -1031,6 +1042,7 @@ def _cache_book_config(
     nonskip_rate,
     step_thres,
     attn_thres,
+    context_attn_thres,
     ff_thres,
     context_ff_thres,
     single_attn_thres,
@@ -1042,6 +1054,7 @@ def _cache_book_config(
         "nonskip": nonskip_rate,
         "step": step_thres,
         "attn": attn_thres,
+        "context_attn": context_attn_thres,
         "ff": ff_thres,
         "context_ff": context_ff_thres,
         "single_attn": single_attn_thres,
@@ -1055,6 +1068,7 @@ def _cache_book_name(config):
         f"cache_book_stplayer_steps{config['steps']}_ns{fmt(config['nonskip'])}"
         f"_stepth{fmt(config['step'])}"
         f"_attnth{fmt(config['attn'])}_ffth{fmt(config['ff'])}"
+        f"_cattnth{fmt(config['context_attn'])}"
         f"_ctxffth{fmt(config['context_ff'])}"
         f"_sattnth{fmt(config['single_attn'])}"
         f"_smlpth{fmt(config['single_mlp'])}.json"
@@ -1087,6 +1101,7 @@ def main(args):
     step_thres = args.step_thres
 
     attn_thres = args.attn_thres
+    context_attn_thres = args.context_attn_thres
     ff_thres = args.ff_thres
     context_ff_thres = args.context_ff_thres
     single_attn_thres = args.single_attn_thres
@@ -1110,6 +1125,7 @@ def main(args):
         nonskip_rate,
         step_thres,
         attn_thres,
+        context_attn_thres,
         ff_thres,
         context_ff_thres,
         single_attn_thres,
@@ -1146,6 +1162,7 @@ def main(args):
             nonskip_rate=nonskip_rate,
             step_thres=step_thres,
             attn_thres=attn_thres,
+            context_attn_thres=context_attn_thres,
             ff_thres=ff_thres,
             context_ff_thres=context_ff_thres,
             Single_attn_thres=single_attn_thres,
@@ -1176,6 +1193,7 @@ def main(args):
         cache_book_path=cache_book_path,
         cache_book_file=cache_book_file,
         expected_rate_method=RATE_METHOD,
+        expected_config=cache_config,
     )
 
     pipe.to("cuda")
@@ -1230,6 +1248,7 @@ def main(args):
         f"{args.output_dir}/imgs_{POLICY_VARIANT}_stp{num_inference_steps}"
         f"_n{nonskip_rate}_th{step_thres}"
         f"_attn{attn_thres}_ff{ff_thres}_ctxff{context_ff_thres}"
+        f"_cattn{context_attn_thres}"
         f"_sattn{single_attn_thres}_smlp{single_mlp_thres}"
         f"_{timestamp}.png"
     )
@@ -1249,16 +1268,15 @@ if __name__ == "__main__":
     parser.add_argument("--cache-book-path", default="./cache_books")
     parser.add_argument("--cache-book-file", default=None)
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
-    # Fast step+layer preset.  Module thresholds reuse the measured
-    # layer-only fast point so the two policies can be compared directly.
-    parser.add_argument("--step-thres", type=float, default=0.30)
-    # The default step+layer preset reuses the measured layer-only fast
-    # threshold.  The step threshold remains the separately selected
-    # whole-step fast point.
-    parser.add_argument("--attn-thres", type=float, default=0.20)
-    parser.add_argument("--ff-thres", type=float, default=0.20)
-    parser.add_argument("--context-ff-thres", type=float, default=0.20)
-    parser.add_argument("--single-attn-thres", type=float, default=0.20)
+    # fast (default): step=0.50, layer=(0.30, 0.30, 0.12, 0.22, 0.40, 0.20);
+    # balanced: step=0.40, layer=(0.30, 0.30, 0.12, 0.22, 0.40, 0.11);
+    # slow: step=0.20, layer=(0.30, 0.30, 0.06, 0.21, 0.40, 0.06).
+    parser.add_argument("--step-thres", type=float, default=0.50)
+    parser.add_argument("--attn-thres", type=float, default=0.30)
+    parser.add_argument("--context-attn-thres", type=float, default=0.30)
+    parser.add_argument("--ff-thres", type=float, default=0.22)
+    parser.add_argument("--context-ff-thres", type=float, default=0.40)
+    parser.add_argument("--single-attn-thres", type=float, default=0.12)
     parser.add_argument("--single-mlp-thres", type=float, default=0.20)
     parser.add_argument("--guidance-scale", type=float, default=3.5)
     parser.add_argument("--generate-cache-books", action="store_true")

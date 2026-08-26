@@ -791,12 +791,13 @@ def _parse_args(cli_args=None):
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
     parser.add_argument("--cache_book_file", type=str, default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    # Fast step+layer preset; cross-step threshold is tuned separately from
-    # the layer-only default in sample_wan.py.
+    # fast (default): step=0.30, layer=(self_attn=0.20, cross_attn=0.10, ffn=0.01);
+    # balanced: step=0.20, layer=(0.10, 0.10, 0.00);
+    # slow: step=0.10, layer=(0.10, 0.00, 0.00).
     parser.add_argument("--step_thres", type=float, default=0.30)
-    parser.add_argument("--self_attn_thres", type=float, default=0.5)
-    parser.add_argument("--cross_attn_thres", type=float, default=0.5)
-    parser.add_argument("--ffn_thres", type=float, default=0.5)
+    parser.add_argument("--self_attn_thres", type=float, default=0.20)
+    parser.add_argument("--cross_attn_thres", type=float, default=0.10)
+    parser.add_argument("--ffn_thres", type=float, default=0.01)
 
     args = parser.parse_args(cli_args)
     _validate_args(args)
@@ -1430,9 +1431,9 @@ if __name__ == "__main__":
 
     "--nonskip_rate", "0.1",
     "--step_thres", "0.30",
-    "--self_attn_thres", "0.5",
-    "--cross_attn_thres", "0.5",
-    "--ffn_thres", "0.5",
+    "--self_attn_thres", "0.20",
+    "--cross_attn_thres", "0.10",
+    "--ffn_thres", "0.01",
     ]
     cli_args = _parse_args(debug_args if len(sys.argv) == 1 else None)
     generate(cli_args)

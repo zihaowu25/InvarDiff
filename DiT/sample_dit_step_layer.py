@@ -654,20 +654,19 @@ if __name__ == "__main__":
     
     parser.add_argument('--nonskip-rate', type=float, default=0, # little effect on DiT
                         help="Proportion of initial timesteps that are forced not to be skipped")
-    # Fast step+layer preset; layer-only remains the primary default.
-    parser.add_argument('--step-thres', type=float, default=0.30,
+    # fast (default): step=0.45, msa=0.45, mlp=0.13; balanced: step=0.40,
+    # msa=0.45, mlp=0.13; slow: step=0.20, msa=0.45, mlp=0.13.
+    parser.add_argument('--step-thres', type=float, default=0.45,
                         help="Quantile threshold for step skipping.")
-    parser.add_argument('--msa-thres', type=float, default=0.22,
+    parser.add_argument('--msa-thres', type=float, default=0.45,
                         help='Quantile threshold for MSA module skipping.')
-    parser.add_argument('--mlp-thres', type=float, default=0.22,
+    parser.add_argument('--mlp-thres', type=float, default=0.13,
                         help='Quantile threshold for MLP module skipping.')
     parser.add_argument('--num-analysis', type=int, default=16,
                         help='Number of sampling runs for stable feature analysis.')
     parser.add_argument('--output-dir', type=str, default='images')
     parser.add_argument('--calibration-only', action='store_true')
     
-    # fast(2.8x): nonskip-rate=0, step-thres=0.63, msa-thres = 0.22, mlp-thres = 0.22
-    # slow(2.5x): nonskip-rate=0, step-thres=0.61, msa-thres = 0.2, mlp-thres = 0.2
     debug_args = [
         '--model', 'DiT-XL/2',
         '--image-size', '512',
@@ -679,9 +678,9 @@ if __name__ == "__main__":
         '--seed', '0',
         '--sample-times', '1',
         '--nonskip-rate', '0',
-        '--step-thres', '0.30',
-        '--msa-thres', '0.22',
-        '--mlp-thres', '0.22',
+        '--step-thres', '0.45',
+        '--msa-thres', '0.45',
+        '--mlp-thres', '0.13',
         '--num-analysis', '1',
         # '--generate-cache-books', 
     ]

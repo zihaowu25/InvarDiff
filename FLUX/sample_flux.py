@@ -424,6 +424,7 @@ def threshold_analyse(
     measure_prompts,
     nonskip_rate=0.1,
     attn_thres=0.5,
+    context_attn_thres=0.5,
     ff_thres=0.5,
     context_ff_thres=0.5,
     Single_attn_thres=0.5,
@@ -442,7 +443,7 @@ def threshold_analyse(
 
     transformer_thresholds = {
         "attn": attn_thres,
-        "context_attn": attn_thres,
+        "context_attn": context_attn_thres,
         "ff": ff_thres,
         "context_ff": context_ff_thres,
     }
@@ -799,6 +800,7 @@ def cache_book_config(
     num_inference_steps,
     nonskip_rate,
     attn_thres,
+    context_attn_thres,
     ff_thres,
     context_ff_thres,
     single_attn_thres,
@@ -809,6 +811,7 @@ def cache_book_config(
         "steps": num_inference_steps,
         "nonskip": nonskip_rate,
         "attn": attn_thres,
+        "context_attn": context_attn_thres,
         "ff": ff_thres,
         "context_ff": context_ff_thres,
         "single_attn": single_attn_thres,
@@ -821,6 +824,7 @@ def cache_book_name(config):
     return (
         f"cache_book_layer_steps{config['steps']}_ns{fmt(config['nonskip'])}"
         f"_attnth{fmt(config['attn'])}_ffth{fmt(config['ff'])}"
+        f"_cattnth{fmt(config['context_attn'])}"
         f"_ctxffth{fmt(config['context_ff'])}"
         f"_sattnth{fmt(config['single_attn'])}"
         f"_smlpth{fmt(config['single_mlp'])}.json"
@@ -831,6 +835,7 @@ def load_cache_books(
     cache_book_file,
     expected_rate_method=None,
     expected_cache_scope=None,
+    expected_config=None,
 ):
     with open(os.path.join(cache_book_path, cache_book_file), "r") as file:
         cache_books = json.load(file)
@@ -855,6 +860,12 @@ def load_cache_books(
             "Cache-book scope mismatch: "
             f"expected {expected_cache_scope!r}, "
             f"found {saved_cache_scope!r}."
+        )
+
+    if expected_config is not None and cache_books.get("config") != expected_config:
+        raise ValueError(
+            "Cache-book configuration mismatch: "
+            f"expected {expected_config!r}, found {cache_books.get('config')!r}."
         )
 
     step_cache_book = cache_books["step_cache_book"]
@@ -889,6 +900,7 @@ def main(args):
     # step_thres = 0
 
     attn_thres = args.attn_thres
+    context_attn_thres = args.context_attn_thres
     ff_thres = args.ff_thres
     context_ff_thres = args.context_ff_thres
 
@@ -899,6 +911,7 @@ def main(args):
         num_inference_steps,
         nonskip_rate,
         attn_thres,
+        context_attn_thres,
         ff_thres,
         context_ff_thres,
         Single_attn_thres,
@@ -958,6 +971,7 @@ def main(args):
             # Cross-step cache threshold is intentionally disabled:
             # step_thres=step_thres,
             attn_thres=attn_thres,
+            context_attn_thres=context_attn_thres,
             ff_thres=ff_thres,
             context_ff_thres=context_ff_thres,
             Single_attn_thres=Single_attn_thres,
@@ -990,6 +1004,7 @@ def main(args):
             cache_book_file=cache_book_file,
             expected_rate_method=RATE_METHOD,
             expected_cache_scope="layer_only",
+            expected_config=cache_config,
         )
         pipe.to("cuda")
         dynamic_model.init_cache_book(transformer_cache_book, single_transformer_cache_book, step_cache_book)
@@ -1045,6 +1060,7 @@ def main(args):
             f"{args.output_dir}/imgs_{POLICY_VARIANT}_stp{num_inference_steps}"
             f"_n{nonskip_rate}"
             f"_attn{attn_thres}_ff{ff_thres}"
+            f"_cattn{context_attn_thres}"
             f"_ctxff{context_ff_thres}"
             f"_sattn{Single_attn_thres}_smlp{Single_mlp_thres}"
             f"_{timestamp}.png"
@@ -1064,12 +1080,16 @@ if __name__ == "__main__":
     parser.add_argument("--cache-book-path", default="./cache_books")
     parser.add_argument("--cache-book-file", default=None)
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
-    # Fast layer-only preset selected from the single-prompt 1024px sweep.
-    parser.add_argument("--attn-thres", type=float, default=0.2)
-    parser.add_argument("--ff-thres", type=float, default=0.2)
-    parser.add_argument("--context-ff-thres", type=float, default=0.2)
-    parser.add_argument("--single-attn-thres", type=float, default=0.2)
-    parser.add_argument("--single-mlp-thres", type=float, default=0.2)
+    # fast (default): attn=0.30, context_attn=0.30, single_attn=0.12,
+    # ff=0.22, context_ff=0.40, single_mlp=0.20;
+    # balanced: 0.30, 0.30, 0.12, 0.22, 0.40, 0.11;
+    # slow: 0.30, 0.30, 0.06, 0.21, 0.40, 0.06.
+    parser.add_argument("--attn-thres", type=float, default=0.30)
+    parser.add_argument("--context-attn-thres", type=float, default=0.30)
+    parser.add_argument("--ff-thres", type=float, default=0.22)
+    parser.add_argument("--context-ff-thres", type=float, default=0.40)
+    parser.add_argument("--single-attn-thres", type=float, default=0.12)
+    parser.add_argument("--single-mlp-thres", type=float, default=0.20)
     parser.add_argument("--guidance-scale", type=float, default=3.5)
     parser.add_argument("--generate-cache-books", action="store_true")
     parser.add_argument("--calibration-only", action="store_true")
