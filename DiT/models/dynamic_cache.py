@@ -301,13 +301,28 @@ class SimilarityAnalyzer:
         cos_sim = cos_sim.sum(dim=1).mean()
         return cos_sim
     
-    @staticmethod
-    def compute_rate(x_prev:torch.Tensor, x:torch.Tensor, x_post:torch.Tensor) -> torch.Tensor:
-        diff_prev = x - x_prev + 1e-8
-        diff_post = x_post - x_prev + 1e-8
-        rate = diff_post.norm(p=1)/diff_prev.norm(p=1)
+    rate_chunk_size = 1_048_576
 
-        return rate
+    @staticmethod
+    def compute_l1_distance(x_start: torch.Tensor, x_end: torch.Tensor) -> torch.Tensor:
+        x_start = x_start.detach().reshape(-1)
+        x_end = x_end.detach().reshape(-1)
+        if x_start.numel() != x_end.numel():
+            raise ValueError("Rate feature sizes must match")
+        total = torch.zeros((), device=x_start.device, dtype=torch.float32)
+        for start in range(0, x_start.numel(), SimilarityAnalyzer.rate_chunk_size):
+            end = min(start + SimilarityAnalyzer.rate_chunk_size, x_start.numel())
+            total += (
+                x_end[start:end] - x_start[start:end] + 1e-8
+            ).abs().sum(dtype=torch.float32)
+        return total
+
+    @staticmethod
+    def compute_rate(
+        current_norm: torch.Tensor,
+        previous_norm: torch.Tensor,
+    ) -> torch.Tensor:
+        return current_norm / previous_norm.clamp_min(1e-8)
 
 class DynamicDiT(nn.Module):
     def __init__(self, base_dit: DiT, msa_cache_book, mlp_cache_book, step_cache):

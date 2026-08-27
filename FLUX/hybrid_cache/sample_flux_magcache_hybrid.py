@@ -33,6 +33,7 @@ from tqdm.auto import tqdm
 logger = logging.get_logger(__name__)
 METHOD = "magcache"
 RATE_METHOD = "three_point_l1"
+CACHE_BOOK_VERSION = 2
 RATE_CHUNK_SIZE = 1_048_576
 DOUBLE_RATE_KEYS = ("attn", "context_attn", "ff", "context_ff")
 DOUBLE_CACHE_KEYS = (*DOUBLE_RATE_KEYS, "ip_attn")
@@ -84,14 +85,10 @@ def compute_l1_distance(
 
 
 def compute_rate(
-    x_prev: torch.Tensor,
-    x: torch.Tensor,
-    x_post: torch.Tensor,
-    diff_prev_norm: Optional[torch.Tensor] = None,
+    current_norm: torch.Tensor,
+    previous_norm: torch.Tensor,
 ) -> torch.Tensor:
-    if diff_prev_norm is None:
-        diff_prev_norm = compute_l1_distance(x_prev, x)
-    return compute_l1_distance(x_prev, x_post) / diff_prev_norm.clamp_min(1e-8)
+    return current_norm / previous_norm.clamp_min(1e-8)
 
 
 def nearest_interp(values: np.ndarray, target_length: int) -> np.ndarray:
@@ -296,7 +293,6 @@ class FinegrainedAnalyzer:
     def _new_track():
         return {
             "count": 0,
-            "prev": None,
             "current": None,
             "norm": None,
             "active": False,
@@ -332,20 +328,15 @@ class FinegrainedAnalyzer:
                     result[trajectory].append(float("nan"))
                     continue
                 if track["count"] == 1:
-                    track["prev"] = track["current"]
-                    track["current"] = feature
                     track["norm"] = compute_l1_distance(
-                        track["prev"], track["current"]
+                        track["current"], feature
                     )
+                    track["current"] = feature
                     track["count"] = 2
                     result[trajectory].append(float("nan"))
                     continue
-                score = compute_rate(
-                    track["prev"],
-                    track["current"],
-                    feature,
-                    track["norm"],
-                )
+                current_norm = compute_l1_distance(track["current"], feature)
+                score = compute_rate(current_norm, track["norm"])
                 result[trajectory].append(float(score.item()))
                 refresh = True
                 if effective_books is not None:
@@ -361,10 +352,7 @@ class FinegrainedAnalyzer:
                     else:
                         refresh = False
                 if refresh:
-                    track["norm"] = compute_l1_distance(
-                        track["current"], feature
-                    )
-                    track["prev"] = track["current"]
+                    track["norm"] = current_norm
                     track["current"] = feature
         return result
 
@@ -833,6 +821,7 @@ def default_cache_name(args):
 
 def make_cache_book(args, model, ratios, step_book, layer_books):
     return {
+        "cache_version": CACHE_BOOK_VERSION,
         "cache_scope": "hybrid",
         "layer_policy": "finegrained_cache",
         "step_policy": METHOD,
@@ -860,6 +849,8 @@ def make_cache_book(args, model, ratios, step_book, layer_books):
 
 
 def validate_cache_book(book, args, model):
+    if book.get("cache_version") != CACHE_BOOK_VERSION:
+        raise ValueError("Incompatible cache book; re-run calibration.")
     if book.get("cache_scope") != "hybrid":
         raise ValueError("Cache Book scope mismatch")
     if book.get("layer_policy") != "finegrained_cache":

@@ -37,6 +37,7 @@ TRANSFORMER_RATE_MODULES = (
 )
 SINGLE_TRANSFORMER_MODULES = ("attn", "mlp")
 RATE_METHOD = "three_point_l1"
+CACHE_BOOK_VERSION = 2
 POLICY_VARIANT = "layer"
 RATE_CHUNK_SIZE = 1_048_576
 
@@ -67,16 +68,11 @@ def compute_l1_distance(
 
 
 def compute_rate(
-    x_prev: torch.Tensor,
-    x: torch.Tensor,
-    x_post: torch.Tensor,
-    diff_prev_norm: Optional[torch.Tensor] = None,
+    current_norm: torch.Tensor,
+    previous_norm: torch.Tensor,
 ) -> torch.Tensor:
-    """Return ||x_post-x_prev+eps||_1 / ||x-x_prev+eps||_1."""
-    if diff_prev_norm is None:
-        diff_prev_norm = compute_l1_distance(x_prev, x)
-    diff_post_norm = compute_l1_distance(x_prev, x_post)
-    return diff_post_norm / diff_prev_norm.clamp_min(1e-8)
+    """Return the ratio between the current and previous L1 displacements."""
+    return current_norm / previous_norm.clamp_min(1e-8)
 
 
 def register_hooks(model, transformer_keys, single_transformer_keys):
@@ -163,26 +159,20 @@ class FeatureChangeAnalyzer:
     #         return None
     #
     #     if self._step_count == 1:
-    #         self.prev_hidden_states = self.current_hidden_states
-    #         self.current_hidden_states = hidden_states
     #         self.prev_step_norm = compute_l1_distance(
-    #             self.prev_hidden_states,
     #             self.current_hidden_states,
+    #             hidden_states,
     #         )
+    #         self.current_hidden_states = hidden_states
     #         self._step_count = 2
     #         return None
     #
-    #     step_score = compute_rate(
-    #         self.prev_hidden_states,
-    #         self.current_hidden_states,
-    #         hidden_states,
-    #         self.prev_step_norm,
-    #     )
-    #     self.prev_step_norm = compute_l1_distance(
+    #     current_norm = compute_l1_distance(
     #         self.current_hidden_states,
     #         hidden_states,
     #     )
-    #     self.prev_hidden_states = self.current_hidden_states
+    #     step_score = compute_rate(current_norm, self.prev_step_norm)
+    #     self.prev_step_norm = current_norm
     #     self.current_hidden_states = hidden_states
     #     return step_score
 
@@ -213,21 +203,16 @@ class FeatureChangeAnalyzer:
         self._layer_count = 1
 
     def _initialize_layer_state(self, transformer_features, single_features):
-        self.prev_Transformer = self.current_Transformer
-        self.prev_SingleTransformer = self.current_SingleTransformer
-        self.current_Transformer = transformer_features
-        self.current_SingleTransformer = single_features
-
         self.prev_Transformer_norm = {
             key: [None] * self.num_transformer_layers
             for key in self.transformer_keys
         }
         for key in self.transformer_keys:
             for block_idx, feature in enumerate(transformer_features[key]):
-                previous = self.prev_Transformer[key][block_idx]
-                if previous is not None and feature is not None:
+                current = self.current_Transformer[key][block_idx]
+                if current is not None and feature is not None:
                     self.prev_Transformer_norm[key][block_idx] = (
-                        compute_l1_distance(previous, feature)
+                        compute_l1_distance(current, feature)
                     )
 
         self.prev_SingleTransformer_norm = {
@@ -236,11 +221,14 @@ class FeatureChangeAnalyzer:
         }
         for key in self.single_transformer_keys:
             for block_idx, feature in enumerate(single_features[key]):
-                previous = self.prev_SingleTransformer[key][block_idx]
-                if previous is not None and feature is not None:
+                current = self.current_SingleTransformer[key][block_idx]
+                if current is not None and feature is not None:
                     self.prev_SingleTransformer_norm[key][block_idx] = (
-                        compute_l1_distance(previous, feature)
+                        compute_l1_distance(current, feature)
                     )
+
+        self.current_Transformer = transformer_features
+        self.current_SingleTransformer = single_features
 
         self._layer_count = 2
 
@@ -278,22 +266,17 @@ class FeatureChangeAnalyzer:
         for key in self.transformer_keys:
             scores = []
             for block_idx, feature in enumerate(transformer_features[key]):
-                previous = self.prev_Transformer[key][block_idx]
                 current = self.current_Transformer[key][block_idx]
-                if previous is None or current is None or feature is None:
+                if current is None or feature is None:
                     scores.append(float("nan"))
                     next_norm = None
                 else:
+                    next_norm = compute_l1_distance(current, feature)
                     score = compute_rate(
-                        previous,
-                        current,
-                        feature,
+                        next_norm,
                         self.prev_Transformer_norm[key][block_idx],
                     )
                     scores.append(score.item())
-                    next_norm = compute_l1_distance(current, feature)
-
-                self.prev_Transformer[key][block_idx] = current
                 self.current_Transformer[key][block_idx] = feature
                 self.prev_Transformer_norm[key][block_idx] = next_norm
 
@@ -303,22 +286,17 @@ class FeatureChangeAnalyzer:
         for key in self.single_transformer_keys:
             scores = []
             for block_idx, feature in enumerate(single_features[key]):
-                previous = self.prev_SingleTransformer[key][block_idx]
                 current = self.current_SingleTransformer[key][block_idx]
-                if previous is None or current is None or feature is None:
+                if current is None or feature is None:
                     scores.append(float("nan"))
                     next_norm = None
                 else:
+                    next_norm = compute_l1_distance(current, feature)
                     score = compute_rate(
-                        previous,
-                        current,
-                        feature,
+                        next_norm,
                         self.prev_SingleTransformer_norm[key][block_idx],
                     )
                     scores.append(score.item())
-                    next_norm = compute_l1_distance(current, feature)
-
-                self.prev_SingleTransformer[key][block_idx] = current
                 self.current_SingleTransformer[key][block_idx] = feature
                 self.prev_SingleTransformer_norm[key][block_idx] = next_norm
 
@@ -350,15 +328,13 @@ class FeatureChangeAnalyzer:
         for key in self.transformer_keys:
             scores = []
             for block_idx, feature in enumerate(transformer_features[key]):
-                previous = self.prev_Transformer[key][block_idx]
                 current = self.current_Transformer[key][block_idx]
-                if previous is None or current is None or feature is None:
+                if current is None or feature is None:
                     scores.append(float("nan"))
                 else:
+                    next_norm = compute_l1_distance(current, feature)
                     score = compute_rate(
-                        previous,
-                        current,
-                        feature,
+                        next_norm,
                         self.prev_Transformer_norm[key][block_idx],
                     )
                     scores.append(score.item())
@@ -370,12 +346,6 @@ class FeatureChangeAnalyzer:
                     timestep_idx,
                     block_idx,
                 ):
-                    next_norm = (
-                        None
-                        if current is None or feature is None
-                        else compute_l1_distance(current, feature)
-                    )
-                    self.prev_Transformer[key][block_idx] = current
                     self.current_Transformer[key][block_idx] = feature
                     self.prev_Transformer_norm[key][block_idx] = next_norm
 
@@ -385,15 +355,13 @@ class FeatureChangeAnalyzer:
         for key in self.single_transformer_keys:
             scores = []
             for block_idx, feature in enumerate(single_features[key]):
-                previous = self.prev_SingleTransformer[key][block_idx]
                 current = self.current_SingleTransformer[key][block_idx]
-                if previous is None or current is None or feature is None:
+                if current is None or feature is None:
                     scores.append(float("nan"))
                 else:
+                    next_norm = compute_l1_distance(current, feature)
                     score = compute_rate(
-                        previous,
-                        current,
-                        feature,
+                        next_norm,
                         self.prev_SingleTransformer_norm[key][block_idx],
                     )
                     scores.append(score.item())
@@ -405,12 +373,6 @@ class FeatureChangeAnalyzer:
                     timestep_idx,
                     block_idx,
                 ):
-                    next_norm = (
-                        None
-                        if current is None or feature is None
-                        else compute_l1_distance(current, feature)
-                    )
-                    self.prev_SingleTransformer[key][block_idx] = current
                     self.current_SingleTransformer[key][block_idx] = feature
                     self.prev_SingleTransformer_norm[key][block_idx] = next_norm
 
@@ -840,6 +802,8 @@ def load_cache_books(
     with open(os.path.join(cache_book_path, cache_book_file), "r") as file:
         cache_books = json.load(file)
 
+    if cache_books.get("cache_version") != CACHE_BOOK_VERSION:
+        raise ValueError("Incompatible cache book; re-run calibration.")
     saved_rate_method = cache_books.get("rate_method")
     if (
         expected_rate_method is not None
@@ -979,6 +943,7 @@ def main(args):
             seed=seed
         )
         cache_books = {
+            "cache_version": CACHE_BOOK_VERSION,
             "cache_scope": "layer_only",
             "config": cache_config,
             "rate_method": RATE_METHOD,

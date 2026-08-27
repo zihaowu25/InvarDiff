@@ -19,6 +19,7 @@ from models.dynamic_cache import DiT_models, DynamicDiT, SimilarityAnalyzer
 
 CACHE_SCOPE = "step_layer"
 RATE_METHOD = "three_point_l1"
+CACHE_BOOK_VERSION = 2
 POLICY_VARIANT = "stplayer"
 
 def set_seed(seed):
@@ -52,12 +53,12 @@ def register_hooks(model):
 class FeatureChangeAnalyzer:
     def __init__(self, num_layers):
         self.num_layers = num_layers
-        self.prev_msa_features = [None] * num_layers
-        self.prev_mlp_features = [None] * num_layers
         self.curr_msa_features = [None] * num_layers
         self.curr_mlp_features = [None] * num_layers
-        self.prev_x = None
+        self.prev_msa_norms = [None] * num_layers
+        self.prev_mlp_norms = [None] * num_layers
         self.curr_x = None
+        self.prev_x_norm = None
 
         self.start_up = [0, 0]
         self.x_state = False
@@ -66,55 +67,67 @@ class FeatureChangeAnalyzer:
 
     def step_forward(self, x):
         if self.start_up[0] == 0:
-            self.prev_x = x
-            self.start_up[0] += 1
-            return None
-        elif self.start_up[0] == 1:
             self.curr_x = x
             self.start_up[0] += 1
             return None
-        
+        elif self.start_up[0] == 1:
+            self.prev_x_norm = SimilarityAnalyzer.compute_l1_distance(
+                self.curr_x, x
+            )
+            self.curr_x = x
+            self.start_up[0] += 1
+            return None
+
+        curr_norm = SimilarityAnalyzer.compute_l1_distance(self.curr_x, x)
         step_score = SimilarityAnalyzer.compute_rate(
-            self.prev_x,
-            self.curr_x,
-            x
+            curr_norm,
+            self.prev_x_norm,
         )
-        self.prev_x = self.curr_x
         self.curr_x = x
+        self.prev_x_norm = curr_norm
         return step_score
 
     def step_forward_correct(self, x, x_state, timestep_idx):
         if timestep_idx == 0:
-            self.prev_x = x
+            self.curr_x = x
             return None
         elif timestep_idx == 1:
+            self.prev_x_norm = SimilarityAnalyzer.compute_l1_distance(
+                self.curr_x, x
+            )
             self.curr_x = x
             return None
-        
+
+        curr_norm = SimilarityAnalyzer.compute_l1_distance(self.curr_x, x)
         step_score = SimilarityAnalyzer.compute_rate(
-            self.prev_x,
-            self.curr_x,
-            x
+            curr_norm,
+            self.prev_x_norm,
         )
         if not x_state[timestep_idx-1]:
-            self.prev_x = self.curr_x
             self.curr_x = x
+            self.prev_x_norm = curr_norm
             self.x_state = False
         elif not self.x_state:
-            self.prev_x = self.curr_x
             self.curr_x = x
+            self.prev_x_norm = curr_norm
             self.x_state = True
         return step_score
     
     def step(self, msa_features_dict, mlp_features_dict):
         if self.start_up[1] == 0:
             for i in range(self.num_layers):
-                self.prev_msa_features[i] = msa_features_dict[i]
-                self.prev_mlp_features[i] = mlp_features_dict[i]
+                self.curr_msa_features[i] = msa_features_dict[i]
+                self.curr_mlp_features[i] = mlp_features_dict[i]
             self.start_up[1] += 1
             return None, None
         elif self.start_up[1] == 1:
             for i in range(self.num_layers):
+                self.prev_msa_norms[i] = SimilarityAnalyzer.compute_l1_distance(
+                    self.curr_msa_features[i], msa_features_dict[i]
+                )
+                self.prev_mlp_norms[i] = SimilarityAnalyzer.compute_l1_distance(
+                    self.curr_mlp_features[i], mlp_features_dict[i]
+                )
                 self.curr_msa_features[i] = msa_features_dict[i]
                 self.curr_mlp_features[i] = mlp_features_dict[i]
             self.start_up[1] += 1
@@ -124,23 +137,27 @@ class FeatureChangeAnalyzer:
         mlp_diffs_list = []
 
         for layer_idx in range(self.num_layers):
-            msa_score = SimilarityAnalyzer.compute_rate( 
-                self.prev_msa_features[layer_idx],
-                self.curr_msa_features[layer_idx],
-                msa_features_dict[layer_idx]
+            msa_norm = SimilarityAnalyzer.compute_l1_distance(
+                self.curr_msa_features[layer_idx], msa_features_dict[layer_idx]
+            )
+            mlp_norm = SimilarityAnalyzer.compute_l1_distance(
+                self.curr_mlp_features[layer_idx], mlp_features_dict[layer_idx]
+            )
+            msa_score = SimilarityAnalyzer.compute_rate(
+                msa_norm,
+                self.prev_msa_norms[layer_idx],
             )
             mlp_score = SimilarityAnalyzer.compute_rate(
-                self.prev_mlp_features[layer_idx],
-                self.curr_mlp_features[layer_idx],
-                mlp_features_dict[layer_idx]
+                mlp_norm,
+                self.prev_mlp_norms[layer_idx],
             )
             msa_diffs_list.append(msa_score)
             mlp_diffs_list.append(mlp_score)
 
-            self.prev_msa_features[layer_idx] = self.curr_msa_features[layer_idx]
-            self.prev_mlp_features[layer_idx] = self.curr_mlp_features[layer_idx]
             self.curr_msa_features[layer_idx] = msa_features_dict[layer_idx]
             self.curr_mlp_features[layer_idx] = mlp_features_dict[layer_idx]
+            self.prev_msa_norms[layer_idx] = msa_norm
+            self.prev_mlp_norms[layer_idx] = mlp_norm
             
         msa_diffs = torch.stack(msa_diffs_list)
         mlp_diffs = torch.stack(mlp_diffs_list)
@@ -157,11 +174,17 @@ class FeatureChangeAnalyzer:
         ):
         if timestep_idx == 0:
             for i in range(self.num_layers):
-                self.prev_msa_features[i] = msa_features_dict[i]
-                self.prev_mlp_features[i] = mlp_features_dict[i]
+                self.curr_msa_features[i] = msa_features_dict[i]
+                self.curr_mlp_features[i] = mlp_features_dict[i]
             return None, None
         elif timestep_idx == 1:
             for i in range(self.num_layers):
+                self.prev_msa_norms[i] = SimilarityAnalyzer.compute_l1_distance(
+                    self.curr_msa_features[i], msa_features_dict[i]
+                )
+                self.prev_mlp_norms[i] = SimilarityAnalyzer.compute_l1_distance(
+                    self.curr_mlp_features[i], mlp_features_dict[i]
+                )
                 self.curr_msa_features[i] = msa_features_dict[i]
                 self.curr_mlp_features[i] = mlp_features_dict[i]
             return None, None
@@ -170,15 +193,19 @@ class FeatureChangeAnalyzer:
         mlp_diffs_list = []
 
         for layer_idx in range(self.num_layers):
-            msa_vary_rate = SimilarityAnalyzer.compute_rate( 
-                self.prev_msa_features[layer_idx],
-                self.curr_msa_features[layer_idx],
-                msa_features_dict[layer_idx]
+            msa_norm = SimilarityAnalyzer.compute_l1_distance(
+                self.curr_msa_features[layer_idx], msa_features_dict[layer_idx]
+            )
+            mlp_norm = SimilarityAnalyzer.compute_l1_distance(
+                self.curr_mlp_features[layer_idx], mlp_features_dict[layer_idx]
+            )
+            msa_vary_rate = SimilarityAnalyzer.compute_rate(
+                msa_norm,
+                self.prev_msa_norms[layer_idx],
             )
             mlp_vary_rate = SimilarityAnalyzer.compute_rate(
-                self.prev_mlp_features[layer_idx],
-                self.curr_mlp_features[layer_idx],
-                mlp_features_dict[layer_idx]
+                mlp_norm,
+                self.prev_mlp_norms[layer_idx],
             )
             msa_score = msa_vary_rate
             mlp_score = mlp_vary_rate
@@ -186,21 +213,20 @@ class FeatureChangeAnalyzer:
             mlp_diffs_list.append(mlp_score)
 
             if not msa_cache_state[timestep_idx-1][layer_idx]:
-                self.prev_msa_features[layer_idx] = self.curr_msa_features[layer_idx]
                 self.curr_msa_features[layer_idx] = msa_features_dict[layer_idx]
+                self.prev_msa_norms[layer_idx] = msa_norm
                 self.msa_state[layer_idx] = False
             elif not self.msa_state[layer_idx]:
-                self.prev_msa_features[layer_idx] = self.curr_msa_features[layer_idx]
                 self.curr_msa_features[layer_idx] = msa_features_dict[layer_idx]
+                self.prev_msa_norms[layer_idx] = msa_norm
                 self.msa_state[layer_idx] = True
-
             if not mlp_cache_state[timestep_idx-1][layer_idx]:
-                self.prev_mlp_features[layer_idx] = self.curr_mlp_features[layer_idx]
                 self.curr_mlp_features[layer_idx] = mlp_features_dict[layer_idx]
+                self.prev_mlp_norms[layer_idx] = mlp_norm
                 self.mlp_state[layer_idx] = False
             elif not self.mlp_state[layer_idx]:
-                self.prev_mlp_features[layer_idx] = self.curr_mlp_features[layer_idx]
                 self.curr_mlp_features[layer_idx] = mlp_features_dict[layer_idx]
+                self.prev_mlp_norms[layer_idx] = mlp_norm
                 self.mlp_state[layer_idx] = True
 
         msa_diffs = torch.stack(msa_diffs_list)
@@ -209,15 +235,15 @@ class FeatureChangeAnalyzer:
         return msa_diffs, mlp_diffs
     
     def clean(self):
-        self.prev_msa_features = [None] * self.num_layers
-        self.prev_mlp_features = [None] * self.num_layers
         self.curr_msa_features = [None] * self.num_layers
         self.curr_mlp_features = [None] * self.num_layers
+        self.prev_msa_norms = [None] * self.num_layers
+        self.prev_mlp_norms = [None] * self.num_layers
         
         self.msa_state = [False] * self.num_layers
         self.mlp_state = [False] * self.num_layers
-        self.prev_x = None
         self.curr_x = None
+        self.prev_x_norm = None
         self.start_up = [0, 0]
 
 def threshold_ananlyse(
@@ -446,6 +472,7 @@ def save_cache_books(
         mlp_thres,
     )
     cache_books = {
+        "cache_version": CACHE_BOOK_VERSION,
         "cache_scope": CACHE_SCOPE,
         "config": config,
         "rate_method": RATE_METHOD,
@@ -468,6 +495,8 @@ def load_cache_books(cache_book_path, cache_book_file):
     with open(os.path.join(cache_book_path, cache_book_file), "r") as f:
         cache_books = json.load(f)
 
+    if cache_books.get("cache_version") != CACHE_BOOK_VERSION:
+        raise ValueError("Incompatible cache book; re-run calibration.")
     if cache_books.get("cache_scope") != CACHE_SCOPE:
         raise ValueError(
             f"Expected cache scope {CACHE_SCOPE!r}, "

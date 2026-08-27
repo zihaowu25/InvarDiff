@@ -1,5 +1,6 @@
 # Copyright 2024-2025 The Alibaba Wan Team Authors. All rights reserved.
 import argparse
+import gc
 import json
 import logging
 import os
@@ -24,6 +25,8 @@ from wan.utils.prompt_extend import DashScopePromptExpander, QwenPromptExpander
 from wan.utils.utils import cache_image, cache_video, str2bool
 
 WAN_CACHE_MODULES = ("self_attn", "cross_attn", "ffn")
+CACHE_BOOK_VERSION = 2
+RATE_CHUNK_SIZE = 1_048_576
 
 EXAMPLE_PROMPT = {
     "t2v-1.3B": {
@@ -86,7 +89,17 @@ class FeatureChangeAnalyzer:
 
     @staticmethod
     def _compute_norm(x_prev: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
-        return (x - x_prev + 1e-8).norm(p=1)
+        x_prev = x_prev.detach().reshape(-1)
+        x = x.detach().reshape(-1)
+        if x_prev.numel() != x.numel():
+            raise ValueError("Rate feature sizes must match")
+        total = torch.zeros((), device=x.device, dtype=torch.float32)
+        for start in range(0, x.numel(), RATE_CHUNK_SIZE):
+            end = min(start + RATE_CHUNK_SIZE, x.numel())
+            total += (x[start:end] - x_prev[start:end] + 1e-8).abs().sum(
+                dtype=torch.float32
+            )
+        return total
 
     def _update_step_score(self, step_idx: int, hidden_states: torch.Tensor):
         if step_idx == 0:
@@ -238,6 +251,7 @@ def _books_from_scores(
 def _save_cache_books(file_path: str, step_cache_bool: List[bool], module_cache_book: Dict[str, List[List[bool]]] ):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     payload = {
+        "cache_version": CACHE_BOOK_VERSION,
         "step_cache_bool": step_cache_bool,
         "module_cache_book": module_cache_book,
     }
@@ -249,6 +263,8 @@ def _load_cache_books(file_path: str) -> Tuple[List[bool], Dict[str, List[List[b
     with open(file_path, "r", encoding="utf-8") as f:
         payload = json.load(f)
 
+    if payload.get("cache_version") != CACHE_BOOK_VERSION:
+        raise ValueError("Incompatible cache book; re-run calibration.")
     step_cache_bool = payload.get("step_cache_bool", payload.get("step_cache_book", []))
     module_cache_book = payload.get("module_cache_book", {})
 
@@ -644,7 +660,7 @@ def _calibrate_invardiff(run_once, model, args):
     # Phase 1: full-run statistics.
     analyzer1 = FeatureChangeAnalyzer(policy_steps, num_layers, correction_mode=False)
     _init_invardiff_runtime(model, num_steps=runtime_steps, use_invardiff=False, analyzer=analyzer1)
-    _ = run_once()
+    raw_output = run_once()
 
     provisional_step_cache_bool, provisional_module_cache_book = _books_from_scores(
         analyzer1.step_scores,
@@ -653,6 +669,9 @@ def _calibrate_invardiff(run_once, model, args):
         step_thres=args.step_thres,
         module_thres=module_thres,
     )
+    del raw_output, analyzer1
+    gc.collect()
+    torch.cuda.empty_cache()
 
     # Phase 2: correction pass with cache-state-aware baseline updates.
     analyzer2 = FeatureChangeAnalyzer(
@@ -663,7 +682,7 @@ def _calibrate_invardiff(run_once, model, args):
         module_cache_state=provisional_module_cache_book,
     )
     _init_invardiff_runtime(model, num_steps=runtime_steps, use_invardiff=False, analyzer=analyzer2)
-    _ = run_once()
+    correction_output = run_once()
 
     final_step_cache_bool, final_module_cache_book = _books_from_scores(
         analyzer2.step_scores,
@@ -672,6 +691,9 @@ def _calibrate_invardiff(run_once, model, args):
         step_thres=args.step_thres,
         module_thres=module_thres,
     )
+    del correction_output, analyzer2
+    gc.collect()
+    torch.cuda.empty_cache()
 
     cache_file = args.cache_book_file or _build_default_cache_book_filename(args)
     cache_path = os.path.join(args.cache_book_path, cache_file)
@@ -1096,6 +1118,5 @@ if __name__ == "__main__":
     "--cross_attn_thres", "0.5",
     "--ffn_thres", "0.5",
     ]
-    cli_args = _parse_args(debug_args)
-    # cli_args = _parse_args()
+    cli_args = _parse_args(debug_args if len(sys.argv) == 1 else None)
     generate(cli_args)

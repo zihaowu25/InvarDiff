@@ -65,6 +65,7 @@ CACHE_SCOPE = "hybrid"
 POLICY_VARIANT = "hybrid_seacache"
 STEP_POLICY = "seacache"
 RATE_METHOD = "three_point_l1"
+CACHE_BOOK_VERSION = 2
 SOURCE_COMMIT = "8dcf490"
 HUNYUAN_COMMIT = "60783e7"
 SEACACHE_POWER_EXP = 3.0
@@ -164,15 +165,10 @@ def compute_l1_distance(
 
 
 def compute_rate(
-    x_prev: torch.Tensor,
-    x: torch.Tensor,
-    x_post: torch.Tensor,
-    diff_prev_norm: Optional[torch.Tensor] = None,
+    current_norm: torch.Tensor,
+    previous_norm: torch.Tensor,
 ) -> torch.Tensor:
-    if diff_prev_norm is None:
-        diff_prev_norm = compute_l1_distance(x_prev, x)
-    diff_post_norm = compute_l1_distance(x_prev, x_post)
-    return diff_post_norm / diff_prev_norm.clamp_min(1e-8)
+    return current_norm / previous_norm.clamp_min(1e-8)
 
 
 def _conditional_feature(feature: torch.Tensor, do_cfg: bool) -> torch.Tensor:
@@ -216,7 +212,6 @@ class FeatureChangeAnalyzer:
         self._active = {
             name: [False] * depths[name] for name in active_modules
         }
-        self._prev = {name: [None] * depths[name] for name in active_modules}
         self._current = {name: [None] * depths[name] for name in active_modules}
         self._norm = {name: [None] * depths[name] for name in active_modules}
 
@@ -239,11 +234,12 @@ class FeatureChangeAnalyzer:
         return bool(self.module_books[name][score_idx][layer_idx])
 
     def _rotate_module(
-        self, name: str, layer_idx: int, feature: torch.Tensor
+        self, name: str, layer_idx: int, feature: torch.Tensor,
+        next_norm: Optional[torch.Tensor] = None,
     ):
         current = self._current[name][layer_idx]
-        next_norm = compute_l1_distance(current, feature)
-        self._prev[name][layer_idx] = current
+        if next_norm is None:
+            next_norm = compute_l1_distance(current, feature)
         self._current[name][layer_idx] = _history_tensor(
             feature, self.feature_device
         )
@@ -261,25 +257,23 @@ class FeatureChangeAnalyzer:
                 feature, self.feature_device
             )
             return
-        previous = self._prev[name][layer_idx]
-        if step_idx == 1 or previous is None:
-            self._prev[name][layer_idx] = current
+        previous_norm = self._norm[name][layer_idx]
+        if step_idx == 1 or previous_norm is None:
             self._current[name][layer_idx] = _history_tensor(
                 feature, self.feature_device
             )
             self._norm[name][layer_idx] = compute_l1_distance(current, feature)
             return
         score_idx = step_idx - 1
+        current_norm = compute_l1_distance(current, feature)
         self.module_scores[name][score_idx, layer_idx] = float(
             compute_rate(
-                previous,
-                current,
-                feature,
+                current_norm,
                 self._norm[name][layer_idx],
             ).item()
         )
         if not self.correction_mode:
-            self._rotate_module(name, layer_idx, feature)
+            self._rotate_module(name, layer_idx, feature, current_norm)
             return
         refresh, active = self._refresh_state(
             self._module_cached(name, score_idx, layer_idx),
@@ -287,10 +281,9 @@ class FeatureChangeAnalyzer:
         )
         self._active[name][layer_idx] = active
         if refresh:
-            self._rotate_module(name, layer_idx, feature)
+            self._rotate_module(name, layer_idx, feature, current_norm)
 
     def release(self):
-        self._prev.clear()
         self._current.clear()
         self._norm.clear()
 
@@ -1311,6 +1304,7 @@ def _cache_filename(args, version, width, height, steps):
 
 def _save_books(path, books, config, observer_mask, peaks):
     payload = {
+        "cache_version": CACHE_BOOK_VERSION,
         "cache_scope": CACHE_SCOPE,
         "policy": POLICY_VARIANT,
         "step_policy": STEP_POLICY,
@@ -1339,6 +1333,8 @@ def _load_books(path, expected, steps, depths):
         with open(path, "r", encoding="utf-8") as handle:
             payload = json.load(handle)
     payload = _broadcast_object(payload)
+    if payload.get("cache_version") != CACHE_BOOK_VERSION:
+        raise ValueError("Incompatible cache book; re-run calibration.")
     if (
         payload.get("cache_scope") != CACHE_SCOPE
         or payload.get("policy") != POLICY_VARIANT

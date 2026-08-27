@@ -29,6 +29,7 @@ torch.backends.cudnn.allow_tf32 = True
 
 LAYER_MODULES = ("msa", "mlp")
 RATE_METHOD = "three_point_l1"
+CACHE_BOOK_VERSION = 2
 CACHE_SCOPE = "layer_only"
 POLICY_VARIANT = "layer"
 RATE_CHUNK_SIZE = 1_048_576
@@ -71,16 +72,11 @@ def compute_l1_distance(
 
 
 def compute_rate(
-    x_prev: torch.Tensor,
-    x: torch.Tensor,
-    x_post: torch.Tensor,
-    diff_prev_norm: Optional[torch.Tensor] = None,
+    current_norm: torch.Tensor,
+    previous_norm: torch.Tensor,
 ) -> torch.Tensor:
-    """Return ||x_post-x_prev+eps||_1 / ||x-x_prev+eps||_1."""
-    if diff_prev_norm is None:
-        diff_prev_norm = compute_l1_distance(x_prev, x)
-    diff_post_norm = compute_l1_distance(x_prev, x_post)
-    return diff_post_norm / diff_prev_norm.clamp_min(1e-8)
+    """Return the ratio between the current and previous L1 displacements."""
+    return current_norm / previous_norm.clamp_min(1e-8)
 
 
 def register_hooks(model, active_modules=LAYER_MODULES):
@@ -120,9 +116,6 @@ class FeatureChangeAnalyzer:
     def __init__(self, num_layers, active_modules=LAYER_MODULES):
         self.num_layers = num_layers
         self.active_modules = tuple(active_modules)
-        self.previous_features = {
-            key: [None] * num_layers for key in self.active_modules
-        }
         self.current_features = {
             key: [None] * num_layers for key in self.active_modules
         }
@@ -161,12 +154,12 @@ class FeatureChangeAnalyzer:
 
     def _initialize_current_features(self, features):
         for key in self.active_modules:
-            self.current_features[key] = features[key]
             for layer_idx in range(self.num_layers):
                 self.previous_norms[key][layer_idx] = compute_l1_distance(
-                    self.previous_features[key][layer_idx],
                     self.current_features[key][layer_idx],
+                    features[key][layer_idx],
                 )
+            self.current_features[key] = features[key]
         self._layer_count = 2
 
     @staticmethod
@@ -196,7 +189,7 @@ class FeatureChangeAnalyzer:
         )
         if self._layer_count == 0:
             for key in self.active_modules:
-                self.previous_features[key] = features[key]
+                self.current_features[key] = features[key]
             self._layer_count = 1
             return None, None
 
@@ -208,21 +201,15 @@ class FeatureChangeAnalyzer:
         for key in self.active_modules:
             scores = []
             for layer_idx, feature in enumerate(features[key]):
-                previous = self.previous_features[key][layer_idx]
                 current = self.current_features[key][layer_idx]
+                current_norm = compute_l1_distance(current, feature)
                 score = compute_rate(
-                    previous,
-                    current,
-                    feature,
+                    current_norm,
                     self.previous_norms[key][layer_idx],
                 )
                 scores.append(score.item())
 
-                self.previous_norms[key][layer_idx] = compute_l1_distance(
-                    current,
-                    feature,
-                )
-                self.previous_features[key][layer_idx] = current
+                self.previous_norms[key][layer_idx] = current_norm
                 self.current_features[key][layer_idx] = feature
 
             score_dict[key] = torch.tensor(scores, dtype=torch.float32)
@@ -244,7 +231,7 @@ class FeatureChangeAnalyzer:
         )
         if timestep_idx == 0:
             for key in self.active_modules:
-                self.previous_features[key] = features[key]
+                self.current_features[key] = features[key]
             self._layer_count = 1
             return None, None
 
@@ -260,12 +247,10 @@ class FeatureChangeAnalyzer:
         for key in self.active_modules:
             scores = []
             for layer_idx, feature in enumerate(features[key]):
-                previous = self.previous_features[key][layer_idx]
                 current = self.current_features[key][layer_idx]
+                current_norm = compute_l1_distance(current, feature)
                 score = compute_rate(
-                    previous,
-                    current,
-                    feature,
+                    current_norm,
                     self.previous_norms[key][layer_idx],
                 )
                 scores.append(score.item())
@@ -276,10 +261,7 @@ class FeatureChangeAnalyzer:
                     timestep_idx,
                     layer_idx,
                 ):
-                    self.previous_norms[key][layer_idx] = (
-                        compute_l1_distance(current, feature)
-                    )
-                    self.previous_features[key][layer_idx] = current
+                    self.previous_norms[key][layer_idx] = current_norm
                     self.current_features[key][layer_idx] = feature
 
             score_dict[key] = torch.tensor(scores, dtype=torch.float32)
@@ -575,6 +557,7 @@ def save_cache_books(
         mlp_thres,
     )
     cache_books = {
+        "cache_version": CACHE_BOOK_VERSION,
         "cache_scope": CACHE_SCOPE,
         "config": config,
         "rate_method": RATE_METHOD,
@@ -597,6 +580,8 @@ def load_cache_books(cache_book_path, cache_book_file):
     with open(cache_book_full_path, "r") as file:
         cache_books = json.load(file)
 
+    if cache_books.get("cache_version") != CACHE_BOOK_VERSION:
+        raise ValueError("Incompatible cache book; re-run calibration.")
     if cache_books.get("cache_scope") != CACHE_SCOPE:
         raise ValueError(
             f"Expected cache scope {CACHE_SCOPE!r}, "

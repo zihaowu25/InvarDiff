@@ -40,6 +40,7 @@ CACHE_SCOPE = "hybrid"
 POLICY_VARIANT = "hybrid_magcache"
 STEP_POLICY = "magcache"
 RATE_METHOD = "three_point_l1"
+CACHE_BOOK_VERSION = 2
 RATE_CHUNK_SIZE = 1_048_576
 SOURCE_COMMIT = "df81cb1"
 
@@ -138,16 +139,11 @@ def compute_l1_distance(
 
 
 def compute_rate(
-    x_prev: torch.Tensor,
-    x: torch.Tensor,
-    x_post: torch.Tensor,
-    diff_prev_norm: Optional[torch.Tensor] = None,
+    current_norm: torch.Tensor,
+    previous_norm: torch.Tensor,
 ) -> torch.Tensor:
-    """Return ||x_post-x_prev+eps||_1 / ||x-x_prev+eps||_1."""
-    if diff_prev_norm is None:
-        diff_prev_norm = compute_l1_distance(x_prev, x)
-    diff_post_norm = compute_l1_distance(x_prev, x_post)
-    return diff_post_norm / diff_prev_norm.clamp_min(1e-8)
+    """Return the ratio between the current and previous L1 displacements."""
+    return current_norm / previous_norm.clamp_min(1e-8)
 
 
 class FeatureChangeAnalyzer:
@@ -184,9 +180,6 @@ class FeatureChangeAnalyzer:
         self._module_state = {
             k: [False] * num_layers for k in self.active_modules
         }
-        self._prev_module_feat = {
-            k: [None] * num_layers for k in self.active_modules
-        }
         self._current_module_feat = {
             k: [None] * num_layers for k in self.active_modules
         }
@@ -215,10 +208,11 @@ class FeatureChangeAnalyzer:
         mod_name: str,
         layer_idx: int,
         feature: torch.Tensor,
+        next_norm: Optional[torch.Tensor] = None,
     ):
         current = self._current_module_feat[mod_name][layer_idx]
-        next_norm = compute_l1_distance(current, feature)
-        self._prev_module_feat[mod_name][layer_idx] = current
+        if next_norm is None:
+            next_norm = compute_l1_distance(current, feature)
         self._current_module_feat[mod_name][layer_idx] = self._store_feature(feature)
         self._prev_module_norm[mod_name][layer_idx] = next_norm
 
@@ -239,9 +233,8 @@ class FeatureChangeAnalyzer:
             self._current_module_feat[mod_name][layer_idx] = self._store_feature(feature)
             return
 
-        previous = self._prev_module_feat[mod_name][layer_idx]
-        if policy_step_idx == 1 or previous is None:
-            self._prev_module_feat[mod_name][layer_idx] = current
+        previous_norm = self._prev_module_norm[mod_name][layer_idx]
+        if policy_step_idx == 1 or previous_norm is None:
             self._current_module_feat[mod_name][layer_idx] = self._store_feature(feature)
             self._prev_module_norm[mod_name][layer_idx] = compute_l1_distance(
                 current,
@@ -250,16 +243,15 @@ class FeatureChangeAnalyzer:
             return
 
         score_idx = policy_step_idx - 1
+        current_norm = compute_l1_distance(current, feature)
         score = compute_rate(
-            previous,
-            current,
-            feature,
+            current_norm,
             self._prev_module_norm[mod_name][layer_idx],
         )
         self.module_scores[mod_name][score_idx, layer_idx] = float(score.item())
 
         if not self.correction_mode:
-            self._rotate_module(mod_name, layer_idx, feature)
+            self._rotate_module(mod_name, layer_idx, feature, current_norm)
             return
 
         should_refresh, active_state = self._refresh_state(
@@ -268,10 +260,9 @@ class FeatureChangeAnalyzer:
         )
         self._module_state[mod_name][layer_idx] = active_state
         if should_refresh:
-            self._rotate_module(mod_name, layer_idx, feature)
+            self._rotate_module(mod_name, layer_idx, feature, current_norm)
 
     def reset(self):
-        self._prev_module_feat.clear()
         self._current_module_feat.clear()
         self._prev_module_norm.clear()
 
@@ -464,6 +455,7 @@ def _save_cache_books(
     if directory:
         os.makedirs(directory, exist_ok=True)
     payload = {
+        "cache_version": CACHE_BOOK_VERSION,
         "cache_scope": CACHE_SCOPE,
         "policy": POLICY_VARIANT,
         "rate_method": RATE_METHOD,
@@ -501,6 +493,8 @@ def _load_cache_books(
         dist.broadcast_object_list(shared, src=0)
         payload = shared[0]
 
+    if payload.get("cache_version") != CACHE_BOOK_VERSION:
+        raise ValueError("Incompatible cache book; re-run calibration.")
     if payload.get("cache_scope") != CACHE_SCOPE:
         raise ValueError(
             "Legacy or incompatible cache book: expected "
