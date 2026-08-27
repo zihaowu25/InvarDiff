@@ -26,6 +26,7 @@ from wan.utils.utils import cache_image, cache_video, str2bool
 
 WAN_CACHE_MODULES = ("self_attn", "cross_attn", "ffn")
 CACHE_BOOK_VERSION = 2
+RATE_METHOD = "relative_l1"
 RATE_CHUNK_SIZE = 1_048_576
 
 EXAMPLE_PROMPT = {
@@ -252,6 +253,7 @@ def _save_cache_books(file_path: str, step_cache_bool: List[bool], module_cache_
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     payload = {
         "cache_version": CACHE_BOOK_VERSION,
+        "rate_method": RATE_METHOD,
         "step_cache_bool": step_cache_bool,
         "module_cache_book": module_cache_book,
     }
@@ -265,6 +267,8 @@ def _load_cache_books(file_path: str) -> Tuple[List[bool], Dict[str, List[List[b
 
     if payload.get("cache_version") != CACHE_BOOK_VERSION:
         raise ValueError("Incompatible cache book; re-run calibration.")
+    if payload.get("rate_method") != RATE_METHOD:
+        raise ValueError("Incompatible rate method; re-run calibration.")
     step_cache_bool = payload.get("step_cache_bool", payload.get("step_cache_book", []))
     module_cache_book = payload.get("module_cache_book", {})
 
@@ -279,10 +283,13 @@ def _load_cache_books(file_path: str) -> Tuple[List[bool], Dict[str, List[List[b
 
 
 def _build_default_cache_book_filename(args) -> str:
+    size = args.size.replace("*", "x")
+    frame_num = args.frame_num if args.frame_num is not None else "auto"
     return (
-        f"invardiff_{args.task}_stp{args.sample_steps}"
-        f"_n{args.nonskip_rate}_sth{args.step_thres}"
-        f"_sa{args.self_attn_thres}_ca{args.cross_attn_thres}_ff{args.ffn_thres}.json"
+        f"cache_book_stplayer_{args.task}_{size}_f{frame_num}"
+        f"_steps{args.sample_steps}_ns{args.nonskip_rate}"
+        f"_stepth{args.step_thres}_sattnth{args.self_attn_thres}"
+        f"_cattnth{args.cross_attn_thres}_ffnth{args.ffn_thres}.json"
     )
 
 
@@ -532,7 +539,7 @@ def _validate_args(args):
 
 
 def _parse_args(cli_args=None):
-    parser = argparse.ArgumentParser(description="Generate image/video using Wan with InvarDiff acceleration")
+    parser = argparse.ArgumentParser(description="Generate image/video using Wan with Finegrained Cache acceleration")
     parser.add_argument("--task", type=str, default="t2v-1.3B", choices=list(WAN_CONFIGS.keys()))
     parser.add_argument("--size", type=str, default="1280*720", choices=list(SIZE_CONFIGS.keys()))
     parser.add_argument("--frame_num", type=int, default=None)
@@ -565,7 +572,7 @@ def _parse_args(cli_args=None):
     parser.add_argument("--sample_shift", type=float, default=None)
     parser.add_argument("--sample_guide_scale", type=float, default=5.0)
 
-    # InvarDiff options
+    # Finegrained Cache options (existing flag names are kept for compatibility).
     parser.add_argument("--use_invardiff", action="store_true", default=False)
     parser.add_argument("--invardiff_calibration", action="store_true", default=False)
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
@@ -698,7 +705,7 @@ def _calibrate_invardiff(run_once, model, args):
     cache_file = args.cache_book_file or _build_default_cache_book_filename(args)
     cache_path = os.path.join(args.cache_book_path, cache_file)
     _save_cache_books(cache_path, final_step_cache_bool, final_module_cache_book)
-    logging.info(f"InvarDiff cache books saved to: {cache_path}")
+    logging.info(f"Finegrained Cache books saved to: {cache_path}")
 
     return final_step_cache_bool, final_module_cache_book
 
@@ -712,7 +719,7 @@ def _prepare_invardiff_books(model, args):
         cache_file = args.cache_book_file or _build_default_cache_book_filename(args)
         cache_path = os.path.join(args.cache_book_path, cache_file)
         step_cache_bool, module_cache_book = _load_cache_books(cache_path)
-        logging.info(f"Loaded InvarDiff cache books: {cache_path}")
+        logging.info(f"Loaded Finegrained Cache books: {cache_path}")
 
     _init_invardiff_runtime(
         model,
@@ -927,7 +934,7 @@ def generate(args):
             t5_cpu=args.t5_cpu,
         )
 
-        # FLF2V shares WanModel forward signature, so InvarDiff is directly reusable.
+        # FLF2V shares the WanModel forward signature, so the cache is reusable.
         enable_invardiff = args.use_invardiff or args.invardiff_calibration
 
         if enable_invardiff:
@@ -1042,9 +1049,9 @@ def generate(args):
             formatted_time = datetime.now().strftime("%Y%m%d_%H%M%S")
             formatted_prompt = args.prompt.replace(" ", "_").replace("/", "_")[:50]
             suffix = ".png" if "t2i" in args.task else ".mp4"
-            inv_params = "_invar" if args.use_invardiff else "_full"
+            cache_mode = "_finegrained" if args.use_invardiff else "_full"
             args.save_file = (
-                f"invardiff_{args.task}{inv_params}_{args.size.replace('*', 'x') if sys.platform == 'win32' else args.size}_"
+                f"finegrained_{args.task}{cache_mode}_{args.size.replace('*', 'x') if sys.platform == 'win32' else args.size}_"
                 f"{args.ulysses_size}_{args.ring_size}_{formatted_prompt}_{formatted_time}{suffix}"
             )
         save_path = os.path.abspath(args.save_file)
@@ -1104,13 +1111,13 @@ if __name__ == "__main__":
     # "--dit_fsdp",
     # "--t5_cpu",
 
-    ## InvarDiff controls
+    ## Finegrained Cache controls (existing flag names are kept for compatibility).
 
     "--invardiff_calibration",
     "--use_invardiff",
 
     "--cache_book_path", "./cache_books",
-    # "--cache_book_file", "invardiff_t2v-1.3B_stp50_n0.1_sth0.7_sa0.68_ca0.68_ff0.68.json",
+    # "--cache_book_file", "cache_book_stplayer_t2v-1.3B_832x480_f81_steps30_ns0.1_stepth0.40_sattnth0.20_cattnth0.00_ffnth0.00.json",
 
     "--nonskip_rate", "0.1",
     "--step_thres", "0.58",

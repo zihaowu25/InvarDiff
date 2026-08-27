@@ -1,7 +1,7 @@
-"""HunyuanVideo-1.5 InvarDiff step-and-layer cache sampler.
+"""HunyuanVideo-1.5 Finegrained Cache step-and-layer sampler.
 
 This file is intentionally self contained. It uses the official HunyuanVideo-1.5
-pipeline, but does not import either of the other InvarDiff sampling scripts.
+pipeline, but does not import either of the other sampling scripts.
 """
 
 import os
@@ -29,7 +29,7 @@ except ImportError:
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(message)s",
     )
-    _logger = logging.getLogger("invardiff.hunyuan")
+    _logger = logging.getLogger("finegrained_cache.hunyuan")
     loguru_compat = types.ModuleType("loguru")
     loguru_compat.logger = _logger
     sys.modules["loguru"] = loguru_compat
@@ -62,7 +62,7 @@ from hyvideo.utils.communications import all_gather
 
 CACHE_SCOPE = "step_layer"
 POLICY_VARIANT = "stplayer"
-RATE_METHOD = "three_point_l1"
+RATE_METHOD = "relative_l1"
 CACHE_BOOK_VERSION = 2
 RATE_CHUNK_SIZE = 1_048_576
 MODULES = (
@@ -175,7 +175,7 @@ def _conditional_feature(feature: torch.Tensor, do_cfg: bool) -> torch.Tensor:
 
 
 class FeatureChangeAnalyzer:
-    """Three-point analyzer for step and six fine-grained module trajectories."""
+    """Analyzer for step and six fine-grained module trajectories with compressed state."""
 
     def __init__(
         self,
@@ -637,7 +637,7 @@ def _single_linear_parts(block, attn=None, mlp=None):
     if type(fc) is not nn.Linear:
         raise RuntimeError(
             "single.linear2.fc must remain torch.nn.Linear for fine-grained "
-            "InvarDiff; disable single-block FP8/LoRA wrapping."
+            "Finegrained Cache; disable single-block FP8/LoRA wrapping."
         )
     hidden = block.hidden_size
     attn_out = (
@@ -1179,7 +1179,7 @@ def _load_books(path, expected, steps, depths):
         or payload.get("rate_method") != RATE_METHOD
     ):
         raise ValueError(
-            "Legacy or incompatible Cache Book; rerun calibration "
+            "Incompatible Cache Book; rerun calibration "
             "with this script"
         )
     config = payload.get("config", {})
@@ -1318,12 +1318,12 @@ def _validate_args(args):
         )
     if enabled and args.enable_cache:
         raise ValueError(
-            "Official --enable_cache cannot be combined with InvarDiff"
+            "Official --enable_cache cannot be combined with Finegrained Cache"
         )
     if enabled and args.enable_torch_compile:
         raise ValueError(
             "--enable_torch_compile cannot be combined with dynamic "
-            "InvarDiff control flow"
+            "Finegrained Cache control flow"
         )
     if (
         enabled
@@ -1429,7 +1429,7 @@ def generate(args):
     if steps <= 0:
         raise ValueError("num_inference_steps must be positive")
     if args.invardiff_calibration and steps < 3:
-        raise ValueError("Three-point calibration requires at least 3 inference steps")
+        raise ValueError("Relative-L1 calibration requires at least 3 inference steps")
     do_cfg = float(pipe.config.guidance_scale) > 1.0
     width, height = _geometry(pipe, args, task)
     depths = {
@@ -1562,7 +1562,7 @@ def generate(args):
 def build_parser():
     parser = argparse.ArgumentParser(
         description=(
-            "HunyuanVideo-1.5 InvarDiff step-and-layer Cache sampler"
+            "HunyuanVideo-1.5 Finegrained Cache step-and-layer sampler"
         )
     )
     parser.add_argument("--prompt", required=True)

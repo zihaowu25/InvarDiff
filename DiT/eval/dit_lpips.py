@@ -116,7 +116,7 @@ def main():
     #     f"_msa{msa_thres}_mlp{mlp_thres}.json"
     # )
   
-    # from sample_InvarDiff_dit import load_cache_books
+    # from sample_dit import load_cache_books
     # step_cache_book, msa_cache_book, mlp_cache_book = load_cache_books(
     #     cache_book_path="../cache_books",
     #     cache_book_file=cache_book_file
@@ -134,14 +134,14 @@ def main():
     #     num_inference_steps=num_timesteps,
     #     cfg_scale=cfg_scale,
     #     seed=seed,
-    #     output_dir="./InvarDiff_slow",
+    #     output_dir="./finegrained_slow",
     #     device=device
     # )
     
     print("LPIPS Evaluation...")
     results = calculate_lpips_dataset(
         original_dir="./base_dit",
-        accelerated_dir="./InvarDiff_slow",
+        accelerated_dir="./finegrained_slow",
         device=device
     )
     print("LPIPS Evaluation Results")

@@ -31,7 +31,7 @@ from tqdm.auto import tqdm
 
 logger = logging.get_logger(__name__)
 METHOD = "teacache"
-RATE_METHOD = "three_point_l1"
+RATE_METHOD = "relative_l1"
 CACHE_BOOK_VERSION = 2
 RATE_CHUNK_SIZE = 1_048_576
 DOUBLE_RATE_KEYS = ("attn", "context_attn", "ff", "context_ff")

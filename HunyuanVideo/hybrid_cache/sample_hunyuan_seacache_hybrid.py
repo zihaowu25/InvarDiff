@@ -64,7 +64,7 @@ from hyvideo.utils.communications import all_gather
 CACHE_SCOPE = "hybrid"
 POLICY_VARIANT = "hybrid_seacache"
 STEP_POLICY = "seacache"
-RATE_METHOD = "three_point_l1"
+RATE_METHOD = "relative_l1"
 CACHE_BOOK_VERSION = 2
 SOURCE_COMMIT = "8dcf490"
 HUNYUAN_COMMIT = "60783e7"
@@ -182,7 +182,7 @@ def _conditional_feature(feature: torch.Tensor, do_cfg: bool) -> torch.Tensor:
 
 
 class FeatureChangeAnalyzer:
-    """Three-point analyzer for six fine-grained module trajectories."""
+    """Analyzer for six fine-grained module trajectories with compressed state."""
 
     def __init__(
         self,
@@ -1342,7 +1342,7 @@ def _load_books(path, expected, steps, depths):
         or payload.get("rate_method") != RATE_METHOD
     ):
         raise ValueError(
-            "Legacy or incompatible Cache Book; rerun calibration with this script"
+            "Incompatible Cache Book; rerun calibration with this script"
         )
     config = payload.get("config", {})
     required = (
@@ -1593,7 +1593,7 @@ def generate(args):
     if steps <= 0:
         raise ValueError("num_inference_steps must be positive")
     if args.finegrained_calibration and steps < 3:
-        raise ValueError("Three-point calibration requires at least 3 inference steps")
+        raise ValueError("Relative-L1 calibration requires at least 3 inference steps")
     do_cfg = float(pipe.config.guidance_scale) > 1.0
     scheduler_config = getattr(pipe.scheduler, "config", {})
     args.resolved_scheduler_class = type(pipe.scheduler).__name__

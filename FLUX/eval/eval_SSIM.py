@@ -79,7 +79,7 @@ def calculate_ssim_dataset(
 
 def main():
     original_dir = "./base_flux"
-    accelerated_dir = "./InvarDiff_flux"
+    accelerated_dir = "./finegrained_flux"
     
     print("SSIM Evaluation...")
     results = calculate_ssim_dataset(

@@ -79,7 +79,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     results = calculate_ssim_dataset(
         original_dir="./base_dit",
-        accelerated_dir="./InvarDiff_slow",
+        accelerated_dir="./finegrained_slow",
         device=device
     )
     print("SSIM Evaluation Results")

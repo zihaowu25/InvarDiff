@@ -18,7 +18,7 @@ from models.dynamic_cache import DiT_models, DynamicDiT, SimilarityAnalyzer
 
 
 CACHE_SCOPE = "step_layer"
-RATE_METHOD = "three_point_l1"
+RATE_METHOD = "relative_l1"
 CACHE_BOOK_VERSION = 2
 POLICY_VARIANT = "stplayer"
 

@@ -37,7 +37,7 @@ WAN_CACHE_MODULES = ("self_attn", "cross_attn", "ffn")
 CACHE_SCOPE = "hybrid"
 POLICY_VARIANT = "hybrid_teacache"
 STEP_POLICY = "teacache"
-RATE_METHOD = "three_point_l1"
+RATE_METHOD = "relative_l1"
 CACHE_BOOK_VERSION = 2
 RATE_CHUNK_SIZE = 1_048_576
 SOURCE_COMMIT = "7c10efc"
@@ -140,7 +140,7 @@ def compute_rate(
 
 
 class FeatureChangeAnalyzer:
-    """Conditional-only three-point analyzer for Wan layer features."""
+    """Conditional-only analyzer for Wan layer features with compressed state."""
 
     def __init__(
         self,
@@ -440,7 +440,7 @@ def _load_cache_books(
         raise ValueError("Incompatible cache book; re-run calibration.")
     if payload.get("cache_scope") != CACHE_SCOPE:
         raise ValueError(
-            "Legacy or incompatible cache book: expected "
+            "Incompatible cache book: expected "
             f"cache_scope={CACHE_SCOPE!r}. Re-run calibration with this script."
         )
     if payload.get("policy") != POLICY_VARIANT:
@@ -905,7 +905,7 @@ def _validate_args(args):
         f"supported sizes are: {', '.join(SUPPORTED_SIZES[args.task])}"
     )
     if args.sample_steps < 3:
-        raise ValueError("sample_steps must be at least 3 for three-point rates.")
+        raise ValueError("sample_steps must be at least 3 for relative-L1 calibration.")
     if not 0.0 <= args.nonskip_rate <= 1.0:
         raise ValueError("nonskip_rate must be in [0, 1].")
     for name in (

@@ -1,7 +1,7 @@
-"""Standalone FLUX sampler with layer-only three-point L1 caching.
+"""Standalone FLUX sampler with layer-only relative-L1 caching.
 
-Cross-step cache code is intentionally retained as comments for future
-experiments. Runtime step cache decisions are always False.
+Cross-step cache is disabled in this layer-only variant. Runtime step cache
+decisions are always False.
 """
 
 import json
@@ -36,7 +36,7 @@ TRANSFORMER_RATE_MODULES = (
     "context_ff",
 )
 SINGLE_TRANSFORMER_MODULES = ("attn", "mlp")
-RATE_METHOD = "three_point_l1"
+RATE_METHOD = "relative_l1"
 CACHE_BOOK_VERSION = 2
 POLICY_VARIANT = "layer"
 RATE_CHUNK_SIZE = 1_048_576
@@ -125,7 +125,7 @@ def register_hooks(model, transformer_keys, single_transformer_keys):
     return transformer_blocks, single_transformer_blocks, hooks
 
 class FeatureChangeAnalyzer:
-    """Three-point analyzer for raw and cache-corrected layer calibration."""
+    """Analyzer for raw and corrected layer calibration with compressed state."""
 
     def __init__(
         self,
@@ -149,32 +149,6 @@ class FeatureChangeAnalyzer:
         self._layer_count = 0
 
     # Cross-step cache is intentionally disabled in this layer-only variant.
-    # The original three-point step scorer is retained below as comments.
-    #
-    # def step_forward(self, hidden_states):
-    #     hidden_states = hidden_states.detach()
-    #     if self._step_count == 0:
-    #         self.current_hidden_states = hidden_states
-    #         self._step_count = 1
-    #         return None
-    #
-    #     if self._step_count == 1:
-    #         self.prev_step_norm = compute_l1_distance(
-    #             self.current_hidden_states,
-    #             hidden_states,
-    #         )
-    #         self.current_hidden_states = hidden_states
-    #         self._step_count = 2
-    #         return None
-    #
-    #     current_norm = compute_l1_distance(
-    #         self.current_hidden_states,
-    #         hidden_states,
-    #     )
-    #     step_score = compute_rate(current_norm, self.prev_step_norm)
-    #     self.prev_step_norm = current_norm
-    #     self.current_hidden_states = hidden_states
-    #     return step_score
 
     @staticmethod
     def _detach_feature(feature):

@@ -79,7 +79,7 @@ def calculate_psnr_dataset(
 def main():
     
     original_dir = "./base_flux"
-    accelerated_dir = "./InvarDiff_flux"
+    accelerated_dir = "./finegrained_flux"
     
     print("PSNR Evaluation...")
     results = calculate_psnr_dataset(

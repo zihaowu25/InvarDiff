@@ -1,6 +1,7 @@
-"""Standalone FLUX InvarDiff with full three-point cache correction.
+"""Standalone FLUX sampler with full relative-L1 step and layer correction.
 
-Both cross-step and layer-level scores use a three-point L1 displacement ratio.
+Both cross-step and layer-level scores use the relative-L1 displacement ratio
+with compressed two-state history.
 The second calibration pass corrects and rebuilds both policies. This file is
 standalone apart from the shared dynamic FLUX runtime.
 """
@@ -31,7 +32,7 @@ TRANSFORMER_MODULES = (
 )
 SINGLE_TRANSFORMER_MODULES = ("attn", "mlp")
 POLICY_VARIANT = "stplayer"
-RATE_METHOD = "three_point_l1"
+RATE_METHOD = "relative_l1"
 CACHE_BOOK_VERSION = 2
 RATE_CHUNK_SIZE = 1_048_576
 
@@ -125,7 +126,7 @@ def register_hooks(model, transformer_keys, single_transformer_keys):
 
 
 class FeatureChangeAnalyzer:
-    """Three-point analyzer for raw and cache-corrected calibration passes."""
+    """Analyzer for raw and corrected calibration with compressed state."""
 
     def __init__(
         self,
@@ -172,7 +173,7 @@ class FeatureChangeAnalyzer:
         return transformer_features, single_features
 
     def step_forward(self, hidden_states):
-        """Collect an uncorrected cross-step three-point score."""
+        """Collect an uncorrected cross-step relative-L1 score."""
         hidden_states = hidden_states.detach()
         if self._step_count == 0:
             self.current_hidden_states = hidden_states
@@ -206,7 +207,7 @@ class FeatureChangeAnalyzer:
         step_cache_state: List[bool],
         timestep_idx: int,
     ) -> Optional[torch.Tensor]:
-        """Collect a cache-path-corrected cross-step three-point score."""
+        """Collect a cache-path-corrected cross-step relative-L1 score."""
         hidden_states = hidden_states.detach()
         if timestep_idx == 0:
             self.current_hidden_states = hidden_states
@@ -467,7 +468,7 @@ def _collect_scores(
     Dict[str, torch.Tensor],
     Dict[str, torch.Tensor],
 ]:
-    """Collect averaged three-point scores for one calibration phase."""
+    """Collect averaged relative-L1 scores for one calibration phase."""
     correction_mode = step_cache_state is not None
     if correction_mode and (
         transformer_cache_state is None or single_cache_state is None
@@ -1047,7 +1048,7 @@ def main(args):
     torch.set_grad_enabled(False)
 
     print("Loading FLUX pipeline...")
-    print("Calibration variant: three-point step + layer correction")
+    print("Calibration variant: relative-L1 step + layer correction")
     print(f"Rate method: {RATE_METHOD}")
     pipe = FluxPipeline.from_pretrained(
         args.model_path,
@@ -1056,7 +1057,7 @@ def main(args):
     )
     original_transformer = pipe.transformer
     ## default measure 5 prompts(seed=42), the number of measure prompts will have a slight impact on the speedup ratio.
-    ## The following whole-step settings are legacy references only; cross-step cache is disabled.
+    ## The following settings are reference presets for the step + layer policy.
     # fast (default): step=0.50, attn=0.30, context_attn=0.30,
     # single_attn=0.12, ff=0.22, context_ff=0.40, single_mlp=0.30;
     # balanced: step=0.40, attn=0.30, context_attn=0.30,

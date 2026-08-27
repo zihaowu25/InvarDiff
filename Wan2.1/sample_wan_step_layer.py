@@ -27,7 +27,7 @@ from wan.utils.utils import cache_image, cache_video, str2bool
 WAN_CACHE_MODULES = ("self_attn", "cross_attn", "ffn")
 CACHE_SCOPE = "step_layer"
 POLICY_VARIANT = "stplayer"
-RATE_METHOD = "three_point_l1"
+RATE_METHOD = "relative_l1"
 CACHE_BOOK_VERSION = 2
 RATE_CHUNK_SIZE = 1_048_576
 
@@ -95,7 +95,7 @@ def compute_rate(
 
 
 class FeatureChangeAnalyzer:
-    """GPU-resident three-point analyzer for Wan step and layer features."""
+    """GPU-resident analyzer for Wan step and layer features with compressed state."""
 
     def __init__(
         self,
@@ -388,7 +388,7 @@ def _load_cache_books(
         raise ValueError("Incompatible cache book; re-run calibration.")
     if payload.get("cache_scope") != CACHE_SCOPE:
         raise ValueError(
-            "Legacy or incompatible cache book: expected "
+            "Incompatible cache book: expected "
             f"cache_scope={CACHE_SCOPE!r}. Re-run calibration with this script."
         )
     if payload.get("policy") != POLICY_VARIANT:
@@ -733,7 +733,7 @@ def _validate_args(args):
         f"supported sizes are: {', '.join(SUPPORTED_SIZES[args.task])}"
     )
     if args.sample_steps < 3:
-        raise ValueError("sample_steps must be at least 3 for three-point rates.")
+        raise ValueError("sample_steps must be at least 3 for relative-L1 calibration.")
     if not 0.0 <= args.nonskip_rate <= 1.0:
         raise ValueError("nonskip_rate must be in [0, 1].")
     for name in (
@@ -749,7 +749,7 @@ def _validate_args(args):
 
 
 def _parse_args(cli_args=None):
-    parser = argparse.ArgumentParser(description="Generate image/video using Wan with InvarDiff acceleration")
+    parser = argparse.ArgumentParser(description="Generate image/video using Wan with Finegrained Cache acceleration")
     parser.add_argument("--task", type=str, default="t2v-1.3B", choices=list(WAN_CONFIGS.keys()))
     parser.add_argument("--size", type=str, default="1280*720", choices=list(SIZE_CONFIGS.keys()))
     parser.add_argument("--frame_num", type=int, default=None)
@@ -782,7 +782,7 @@ def _parse_args(cli_args=None):
     parser.add_argument("--sample_shift", type=float, default=None)
     parser.add_argument("--sample_guide_scale", type=float, default=5.0)
 
-    # InvarDiff options
+    # Finegrained Cache options (existing flag names are kept for compatibility).
     parser.add_argument("--use_invardiff", action="store_true", default=False)
     parser.add_argument("--invardiff_calibration", action="store_true", default=False)
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
@@ -1008,7 +1008,7 @@ def _calibrate_invardiff(run_once, model, args):
         final_module_cache_book,
         _cache_book_config(args, num_layers),
     )
-    logging.info(f"InvarDiff cache books saved to: {cache_path}")
+    logging.info(f"Finegrained Cache books saved to: {cache_path}")
 
     return final_step_cache_bool, final_module_cache_book
 
@@ -1026,7 +1026,7 @@ def _prepare_invardiff_books(model, args):
             args,
             len(model.blocks),
         )
-        logging.info(f"Loaded InvarDiff cache books: {cache_path}")
+        logging.info(f"Loaded Finegrained Cache books: {cache_path}")
 
     _init_invardiff_runtime(
         model,
@@ -1241,7 +1241,7 @@ def generate(args):
             t5_cpu=args.t5_cpu,
         )
 
-        # FLF2V shares WanModel forward signature, so InvarDiff is directly reusable.
+        # FLF2V shares the WanModel forward signature, so the cache is reusable.
         enable_invardiff = args.use_invardiff or args.invardiff_calibration
 
         if enable_invardiff:
@@ -1356,9 +1356,9 @@ def generate(args):
             formatted_time = datetime.now().strftime("%Y%m%d_%H%M%S")
             formatted_prompt = args.prompt.replace(" ", "_").replace("/", "_")[:50]
             suffix = ".png" if "t2i" in args.task else ".mp4"
-            inv_params = "_invar" if args.use_invardiff else "_full"
+            cache_mode = "_finegrained" if args.use_invardiff else "_full"
             args.save_file = (
-                f"invardiff_{args.task}{inv_params}_{args.size.replace('*', 'x') if sys.platform == 'win32' else args.size}_"
+                f"finegrained_{args.task}{cache_mode}_{args.size.replace('*', 'x') if sys.platform == 'win32' else args.size}_"
                 f"{args.ulysses_size}_{args.ring_size}_{formatted_prompt}_{formatted_time}{suffix}"
             )
         save_path = os.path.abspath(args.save_file)
@@ -1418,7 +1418,7 @@ if __name__ == "__main__":
     # "--dit_fsdp",
     # "--t5_cpu",
 
-    ## InvarDiff controls
+    ## Finegrained Cache controls (existing flag names are kept for compatibility).
 
     "--invardiff_calibration",
     "--use_invardiff",

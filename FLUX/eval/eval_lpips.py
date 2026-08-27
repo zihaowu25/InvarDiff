@@ -102,7 +102,7 @@ def main():
     # pipe.to("cuda")
 
     original_dir = "./base_flux"
-    accelerated_dir = "./InvarDiff_flux"
+    accelerated_dir = "./finegrained_flux"
     # prompts = load_prompts("prompts.txt")
     # generate_dataset(
     #     pipe=pipe,

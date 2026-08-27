@@ -16,10 +16,10 @@ timing, and output saving logic.
 ## Hybrid policy
 
 The layer cache points are `self_attn`, `cross_attn`, and `ffn`. Their scores
-use the same chunked FP32 three-point L1 rate:
+use the same chunked FP32 relative L1 rate with compressed state:
 
 ```text
-R = ||x_post - x_prev + 1e-8||_1 / ||x - x_prev + 1e-8||_1
+R = ||x_post - x + 1e-8||_1 / ||x - x_prev + 1e-8||_1
 ```
 
 Wan calls the model twice per diffusion step. Even runtime calls are
@@ -112,7 +112,7 @@ tensors to pinned CPU once free GPU memory falls below
 
 Cache Book filenames include task, size, frame count, sampling steps,
 non-skip rate, all layer thresholds, and method-specific parameters. They do
-not contain the seed or the word `threepoint`. Loading strictly validates the
+not contain the seed or trajectory-state labels. Loading strictly validates the
 method, formula, task, geometry, solver, shift, model dimensions, thresholds,
 and source commit.
 

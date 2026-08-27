@@ -83,15 +83,16 @@ The SR Transformer is not patched.
 
 ## Layer-rate formula and two-pass calibration
 
-Every layer trajectory uses a three-point L1 rate:
+Every layer trajectory uses a relative L1 rate with compressed state:
 
 ```text
-R = ||x_post - x_prev + 1e-8||_1
+R = ||x_post - x + 1e-8||_1
     / clamp_min(||x - x_prev + 1e-8||_1, 1e-8)
 ```
 
 L1 accumulation is chunked and performed in FP32 on the current accelerator.
-The analyzer retains only two detached features and the precomputed denominator.
+The analyzer retains only the current detached feature and the precomputed
+previous-displacement norm.
 With `--calibration_feature_device cpu` (default), history features are stored in
 pinned CPU memory and transferred chunk by chunk for scoring.
 
@@ -289,7 +290,7 @@ All books contain:
 cache_scope: hybrid
 policy: hybrid_<method>
 step_policy: <method>
-rate_method: three_point_l1
+rate_method: relative_l1
 config: model/task/geometry/steps/thresholds/source revisions
 finegrained_cache.module_cache_book: six boolean [step][layer] books
 calibration_peak_allocated_gib: raw and correction values

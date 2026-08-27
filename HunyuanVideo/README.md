@@ -1,6 +1,6 @@
-# InvarDiff for HunyuanVideo-1.5
+# Finegrained Cache for HunyuanVideo-1.5
 
-This directory provides two independent InvarDiff implementations for
+This directory provides two independent Finegrained Cache implementations for
 HunyuanVideo-1.5:
 
 | Script | Cache scope | Cache Book policy |
@@ -46,35 +46,38 @@ python sample_hunyuan_step_layer.py --help
 
 ## 2. Algorithm
 
-### 2.1 Three-point L1 rate
+### 2.1 Relative L1 rate with compressed state
 
-The same three-point L1 rate is used for both step-level and layer-level
+The same relative L1 rate is used for both step-level and layer-level
 trajectories:
 
 ```text
 diff_prev = x - x_prev + 1e-8
-diff_post = x_post - x_prev + 1e-8
+diff_post = x_post - x + 1e-8
 rate = ||diff_post||₁ / clamp_min(||diff_prev||₁, 1e-8)
 ```
 
 The L1 norms are accumulated in FP32 chunks. This avoids materializing a full
-FP32 difference tensor. Each three-point trajectory retains only:
+FP32 difference tensor. Each trajectory retains only the current feature and
+the scalar norm of the previous displacement:
 
-- `x_prev`
 - `x`
 - the precomputed scalar `||x - x_prev||₁`
 
-A lower rate indicates a more stable relative change over the current
-three-point window and therefore gives that position a higher cache priority.
+A new score compares the displacement from `x` to `x_post` against the
+previous displacement from `x_prev` to `x`. The first two observations
+initialize the compressed state; the third observation produces the first
+score. A lower rate indicates a more stable relative change and therefore gives
+that position a higher cache priority.
 
 ### 2.2 Two-stage resampling calibration
 
 Both implementations use two calibration passes:
 
 1. **Raw calibration** performs a full denoising pass, collects the original
-   three-point scores, and builds a provisional Cache Book.
+   relative-L1 scores, and builds a provisional Cache Book.
 2. **Correction calibration** still performs all model computations, but
-   updates or freezes each three-point reference according to the provisional
+   updates or freezes each compressed reference according to the provisional
    cache path:
    - refresh at non-cached positions;
    - refresh once when entering a consecutive cached segment;
@@ -86,7 +89,7 @@ runtime feature caches are not allocated during either calibration pass.
 
 ### 2.3 Layer-level cache points
 
-HunyuanVideo-1.5 contains double-stream and single-stream blocks. InvarDiff
+HunyuanVideo-1.5 contains double-stream and single-stream blocks. Finegrained Cache
 maintains six independent module trajectories:
 
 | Trajectory | Cached value |
@@ -286,9 +289,13 @@ torchrun --nproc_per_node=2 sample_hunyuan_step_layer.py \
   --use_invardiff
 ```
 
-## 4. InvarDiff arguments
+## 4. Finegrained Cache arguments
 
 ### 4.1 Execution modes
+
+The existing `--invardiff_*` spellings are retained as command-line
+compatibility names; the implementation and documentation refer to this
+feature as Finegrained Cache.
 
 | Argument | Default | Description |
 | --- | --- | --- |
@@ -339,7 +346,7 @@ score < quantile(scores, threshold)
 
 | Argument | Default | Description |
 | --- | --- | --- |
-| `--calibration_feature_device` | `cpu` | Store three-point history on pinned CPU memory or GPU memory |
+| `--calibration_feature_device` | `cpu` | Store compressed feature history on pinned CPU memory or GPU memory |
 | `--runtime_cache_device` | `auto` | Store runtime caches on `auto`, `gpu`, or `cpu` |
 | `--runtime_cache_gpu_reserve_gib` | 2.0 | GPU free-memory reserve used by `auto` mode |
 | `--offloading` | `true` | Official model CPU offloading |
@@ -379,10 +386,11 @@ table, including:
 - 480p I2V step-distilled models.
 
 The official super-resolution pipeline remains unchanged and is not cached by
-InvarDiff. Calibration passes do not decode videos or run super-resolution.
+Finegrained Cache. Calibration passes do not decode videos or run
+super-resolution.
 During final generation, `--sr` controls whether super-resolution runs.
 
-InvarDiff mode retains support for:
+Finegrained Cache mode retains support for:
 
 - official model offloading and group offloading;
 - SageAttention;
@@ -392,8 +400,8 @@ InvarDiff mode retains support for:
 
 The following combinations are rejected:
 
-- InvarDiff together with official `--enable_cache true`;
-- InvarDiff together with `--enable_torch_compile true`;
+- Finegrained Cache together with official `--enable_cache true`;
+- Finegrained Cache together with `--enable_torch_compile true`;
 - sparse attention together with SageAttention;
 - FP8 `include_patterns` that include `single_blocks`;
 - LoRA or quantization wrappers that replace single-stream `linear2.fc` with
@@ -420,7 +428,7 @@ The file name encodes:
 - step threshold for the step-and-layer version;
 - all six module thresholds.
 
-The file name contains neither the seed nor the word `threepoint`. The seed is
+The file name contains neither the seed nor trajectory-state labels. The seed is
 still recorded in JSON metadata.
 
 The main JSON fields are:
@@ -429,7 +437,7 @@ The main JSON fields are:
 {
   "cache_scope": "layer or step_layer",
   "policy": "layer or stplayer",
-  "rate_method": "three_point_l1",
+  "rate_method": "relative_l1",
   "config": {},
   "step_cache_book": [],
   "module_cache_book": {}
@@ -475,12 +483,12 @@ For a fair comparison between layer-only and step-and-layer caching:
 ### Cache Book mismatch
 
 The Cache Book does not match the current model version, task, geometry, or
-sampling configuration. Do not manually alter the JSON file. Re-run
-`--invardiff_calibration` with the current configuration.
+sampling configuration. Do not manually alter the JSON file. Re-run the
+Finegrained Cache calibration flag with the current configuration.
 
 ### Why does calibration not save a video?
 
-When only `--invardiff_calibration` is specified, the script produces a final
+When only the Finegrained Cache calibration flag is specified, the script produces a final
 Cache Book without VAE decoding or super-resolution. Add `--use_invardiff` to
 perform and save an accelerated generation after calibration.
 

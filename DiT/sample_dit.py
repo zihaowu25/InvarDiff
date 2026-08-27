@@ -1,8 +1,8 @@
-"""Standalone DiT sampler with layer-only three-point L1 caching.
+"""Standalone DiT sampler with layer-only relative-L1 caching.
 
 This comparison variant calibrates and caches MSA/MLP modules only. Cross-step
-cache code is retained as comments, while the runtime step cache book is always
-False. It does not import implementation code from sample_dit_step_layer.py.
+cache is disabled, while the runtime step cache book is always False. It does
+not import implementation code from sample_dit_step_layer.py.
 """
 
 import argparse
@@ -28,7 +28,7 @@ torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
 LAYER_MODULES = ("msa", "mlp")
-RATE_METHOD = "three_point_l1"
+RATE_METHOD = "relative_l1"
 CACHE_BOOK_VERSION = 2
 CACHE_SCOPE = "layer_only"
 POLICY_VARIANT = "layer"
@@ -111,7 +111,7 @@ def register_hooks(model, active_modules=LAYER_MODULES):
 
 
 class FeatureChangeAnalyzer:
-    """Three-point analyzer for raw and corrected MSA/MLP trajectories."""
+    """Analyzer for MSA/MLP trajectories with compressed relative-L1 state."""
 
     def __init__(self, num_layers, active_modules=LAYER_MODULES):
         self.num_layers = num_layers
@@ -128,16 +128,6 @@ class FeatureChangeAnalyzer:
         self._layer_count = 0
 
     # Cross-step cache is intentionally disabled in this layer-only variant.
-    # The corresponding step-layer implementation is retained conceptually:
-    #
-    # def step_forward(self, x):
-    #     step_score = compute_rate(self.prev_x, self.curr_x, x)
-    #     self.prev_x = self.curr_x
-    #     self.curr_x = x
-    #     return step_score
-    #
-    # def step_forward_correct(self, x, step_cache_state, timestep_idx):
-    #     ...  # Freeze the three-point references during a cached step run.
 
     def _collect_features(self, msa_features_dict, mlp_features_dict):
         source_dicts = {
@@ -182,7 +172,7 @@ class FeatureChangeAnalyzer:
         return score_dict.get("msa"), score_dict.get("mlp")
 
     def step(self, msa_features_dict, mlp_features_dict):
-        """Collect raw layer scores and rotate three-point states in place."""
+        """Collect raw layer scores and rotate the compressed states in place."""
         features = self._collect_features(
             msa_features_dict,
             mlp_features_dict,

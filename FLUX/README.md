@@ -1,4 +1,4 @@
-# InvarDiff for FLUX
+# Finegrained Cache for FLUX
 
 Fine-grained caching acceleration for FLUX.1-dev.
 
@@ -15,7 +15,7 @@ pip install Pillow numpy tqdm
 ### Basic Usage
 
 ```bash
-python sample_InvarDiff_flux.py
+python sample_flux.py
 ```
 
 The script will generate images using pre-calibrated cache books. Generated images will be saved in `./images/` directory.
