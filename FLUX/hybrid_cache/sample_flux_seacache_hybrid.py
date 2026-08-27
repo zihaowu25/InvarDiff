@@ -1048,16 +1048,18 @@ def parse_args():
     )
     parser.add_argument("--cache-book-file")
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
-    # fast (default): attn=0.30, context_attn=0.30, single_attn=0.12,
-    # ff=0.22, context_ff=0.40, single_mlp=0.20;
-    # balanced: 0.30, 0.30, 0.12, 0.22, 0.40, 0.11;
-    # slow: 0.30, 0.30, 0.06, 0.21, 0.40, 0.06.
+    # fast (default): attn=0.30, context_attn=0.30, single_attn=0.40,
+    # ff=0.00, context_ff=0.00, single_mlp=0.00;
+    # balanced: attn=0.30, context_attn=0.30, single_attn=0.12,
+    # ff=0.22, context_ff=0.40, single_mlp=0.30;
+    # slow: attn=0.30, context_attn=0.30, single_attn=0.10,
+    # ff=0.00, context_ff=0.00, single_mlp=0.00.
     parser.add_argument("--attn-thres", type=float, default=0.30)
     parser.add_argument("--context-attn-thres", type=float, default=0.30)
-    parser.add_argument("--ff-thres", type=float, default=0.22)
-    parser.add_argument("--context-ff-thres", type=float, default=0.40)
-    parser.add_argument("--single-attn-thres", type=float, default=0.12)
-    parser.add_argument("--single-mlp-thres", type=float, default=0.20)
+    parser.add_argument("--ff-thres", type=float, default=0.00)
+    parser.add_argument("--context-ff-thres", type=float, default=0.00)
+    parser.add_argument("--single-attn-thres", type=float, default=0.40)
+    parser.add_argument("--single-mlp-thres", type=float, default=0.00)
     parser.add_argument("--disable-step-cache", action="store_true")
     parser.add_argument("--disable-progress-bar", action="store_true")
     parser.add_argument("--seacache-thresh", type=float, default=0.3)

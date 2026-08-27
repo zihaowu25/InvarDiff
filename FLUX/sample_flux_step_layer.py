@@ -747,13 +747,19 @@ def threshold_analyse(
     pipe,
     measure_prompts,
     nonskip_rate=0.1,
-    step_thres=0.5,
-    attn_thres=0.5,
-    context_attn_thres=0.5,
-    ff_thres=0.5,
-    context_ff_thres=0.5,
-    Single_attn_thres=0.5,
-    Single_mlp_thres=0.5,
+    # fast (default): step=0.50, attn=0.30, context_attn=0.30,
+    # single_attn=0.12, ff=0.22, context_ff=0.40, single_mlp=0.30;
+    # balanced: step=0.40, attn=0.30, context_attn=0.30,
+    # single_attn=0.12, ff=0.22, context_ff=0.40, single_mlp=0.20;
+    # slow: step=0.30, attn=0.20, context_attn=0.20,
+    # single_attn=0.06, ff=0.10, context_ff=0.20, single_mlp=0.10.
+    step_thres=0.50,
+    attn_thres=0.30,
+    context_attn_thres=0.30,
+    ff_thres=0.22,
+    context_ff_thres=0.40,
+    Single_attn_thres=0.12,
+    Single_mlp_thres=0.30,
     seed=42,
 ):
     """Run full step-level and layer-level resampling calibration."""
@@ -1051,10 +1057,12 @@ def main(args):
     original_transformer = pipe.transformer
     ## default measure 5 prompts(seed=42), the number of measure prompts will have a slight impact on the speedup ratio.
     ## The following whole-step settings are legacy references only; cross-step cache is disabled.
-    ## fast(3.3x): nonskip_rate=0.1, step_thres = 0.7, attn_thres=ff_thres=context_ff_thres=Single_attn_thres=Single_mlp_thres= 0.68 (measure 5 prompts)
-    ## medium-1(2.9x): nonskip_rate=0.1, step_thres = 0.7, attn_thres=0.68, ff_thres=0, context_ff_thres=0, Single_attn_thres=0.68, Single_mlp_thres=0
-    ## medium-2(2.6x): nonskip_rate=0.15, step_thres=0.7, attn_thres=0.68, ff_thres=0, context_ff_thres=0, Single_attn_thres=0.7, Single_mlp_thres=0
-    ## slow(2.5x): nonskip_rate=0.22, step_thres=0.72, attn_thres=0.68, ff_thres=0.66, context_ff_thres=0, Single_attn_thres=0.68, Single_mlp_thres=0.62
+    # fast (default): step=0.50, attn=0.30, context_attn=0.30,
+    # single_attn=0.12, ff=0.22, context_ff=0.40, single_mlp=0.30;
+    # balanced: step=0.40, attn=0.30, context_attn=0.30,
+    # single_attn=0.12, ff=0.22, context_ff=0.40, single_mlp=0.20;
+    # slow: step=0.30, attn=0.20, context_attn=0.20,
+    # single_attn=0.06, ff=0.10, context_ff=0.20, single_mlp=0.10.
 
     # Experiment controls are local to this standalone comparison script.
     num_inference_steps = args.num_inference_steps
@@ -1239,7 +1247,7 @@ if __name__ == "__main__":
     parser.add_argument("--ff-thres", type=float, default=0.22)
     parser.add_argument("--context-ff-thres", type=float, default=0.40)
     parser.add_argument("--single-attn-thres", type=float, default=0.12)
-    parser.add_argument("--single-mlp-thres", type=float, default=0.20)
+    parser.add_argument("--single-mlp-thres", type=float, default=0.30)
     parser.add_argument("--guidance-scale", type=float, default=3.5)
     parser.add_argument("--generate-cache-books", action="store_true")
     parser.add_argument("--calibration-only", action="store_true")

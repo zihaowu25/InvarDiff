@@ -297,8 +297,11 @@ def threshold_analyse(
     class_labels,
     input_size,
     nonskip_rate=0,
-    msa_thres=0.1,
-    mlp_thres=0.1,
+    # fast (default): msa=0.45, mlp=0.10;
+    # balanced: msa=0.40, mlp=0.00;
+    # slow: msa=0.30, mlp=0.10.
+    msa_thres=0.45,
+    mlp_thres=0.10,
     num_analysis=10,
 ):
     """Run raw and cache-corrected calibration for MSA/MLP only."""
@@ -791,10 +794,11 @@ if __name__ == "__main__":
         default=0,
         help="Initial timestep ratio forced to recompute layer modules.",
     )
-    # fast (default): msa=0.45, mlp=0.20; balanced: msa=0.45, mlp=0.13;
+    # fast (default): msa=0.45, mlp=0.10;
+    # balanced: msa=0.40, mlp=0.00;
     # slow: msa=0.30, mlp=0.10.
     parser.add_argument("--msa-thres", type=float, default=0.45)
-    parser.add_argument("--mlp-thres", type=float, default=0.20)
+    parser.add_argument("--mlp-thres", type=float, default=0.10)
     parser.add_argument("--num-analysis", type=int, default=16)
     parser.add_argument("--output-dir", type=str, default="images")
     parser.add_argument("--calibration-only", action="store_true")
@@ -811,7 +815,7 @@ if __name__ == "__main__":
         "--sample-times", "1",
         "--nonskip-rate", "0",
         "--msa-thres", "0.45",
-        "--mlp-thres", "0.20",
+        "--mlp-thres", "0.10",
         "--num-analysis", "1",
         "--generate-cache-books",
     ]

@@ -248,10 +248,13 @@ class FeatureChangeAnalyzer:
 
 def threshold_ananlyse(
     model, diffusion, class_labels, input_size,
-    step_thres=0.2,
+    # fast (default): step=0.45, msa=0.45, mlp=0.10;
+    # balanced: step=0.40, msa=0.40, mlp=0.00;
+    # slow: step=0.30, msa=0.30, mlp=0.10.
+    step_thres=0.45,
     nonskip_rate=0,
-    msa_thres=0.1, 
-    mlp_thres=0.1, 
+    msa_thres=0.45,
+    mlp_thres=0.10,
     num_analysis=10, # len(class_labels) normally not smaller than num_analysis
     ): 
 
@@ -683,13 +686,14 @@ if __name__ == "__main__":
     
     parser.add_argument('--nonskip-rate', type=float, default=0, # little effect on DiT
                         help="Proportion of initial timesteps that are forced not to be skipped")
-    # fast (default): step=0.45, msa=0.45, mlp=0.13; balanced: step=0.40,
-    # msa=0.45, mlp=0.13; slow: step=0.20, msa=0.45, mlp=0.13.
+    # fast (default): step=0.45, msa=0.45, mlp=0.10;
+    # balanced: step=0.40, msa=0.40, mlp=0.00;
+    # slow: step=0.30, msa=0.30, mlp=0.10.
     parser.add_argument('--step-thres', type=float, default=0.45,
                         help="Quantile threshold for step skipping.")
     parser.add_argument('--msa-thres', type=float, default=0.45,
                         help='Quantile threshold for MSA module skipping.')
-    parser.add_argument('--mlp-thres', type=float, default=0.13,
+    parser.add_argument('--mlp-thres', type=float, default=0.10,
                         help='Quantile threshold for MLP module skipping.')
     parser.add_argument('--num-analysis', type=int, default=16,
                         help='Number of sampling runs for stable feature analysis.')
@@ -709,7 +713,7 @@ if __name__ == "__main__":
         '--nonskip-rate', '0',
         '--step-thres', '0.45',
         '--msa-thres', '0.45',
-        '--mlp-thres', '0.13',
+        '--mlp-thres', '0.10',
         '--num-analysis', '1',
         # '--generate-cache-books', 
     ]

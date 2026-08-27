@@ -679,12 +679,12 @@ def _parse_args(cli_args=None):
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
     parser.add_argument("--cache_book_file", type=str, default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    # fast (default): self_attn=0.20, cross_attn=0.10, ffn=0.01;
-    # balanced: self_attn=0.10, cross_attn=0.10, ffn=0.00;
+    # fast (default): self_attn=0.20, cross_attn=0.00, ffn=0.00;
+    # balanced: self_attn=0.20, cross_attn=0.20, ffn=0.05;
     # slow: self_attn=0.10, cross_attn=0.00, ffn=0.00.
     parser.add_argument("--self_attn_thres", type=float, default=0.20)
-    parser.add_argument("--cross_attn_thres", type=float, default=0.10)
-    parser.add_argument("--ffn_thres", type=float, default=0.01)
+    parser.add_argument("--cross_attn_thres", type=float, default=0.00)
+    parser.add_argument("--ffn_thres", type=float, default=0.00)
 
     args = parser.parse_args(cli_args)
     _validate_args(args)
@@ -1297,8 +1297,8 @@ if __name__ == "__main__":
 
     "--nonskip_rate", "0.1",
     "--self_attn_thres", "0.20",
-    "--cross_attn_thres", "0.10",
-    "--ffn_thres", "0.01",
+    "--cross_attn_thres", "0.00",
+    "--ffn_thres", "0.00",
     ]
     cli_args = _parse_args(debug_args if len(sys.argv) == 1 else None)
     generate(cli_args)

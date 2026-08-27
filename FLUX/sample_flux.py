@@ -385,12 +385,18 @@ def threshold_analyse(
     pipe,
     measure_prompts,
     nonskip_rate=0.1,
-    attn_thres=0.5,
-    context_attn_thres=0.5,
-    ff_thres=0.5,
-    context_ff_thres=0.5,
-    Single_attn_thres=0.5,
-    Single_mlp_thres=0.5,
+    # fast (default): attn=0.30, context_attn=0.30, single_attn=0.40,
+    # ff=0.00, context_ff=0.00, single_mlp=0.00;
+    # balanced: attn=0.30, context_attn=0.30, single_attn=0.12,
+    # ff=0.22, context_ff=0.40, single_mlp=0.30;
+    # slow: attn=0.30, context_attn=0.30, single_attn=0.10,
+    # ff=0.00, context_ff=0.00, single_mlp=0.00.
+    attn_thres=0.30,
+    context_attn_thres=0.30,
+    ff_thres=0.00,
+    context_ff_thres=0.00,
+    Single_attn_thres=0.40,
+    Single_mlp_thres=0.00,
     seed=42,
 ):
     """Run raw and corrected calibration for layer cache only."""
@@ -1045,16 +1051,18 @@ if __name__ == "__main__":
     parser.add_argument("--cache-book-path", default="./cache_books")
     parser.add_argument("--cache-book-file", default=None)
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
-    # fast (default): attn=0.30, context_attn=0.30, single_attn=0.12,
-    # ff=0.22, context_ff=0.40, single_mlp=0.20;
-    # balanced: 0.30, 0.30, 0.12, 0.22, 0.40, 0.11;
-    # slow: 0.30, 0.30, 0.06, 0.21, 0.40, 0.06.
+    # fast (default): attn=0.30, context_attn=0.30, single_attn=0.40,
+    # ff=0.00, context_ff=0.00, single_mlp=0.00;
+    # balanced: attn=0.30, context_attn=0.30, single_attn=0.12,
+    # ff=0.22, context_ff=0.40, single_mlp=0.30;
+    # slow: attn=0.30, context_attn=0.30, single_attn=0.10,
+    # ff=0.00, context_ff=0.00, single_mlp=0.00.
     parser.add_argument("--attn-thres", type=float, default=0.30)
     parser.add_argument("--context-attn-thres", type=float, default=0.30)
-    parser.add_argument("--ff-thres", type=float, default=0.22)
-    parser.add_argument("--context-ff-thres", type=float, default=0.40)
-    parser.add_argument("--single-attn-thres", type=float, default=0.12)
-    parser.add_argument("--single-mlp-thres", type=float, default=0.20)
+    parser.add_argument("--ff-thres", type=float, default=0.00)
+    parser.add_argument("--context-ff-thres", type=float, default=0.00)
+    parser.add_argument("--single-attn-thres", type=float, default=0.40)
+    parser.add_argument("--single-mlp-thres", type=float, default=0.00)
     parser.add_argument("--guidance-scale", type=float, default=3.5)
     parser.add_argument("--generate-cache-books", action="store_true")
     parser.add_argument("--calibration-only", action="store_true")
