@@ -1,0 +1,41 @@
+{
+  "density_cmap": "cividis",
+  "formats": [
+    "pdf",
+    "png"
+  ],
+  "gain_center_db": 0.0,
+  "gain_cmap": "BrBG",
+  "global_limits": {
+    "gain_db": [
+      -3.349347375915102,
+      -2.9520917669219062
+    ],
+    "log_rho": [
+      -0.6888014245200861,
+      -0.4969026840015559
+    ],
+    "log_v": [
+      -2.9462215876235125,
+      -2.1241270980196547
+    ]
+  },
+  "global_robust_quantiles": [
+    0.005,
+    0.995
+  ],
+  "log_rho_center": 0.0,
+  "mask_color": "#BDBDBD",
+  "module_colors": {
+    "attention": "#0072B2",
+    "context_attention": "#CC79A7",
+    "context_ffn": "#009E73",
+    "ffn": "#E69F00",
+    "single_attention": "#56B4E9",
+    "single_mlp": "#D55E00"
+  },
+  "png_dpi": 300,
+  "rho_cmap": "PuOr",
+  "rho_dispersion_cmap": "magma",
+  "sequential_cmap": "cividis"
+}

@@ -21,3 +21,4 @@ images/
 # Generated cache books at any directory depth.
 **/cache_books/
 raw_cache_books/
+agent_skills

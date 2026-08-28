@@ -1,0 +1,18 @@
+[
+  {"id": 0, "name": "tench", "category": "animal"},
+  {"id": 7, "name": "cock", "category": "animal"},
+  {"id": 37, "name": "European fire salamander", "category": "animal"},
+  {"id": 142, "name": "great grey owl", "category": "animal"},
+  {"id": 207, "name": "golden retriever", "category": "animal"},
+  {"id": 279, "name": "Arctic fox", "category": "animal"},
+  {"id": 340, "name": "zebra", "category": "animal"},
+  {"id": 387, "name": "Labrador retriever", "category": "animal"},
+  {"id": 417, "name": "balloon", "category": "object"},
+  {"id": 569, "name": "fur coat", "category": "object"},
+  {"id": 656, "name": "sunglasses", "category": "object"},
+  {"id": 751, "name": "cab", "category": "vehicle"},
+  {"id": 817, "name": "sports car", "category": "vehicle"},
+  {"id": 933, "name": "comic book", "category": "object"},
+  {"id": 980, "name": "volcano", "category": "scene"},
+  {"id": 992, "name": "chalet", "category": "scene"}
+]

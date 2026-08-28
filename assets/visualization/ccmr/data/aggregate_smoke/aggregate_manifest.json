@@ -1,0 +1,20 @@
+{
+  "inputs": [
+    "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/dit_smoke",
+    "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/flux_smoke"
+  ],
+  "rho_stability": 832,
+  "runs": [
+    "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/dit_smoke",
+    "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/flux_smoke"
+  ],
+  "subset_stability": 0,
+  "tables": {
+    "ccmr_metrics": 1248,
+    "condition_distance": 1040,
+    "condition_similarity": 1040,
+    "rho_per_condition": 1664,
+    "temporal_metrics": 2080,
+    "time_gap_metrics": 1872
+  }
+}

@@ -1,0 +1,32 @@
+experiment: dit_ccmr_final
+hardware_target: RTX_4090_48GB
+model: DiT-XL/2
+checkpoint: DiT/pretrained_models/DiT-XL-2-512x512.pt
+image_size: 512
+num_classes: 1000
+sampler: ddim
+eta: 0.0
+num_inference_steps: 50
+cfg_scale: 4.0
+class_ids: [0, 7, 37, 142, 207, 279, 340, 387, 417, 569, 656, 751, 817, 933, 980, 992]
+seeds: [0, 1, 2, 3, 4]
+modules: [msa, mlp]
+condition_backend: exact_batch
+condition_batch_size: 16
+model_dtype: float32
+statistics_dtype: float32
+cache_enabled: false
+save_raw_activations: false
+epsilon: 1.0e-12
+degenerate_relative_threshold: 1.0e-8
+subset_sizes: [1, 2, 4, 8, 16]
+cache_fractions: [0.1, 0.2, 0.3, 0.5]
+subset_trials: 50
+bootstrap_trials: 2000
+alignment_shuffle: true
+shuffle_seed: 2027
+time_gaps: [1, 2, 4]
+condition_matrix_ids: [0, 207, 387, 569, 933, 992]
+pca_snapshots:
+  - {module: msa, layer: 14, steps: [10, 25, 40]}
+  - {module: mlp, layer: 14, steps: [10, 25, 40]}

@@ -1,0 +1,129 @@
+{
+  "ccmr_points": 1248,
+  "invalid": {
+    "dit": 56,
+    "flux": 152
+  },
+  "models": {
+    "dit": {
+      "dit.mlp": {
+        "gain_db": {
+          "mean": 0.6584332923386944,
+          "median": 0.18250378733147485,
+          "n": 140,
+          "p025": 0.39614898383298364,
+          "p975": 0.9333375596098011
+        }
+      },
+      "dit.msa": {
+        "gain_db": {
+          "mean": 1.5304742142372647,
+          "median": 1.0032705412524234,
+          "n": 140,
+          "p025": 1.248936688748179,
+          "p975": 1.8280810787385018
+        }
+      }
+    },
+    "flux": {
+      "double.attn": {
+        "gain_db": {
+          "mean": 5.218877223058237,
+          "median": 6.012110583587504,
+          "n": 95,
+          "p025": 4.174773004977522,
+          "p975": 6.209725129238323
+        }
+      },
+      "double.context_attn": {
+        "gain_db": {
+          "mean": 6.8833536573422025,
+          "median": 8.0341206797195,
+          "n": 95,
+          "p025": 5.772427287221451,
+          "p975": 7.902833384173834
+        }
+      },
+      "double.context_ff": {
+        "gain_db": {
+          "mean": 10.128239101467328,
+          "median": 9.942644795510077,
+          "n": 95,
+          "p025": 8.97378765289879,
+          "p975": 11.306680672981923
+        }
+      },
+      "double.ff": {
+        "gain_db": {
+          "mean": 3.8952909363609836,
+          "median": 4.216670454166435,
+          "n": 95,
+          "p025": 3.0480230035328053,
+          "p975": 4.721692942425579
+        }
+      },
+      "single.attn": {
+        "gain_db": {
+          "mean": 2.868214785094496,
+          "median": 3.1257933962514306,
+          "n": 190,
+          "p025": 2.4361458200015287,
+          "p975": 3.305279756589011
+        }
+      },
+      "single.mlp": {
+        "gain_db": {
+          "mean": 1.1454754901664217,
+          "median": 1.6223286784257622,
+          "n": 190,
+          "p025": 0.844688892973025,
+          "p975": 1.4328996598763073
+        }
+      }
+    }
+  },
+  "rho_stability_points": 832,
+  "runs": [
+    {
+      "path": "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/dit_smoke",
+      "run_id": "dit_smoke",
+      "summary": {
+        "elapsed_s": 0.8739130473695695,
+        "invalid": {},
+        "model": "dit",
+        "num_conditions": 2,
+        "num_seeds": 1,
+        "row_counts": {
+          "ccmr_metrics": 336,
+          "condition_distance": 280,
+          "condition_similarity": 280,
+          "rho_per_condition": 448,
+          "temporal_metrics": 560,
+          "time_gap_metrics": 504
+        },
+        "run_id": "dit_smoke"
+      }
+    },
+    {
+      "path": "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/flux_smoke",
+      "run_id": "flux_smoke",
+      "summary": {
+        "elapsed_s": 8.537116137333214,
+        "model": "flux",
+        "num_pairs": 1,
+        "num_seeds": 1,
+        "row_counts": {
+          "ccmr_metrics": 912,
+          "condition_distance": 760,
+          "condition_similarity": 760,
+          "pair_metrics": 760,
+          "rho_per_condition": 1216,
+          "temporal_metrics": 1520,
+          "time_gap_metrics": 1368
+        },
+        "run_id": "flux_smoke"
+      }
+    }
+  ],
+  "subset_stability": {}
+}

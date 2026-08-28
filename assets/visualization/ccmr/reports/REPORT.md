@@ -1,0 +1,168 @@
+# CCMR Visualization Experiment Report
+
+## Scope and status
+
+This report records the CCMR (condition-consistency mismatch ratio) experiment
+for full-compute DiT and FLUX trajectories.  Cache decisions are disabled in
+all collectors.  The hooks are read-only and are attached to the same module
+outputs used by the layer-level cache implementation.  The current checkout
+contains completed smoke tests and one formal-resolution pilot per model.  The
+full multi-seed/pair FLUX matrix is intentionally not claimed as complete: the
+1024px collector takes about 16 minutes for one pair on the RTX 4090, making 24
+pairs × 3 seeds prohibitively expensive for this run.
+
+The experiment is therefore suitable for validating the implementation,
+geometry, statistics and plotting pipeline, and for reporting the pilot
+resource cost.  It is not a replacement for the planned full population
+estimate.
+
+## Reproducibility metadata
+
+| Item | Value |
+| --- | --- |
+| Repository | `/root/autodl-tmp/InvarDiff` |
+| Git commit at collector start | `71dacede9a1a2336794008c3b826b15e56c9d2f1` |
+| GPU | NVIDIA GeForce RTX 4090 (CUDA available) |
+| Torch | 2.8.0+cu128 |
+| Diffusers | 0.39.0 |
+| Statistics dtype | FP32 accumulation |
+| Cache | Disabled (`cache_enabled: false`) |
+| Output root | `assets/visualization/ccmr/` |
+
+The exact environment and checkpoint paths are stored in each run's
+`environment.json`.  Latent hashes are written to `latent_hashes.json`.
+
+## Configurations
+
+### DiT
+
+The formal pilot uses DiT-XL/2 with the 512 checkpoint, 512×512 geometry, 50
+DDIM steps, CFG scale 4.0, one seed (`0`) and an exact conditional batch of
+16 ImageNet classes.  The formal YAML retains the planned five seeds
+`[0,1,2,3,4]`; only seed 0 was run in this pilot.  The smoke run uses the
+matching 256 checkpoint, 256×256 geometry, two classes and six steps.
+
+The collector calls `forward_with_cfg`, passing the conditional half followed
+by the null-label half.  `DiTBlock` hooks record gate-before MSA and MLP
+outputs; only the conditional half enters condition statistics.
+
+### FLUX
+
+The formal pilot uses the local FLUX.1-dev snapshot, 1024×1024, BF16, 28
+steps, guidance 3.5, seed 0 and one deterministic unordered prompt pair.  The
+formal YAML retains the planned 12-prompt bank and 24 pairs selected with
+`pair_selection_seed=2027`; only one pair was executed.  The smoke run uses
+512×512, six steps and one pair.
+
+The collector wraps the local dynamic transformer with all six module families:
+`double.attn`, `double.context_attn`, `double.ff`, `double.context_ff`,
+`single.attn` and `single.mlp`.  For the two-prompt pilot it stores the FP32
+pair difference `feature[0]-feature[1]`, which is mathematically sufficient
+for K=2 population variance, aligned/shuffled gain and pair distance.  This
+compact path avoids retaining both 1024px activations.  Per-condition temporal
+and rho diagnostics are mirrored from the pair representation and are marked
+as diagnostic rather than a K>2 population estimate.
+
+## Statistics
+
+For condition features `Z`, the collector computes population condition
+variance for the raw activation and for the aligned temporal difference.  The
+reported ratio and gain are
+
+\[
+R=\frac{V^{diff}}{(V^{raw}_t+V^{raw}_{t-1})/2+\epsilon},\qquad
+G=10\log_{10}\frac{(V^{raw}_t+V^{raw}_{t-1})/2+\epsilon}
+{V^{diff}+\epsilon}.
+\]
+
+The rho diagnostic uses only interior step indices (`1..T-2`) and the
+two-point L1 ratio.  Boundary entries are invalid by construction.  All
+statistics use FP32; input features keep their model dtype until the
+accumulation operation.  Pairwise FLUX tables retain the full prompt
+population size so the aggregator can apply the finite-population correction.
+
+## Executed runs
+
+| Run | Conditions | Steps | Collector elapsed | Peak allocated GPU | Result |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `dit_smoke` | 2 | 6 | 0.874 s | 3.350 GiB | complete |
+| `flux_smoke` | 2 | 6 | 8.537 s | 44.189 GiB | complete (pre-compact path) |
+| `dit_final_pilot` | 16 | 50 | 132.804 s | 43.903 GiB | complete, seed 0 |
+| `flux_final_single_pilot` | 1 pair | 28 | 959.771 s (15:59.8) | 32.785 GiB | complete, seed 0 |
+
+The first FLUX smoke run is retained as a regression record for the original
+full-feature hook path.  The formal pilot uses the compact pair path and stays
+below the 96-GB process memory limit.  An experimental all-GPU compact path
+was rejected after an immediate CUDA OOM (47.34 GiB allocated); it is not used
+in the reported runs.
+
+The formal pilot aggregate contains 7,056 CCMR rows, 6,848 condition-similarity
+rows, 333,384 condition-distance rows, 52,112 temporal rows, 12,112 time-gap
+rows and 50,912 rho rows.  The aggregate summary reports 56 invalid DiT
+first-step cells and 152 invalid FLUX first-step cells, exactly matching the
+expected boundary initialization.
+
+## Pilot quantitative summary
+
+The following values are from
+`data/aggregate_pilot/summary.json`; gain intervals are bootstrap summaries over
+valid rows.
+
+| Model/module | Gain mean (dB) | Gain median (dB) | 2.5–97.5% bootstrap interval |
+| --- | ---: | ---: | ---: |
+| DiT MSA | 18.613 | 18.726 | [18.413, 18.815] |
+| DiT MLP | 17.277 | 17.430 | [17.090, 17.465] |
+| FLUX double attention | 15.047 | 16.117 | [14.530, 15.528] |
+| FLUX double context attention | 16.691 | 18.351 | [16.172, 17.182] |
+| FLUX double FF | 13.600 | 14.618 | [13.099, 14.078] |
+| FLUX double context FF | 20.460 | 20.680 | [19.859, 21.083] |
+| FLUX single attention | 9.226 | 9.296 | [8.959, 9.500] |
+| FLUX single MLP | 6.588 | 6.860 | [6.364, 6.819] |
+
+The lower single-stream gains indicate larger temporal mismatch than the
+double-stream context FF in this pilot; this is a descriptive observation, not
+a cache-threshold recommendation.  No LPIPS is reported because CCMR
+collection intentionally performs latent/statistical observation only and
+does not decode or compare generated images.
+
+## Figures
+
+`figures/pilot/` contains 18 figure families, each as PDF and 300-DPI PNG.  The
+families include raw/difference/gain heatmaps, raw-vs-difference density,
+gain ECDF/violin, gain over time, condition similarity and distance matrices,
+rho mean/dispersion distributions, subset stability, CCMR-vs-rho dispersion,
+temporal smoothness, time-gap ablation and PCA trajectory views.  All plots are
+regenerated from aggregate scalar CSV files; no activation tensor is required
+for plotting.  Colormaps are configured in `configs/plot.yaml` and use the
+specified perceptually ordered palettes and Okabe–Ito module colors.
+
+## Validation performed
+
+* Ten synthetic tests passed (`pytest assets/visualization/ccmr/code/tests -q`).
+* All collector, aggregator and plotting modules pass `py_compile`.
+* All four CLIs respond to `--help` without initializing a model.
+* DiT smoke and 512px pilot completed with the expected hook counts and no
+  NaN/Inf runtime failure.
+* FLUX smoke and 1024px single-pair pilot completed with deterministic latent
+  duplication, correct module hook counts and no GPU OOM in the compact CPU
+  path.
+* The aggregator duplication bug found during smoke processing was fixed and
+  verified: two runs now produce 1,248 CCMR rows rather than repeated rows.
+
+## Limitations and next run
+
+1. The planned DiT five-seed and FLUX 24-pair × three-seed formal collections
+   are not present in this run; only seed-0 pilots are complete.
+2. The FLUX formal pilot uses one pair and `time_gaps=[1]` in its temporary
+   execution config to control memory.  The checked-in formal YAML still
+   specifies `[1,2,4]` and the full prompt bank.
+3. K=2 compact FLUX temporal/rho rows are diagnostic mirrors; full condition
+   consistency requires running the planned 24 unordered pairs and aggregating
+   across the 12-prompt population.
+4. LPIPS, CLIP/DINO, VBench and video metrics are outside this CCMR collector;
+   they belong to the separate cache-tuning experiments.
+
+To continue, run the commands in `commands.sh` with the formal YAMLs and
+`--resume`, then aggregate only after every seed/pair shard is complete.  The
+existing pilot data and figures are retained and can be compared with the
+full-population aggregate.
