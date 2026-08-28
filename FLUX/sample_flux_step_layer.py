@@ -36,6 +36,15 @@ RATE_METHOD = "relative_l1"
 CACHE_BOOK_VERSION = 2
 RATE_CHUNK_SIZE = 1_048_576
 
+# The two-prompt default was validated for the current FLUX step+layer
+# configuration.  Keeping this list here makes the calibration data explicit
+# and reproducible while still allowing callers to override it from the CLI.
+DEFAULT_CALIBRATION_PROMPTS = (
+    "A cinematic shot of a fox walking through a sunlit autumn forest, "
+    "detailed natural fur, soft volumetric light.",
+    "A golden retriever running through autumn leaves, realistic photography.",
+)
+
 
 TRANSFORMER_RATE_MODULES = tuple(
     key for key in TRANSFORMER_MODULES if key != "ip_attn"
@@ -1015,10 +1024,12 @@ def _cache_book_config(
     context_ff_thres,
     single_attn_thres,
     single_mlp_thres,
+    calibration_count,
 ):
     return {
         "policy": POLICY_VARIANT,
         "steps": num_inference_steps,
+        "calibration_count": calibration_count,
         "nonskip": nonskip_rate,
         "step": step_thres,
         "attn": attn_thres,
@@ -1033,7 +1044,8 @@ def _cache_book_config(
 def _cache_book_name(config):
     fmt = lambda value: format(float(value), "g")
     return (
-        f"cache_book_stplayer_steps{config['steps']}_ns{fmt(config['nonskip'])}"
+        f"cache_book_stplayer_calib{config['calibration_count']}"
+        f"_steps{config['steps']}_ns{fmt(config['nonskip'])}"
         f"_stepth{fmt(config['step'])}"
         f"_attnth{fmt(config['attn'])}_ffth{fmt(config['ff'])}"
         f"_cattnth{fmt(config['context_attn'])}"
@@ -1056,8 +1068,8 @@ def main(args):
         cache_dir=args.cache_dir,
     )
     original_transformer = pipe.transformer
-    ## default measure 5 prompts(seed=42), the number of measure prompts will have a slight impact on the speedup ratio.
-    ## The following settings are reference presets for the step + layer policy.
+    # Default calibration uses two prompts (seed=42).  The following settings
+    # are the validated reference presets for the step + layer policy.
     # fast (default): step=0.50, attn=0.30, context_attn=0.30,
     # single_attn=0.12, ff=0.22, context_ff=0.40, single_mlp=0.30;
     # balanced: step=0.40, attn=0.30, context_attn=0.30,
@@ -1076,6 +1088,15 @@ def main(args):
     context_ff_thres = args.context_ff_thres
     single_attn_thres = args.single_attn_thres
     single_mlp_thres = args.single_mlp_thres
+
+    calibration_prompts = list(args.calibration_prompt or [])
+    if args.calibration_prompt_file:
+        with open(args.calibration_prompt_file, "r", encoding="utf-8") as file:
+            calibration_prompts.extend(
+                line.strip() for line in file if line.strip()
+            )
+    if not calibration_prompts:
+        calibration_prompts = list(DEFAULT_CALIBRATION_PROMPTS)
 
     dynamic_model = DynamicFluxTransformer2DModel(
         original_transformer,
@@ -1100,6 +1121,7 @@ def main(args):
         context_ff_thres,
         single_attn_thres,
         single_mlp_thres,
+        len(calibration_prompts),
     )
     cache_book_file = args.cache_book_file or _cache_book_name(cache_config)
     cache_book_full_path = os.path.join(cache_book_path, cache_book_file)
@@ -1110,15 +1132,6 @@ def main(args):
             pipe.enable_model_cpu_offload(device="cuda")
         else:
             pipe.to("cuda")
-        measure_prompts = [
-            "A cinematic shot of a baby raccoon wearing an intricate italian priest robe.",
-            # "A futuristic cityscape with flying cars and neon lights.",
-            # "An astronaut riding a horse on the moon.",
-            # "A bouquet of wildflowers in a glass vase, watercolor style.",
-            # "A majestic lion sitting on a rock, golden mane, sunset.",
-        ]
-        measure_prompts = [args.calibration_prompt]
-
         (
             step_cache_book,
             transformer_cache_book,
@@ -1128,7 +1141,7 @@ def main(args):
         ) = threshold_analyse(
             model=dynamic_model,
             pipe=pipe,
-            measure_prompts=measure_prompts,
+            measure_prompts=calibration_prompts,
             nonskip_rate=nonskip_rate,
             step_thres=step_thres,
             attn_thres=attn_thres,
@@ -1143,6 +1156,7 @@ def main(args):
         cache_books = {
             "cache_version": CACHE_BOOK_VERSION,
             "config": cache_config,
+            "calibration_prompts": calibration_prompts,
             "rate_method": RATE_METHOD,
             "step_cache_book": step_cache_book,
             "transformer_cache_book": transformer_cache_book,
@@ -1234,12 +1248,23 @@ if __name__ == "__main__":
     parser.add_argument("--num-inference-steps", type=int, default=28)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--prompt", default="A cinematic photograph of a red fox sitting beside a moss-covered tree in a sunlit forest, natural colors, detailed fur, soft depth of field.")
-    parser.add_argument("--calibration-prompt", default="A cinematic photograph of a red fox sitting beside a moss-covered tree in a sunlit forest, natural colors, detailed fur, soft depth of field.")
+    parser.add_argument(
+        "--calibration-prompt",
+        action="append",
+        default=None,
+        help="Calibration prompt; repeat the option to calibrate on multiple prompts.",
+    )
+    parser.add_argument(
+        "--calibration-prompt-file",
+        default=None,
+        help="UTF-8 text file with one calibration prompt per non-empty line.",
+    )
     parser.add_argument("--output-dir", default="images")
     parser.add_argument("--cache-book-path", default="./cache_books")
     parser.add_argument("--cache-book-file", default=None)
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
-    # fast (default): step=0.50, layer=(0.30, 0.30, 0.12, 0.22, 0.40, 0.20);
+    # fast (default, two calibration prompts):
+    # step=0.50, layer=(0.30, 0.30, 0.12, 0.22, 0.40, 0.30);
     # balanced: step=0.40, layer=(0.30, 0.30, 0.12, 0.22, 0.40, 0.11);
     # slow: step=0.20, layer=(0.30, 0.30, 0.06, 0.21, 0.40, 0.06).
     parser.add_argument("--step-thres", type=float, default=0.50)

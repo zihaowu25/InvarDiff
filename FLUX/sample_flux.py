@@ -41,6 +41,13 @@ CACHE_BOOK_VERSION = 2
 POLICY_VARIANT = "layer"
 RATE_CHUNK_SIZE = 1_048_576
 
+# Layer-only keeps the original single-prompt default.  Additional prompts
+# can be supplied by repeating --calibration-prompt or via a prompt file.
+DEFAULT_CALIBRATION_PROMPTS = (
+    "A cinematic photograph of a red fox sitting beside a moss-covered tree "
+    "in a sunlit forest, natural colors, detailed fur, soft depth of field.",
+)
+
 
 def compute_l1_distance(
     x_start: torch.Tensor,
@@ -747,10 +754,12 @@ def cache_book_config(
     context_ff_thres,
     single_attn_thres,
     single_mlp_thres,
+    calibration_count,
 ):
     return {
         "policy": POLICY_VARIANT,
         "steps": num_inference_steps,
+        "calibration_count": calibration_count,
         "nonskip": nonskip_rate,
         "attn": attn_thres,
         "context_attn": context_attn_thres,
@@ -764,7 +773,8 @@ def cache_book_config(
 def cache_book_name(config):
     fmt = lambda value: format(float(value), "g")
     return (
-        f"cache_book_layer_steps{config['steps']}_ns{fmt(config['nonskip'])}"
+        f"cache_book_layer_calib{config['calibration_count']}"
+        f"_steps{config['steps']}_ns{fmt(config['nonskip'])}"
         f"_attnth{fmt(config['attn'])}_ffth{fmt(config['ff'])}"
         f"_cattnth{fmt(config['context_attn'])}"
         f"_ctxffth{fmt(config['context_ff'])}"
@@ -851,6 +861,15 @@ def main(args):
     Single_attn_thres = args.single_attn_thres
     Single_mlp_thres = args.single_mlp_thres
 
+    calibration_prompts = list(args.calibration_prompt or [])
+    if args.calibration_prompt_file:
+        with open(args.calibration_prompt_file, "r", encoding="utf-8") as file:
+            calibration_prompts.extend(
+                line.strip() for line in file if line.strip()
+            )
+    if not calibration_prompts:
+        calibration_prompts = list(DEFAULT_CALIBRATION_PROMPTS)
+
     cache_config = cache_book_config(
         num_inference_steps,
         nonskip_rate,
@@ -860,6 +879,7 @@ def main(args):
         context_ff_thres,
         Single_attn_thres,
         Single_mlp_thres,
+        len(calibration_prompts),
     )
     cache_book_path = args.cache_book_path
     cache_book_file = args.cache_book_file or cache_book_name(cache_config)
@@ -881,36 +901,11 @@ def main(args):
             pipe.enable_model_cpu_offload(device="cuda")
         else:
             pipe.to("cuda")
-        ## There is no necessary correlation between the measure prompts and the test prompts.
-        measure_prompts = [
-            "A cinematic shot of a baby raccoon wearing an intricate italian priest robe.",
-            # "A futuristic cityscape with flying cars and neon lights.",
-            # "An astronaut riding a horse on the moon.",
-            # "A bouquet of wildflowers in a glass vase, watercolor style.",
-            # "A majestic lion sitting on a rock, golden mane, sunset.",
-            # "A serene landscape with mountains and a lake at sunset.",
-            # "A cute cat playing with a ball of yarn.",
-            # "A portrait of a woman in Renaissance style, oil painting.",
-            # "A dragon flying over a burning village, epic fantasy.",
-            # "A steaming cup of coffee on a wooden table, cozy morning.",
-            # "A cyberpunk street with rain and neon signs, night.",
-            # "A tropical beach at sunrise, palm trees, golden hour.",
-            # "A magical library with floating books and glowing runes.",
-            # "A vintage camera surrounded by old photographs, nostalgic mood.",
-            # "A colorful parrot flying in a rainforest, vibrant colors.",
-            # "A medieval castle on a hill, surrounded by fog.",
-            # "A young woman in a traditional Japanese kimono, cherry blossoms.",
-            # "A futuristic female cyborg with glowing blue eyes, silver armor.",
-            # "A steaming bowl of ramen on a wooden counter, food photography.",
-            # "A snowy forest with sunlight filtering through the trees.",
-        ]
-        # Single-prompt calibration is the default for low-cost threshold tuning.
-        measure_prompts = [args.calibration_prompt]
         step_cache_book, transformer_cache_book, single_transformer_cache_book, \
         avg_transformer_rates, avg_single_transformer_rates = threshold_analyse(
             model=dynamic_model,
             pipe=pipe,
-            measure_prompts=measure_prompts,
+            measure_prompts=calibration_prompts,
             nonskip_rate=nonskip_rate,
             # Cross-step cache threshold is intentionally disabled:
             # step_thres=step_thres,
@@ -926,6 +921,7 @@ def main(args):
             "cache_version": CACHE_BOOK_VERSION,
             "cache_scope": "layer_only",
             "config": cache_config,
+            "calibration_prompts": calibration_prompts,
             "rate_method": RATE_METHOD,
             "step_cache_book": step_cache_book,
             "transformer_cache_book": transformer_cache_book,
@@ -1020,7 +1016,17 @@ if __name__ == "__main__":
     parser.add_argument("--num-inference-steps", type=int, default=28)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--prompt", default="A cinematic photograph of a red fox sitting beside a moss-covered tree in a sunlit forest, natural colors, detailed fur, soft depth of field.")
-    parser.add_argument("--calibration-prompt", default="A cinematic photograph of a red fox sitting beside a moss-covered tree in a sunlit forest, natural colors, detailed fur, soft depth of field.")
+    parser.add_argument(
+        "--calibration-prompt",
+        action="append",
+        default=None,
+        help="Calibration prompt; repeat the option to calibrate on multiple prompts.",
+    )
+    parser.add_argument(
+        "--calibration-prompt-file",
+        default=None,
+        help="UTF-8 text file with one calibration prompt per non-empty line.",
+    )
     parser.add_argument("--output-dir", default="images")
     parser.add_argument("--cache-book-path", default="./cache_books")
     parser.add_argument("--cache-book-file", default=None)
