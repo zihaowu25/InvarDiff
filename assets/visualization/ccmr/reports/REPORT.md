@@ -127,18 +127,34 @@ does not decode or compare generated images.
 
 ## Figures
 
-`figures/pilot/` contains 18 figure families, each as PDF and 300-DPI PNG.  The
-families include raw/difference/gain heatmaps, raw-vs-difference density,
-gain ECDF/violin, gain over time, condition similarity and distance matrices,
-rho mean/dispersion distributions, subset stability, CCMR-vs-rho dispersion,
-temporal smoothness, time-gap ablation and PCA trajectory views.  All plots are
-regenerated from aggregate scalar CSV files; no activation tensor is required
-for plotting.  Colormaps are configured in `configs/plot.yaml` and use the
-specified perceptually ordered palettes and Okabe–Ito module colors.
+`figures/pilot/` and `figures/smoke/` each contain 25 figure families, each as
+PDF and 300-DPI PNG.  The families include module-specific
+raw/difference/gain heatmaps, raw-vs-difference density, gain ECDF/violin, gain
+over time, condition similarity and distance matrices, rho mean/median and
+dispersion heatmaps, rho distributions, subset stability, temporal smoothness,
+and time-gap ablation.  All plots are regenerated from aggregate scalar CSV
+files; no activation tensor is required for plotting.  Colormaps are
+configured in `configs/plot.yaml` and use the specified perceptually ordered
+palettes and Okabe–Ito module colors.
+
+### Plotting validation and scaling
+
+The plotting code masks all non-finite values, including the intentionally
+invalid first-step CCMR cells.  Variance heatmaps display `log10(V)` and use a
+robust global 0.5--99.5 percentile color range; the percentile configuration
+is stored in fractional form and converted to NumPy's percentage convention
+before limits are computed.  Gain and rho heatmaps use the corresponding
+finite robust limits, while each heatmap panel remains module-specific so
+different block families are not silently pooled.  The rho panels use
+`score_step_idx` (the rho table's schema) rather than the CCMR table's
+`step_idx`.  Pairwise distance matrices aggregate repeated layer/time
+observations by median.  When an optional table is unavailable, the figure is
+rendered with an explicit no-data annotation instead of an axes-only blank
+image.
 
 ## Validation performed
 
-* Ten synthetic tests passed (`pytest assets/visualization/ccmr/code/tests -q`).
+* Thirteen synthetic tests passed (`pytest assets/visualization/ccmr/code/tests -q`).
 * All collector, aggregator and plotting modules pass `py_compile`.
 * All four CLIs respond to `--help` without initializing a model.
 * DiT smoke and 512px pilot completed with the expected hook counts and no
@@ -146,6 +162,8 @@ specified perceptually ordered palettes and Okabe–Ito module colors.
 * FLUX smoke and 1024px single-pair pilot completed with deterministic latent
   duplication, correct module hook counts and no GPU OOM in the compact CPU
   path.
+* All regenerated pilot/smoke PNGs contain finite plotted data or an explicit
+  no-data annotation; no figure relies on unfiltered `NaN` values.
 * The aggregator duplication bug found during smoke processing was fixed and
   verified: two runs now produce 1,248 CCMR rows rather than repeated rows.
 

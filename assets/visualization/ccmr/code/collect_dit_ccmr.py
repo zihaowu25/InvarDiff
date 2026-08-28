@@ -105,7 +105,11 @@ def _run_trajectory(model, diffusion, class_ids: list[int], seed: int, config: d
     z_cond = z_seed.expand(k, -1, -1, -1).clone().to(device)
     z = torch.cat([z_cond, z_cond], dim=0)
     labels = torch.tensor(class_ids + [int(config.get("num_classes", 1000))] * k, device=device, dtype=torch.long)
-    latent_hashes = {str(seed): [tensor_sha256(z_seed[i : i + 1]) for i in range(k)]}
+    # The same initial latent is intentionally copied to every condition.  A
+    # hash must therefore be repeated, rather than hashing empty slices for
+    # condition indices greater than zero.
+    latent_hash = tensor_sha256(z_seed)
+    latent_hashes = {str(seed): [latent_hash for _ in range(k)]}
     n_steps = int(config["num_inference_steps"])
     n_layers = len(model.blocks)
     storage = {name: {} for name in MODULES}

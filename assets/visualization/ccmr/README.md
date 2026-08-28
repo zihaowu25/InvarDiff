@@ -48,3 +48,10 @@ and applies the finite-population correction for pairwise data.  All figures
 are rendered as PDF and 300-DPI PNG from scalar tables only.  See
 `reports/REPORT.md` for the executed configuration, memory, failures and
 quantitative conclusions.
+
+Plotting is robust to the `NaN` values used for invalid boundary steps.  Raw
+and difference variance heatmaps use `log10` values with a global robust
+0.5--99.5 percentile color range, and each module is shown in its own panel.
+Rho heatmaps use the table's `score_step_idx`; repeated condition-distance
+observations are reduced by their median across layers and time.  Optional
+plots with no valid rows are emitted with an explicit no-data annotation.
