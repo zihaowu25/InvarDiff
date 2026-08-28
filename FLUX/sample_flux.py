@@ -754,12 +754,10 @@ def cache_book_config(
     context_ff_thres,
     single_attn_thres,
     single_mlp_thres,
-    calibration_count,
 ):
     return {
         "policy": POLICY_VARIANT,
         "steps": num_inference_steps,
-        "calibration_count": calibration_count,
         "nonskip": nonskip_rate,
         "attn": attn_thres,
         "context_attn": context_attn_thres,
@@ -773,8 +771,7 @@ def cache_book_config(
 def cache_book_name(config):
     fmt = lambda value: format(float(value), "g")
     return (
-        f"cache_book_layer_calib{config['calibration_count']}"
-        f"_steps{config['steps']}_ns{fmt(config['nonskip'])}"
+        f"cache_book_layer_steps{config['steps']}_ns{fmt(config['nonskip'])}"
         f"_attnth{fmt(config['attn'])}_ffth{fmt(config['ff'])}"
         f"_cattnth{fmt(config['context_attn'])}"
         f"_ctxffth{fmt(config['context_ff'])}"
@@ -879,7 +876,6 @@ def main(args):
         context_ff_thres,
         Single_attn_thres,
         Single_mlp_thres,
-        len(calibration_prompts),
     )
     cache_book_path = args.cache_book_path
     cache_book_file = args.cache_book_file or cache_book_name(cache_config)
@@ -972,21 +968,26 @@ def main(args):
         times = []
 
         for prompt in prompts:
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
             start_time = time.time()
             image = pipe(
                 prompt,
                 num_inference_steps=num_inference_steps,
                 guidance_scale=args.guidance_scale,
-                generator=torch.Generator(device="cpu").manual_seed(seed)
-                ).images[0]
+                generator=torch.Generator(device="cpu").manual_seed(seed),
+            ).images[0]
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
             times.append(time.time() - start_time)
             images.append(image)
 
-        if len(prompts)>1:
-            times = np.array(times[1:])
-            avg_time = np.mean(times)
-            std_time = np.std(times)
-            print(f"Sampling time: {avg_time:.4f}±{std_time:.4f} s")
+        if len(prompts) > 1:
+            measured_times = np.asarray(times[1:])
+            print(
+                f"Sampling time: {np.mean(measured_times):.4f}±"
+                f"{np.std(measured_times):.4f} s"
+            )
         else:
             print(f"Sampling time: {times[0]:.4f} s")
 

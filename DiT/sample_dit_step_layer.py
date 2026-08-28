@@ -32,6 +32,28 @@ def set_seed(seed):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
+
+def parse_calibration_classes(spec, num_classes):
+    """Parse an explicit comma/space-separated calibration class list."""
+    if not spec:
+        return None
+    tokens = str(spec).replace(",", " ").split()
+    try:
+        labels = [int(token) for token in tokens]
+    except ValueError as exc:
+        raise ValueError(
+            "--calibration-classes must contain integer ImageNet class IDs."
+        ) from exc
+    if not labels:
+        raise ValueError("--calibration-classes cannot be empty.")
+    invalid = [label for label in labels if not 0 <= label < num_classes]
+    if invalid:
+        raise ValueError(
+            f"Calibration class IDs must be in [0, {num_classes - 1}], "
+            f"got {invalid}."
+        )
+    return labels
+
 def register_hooks(model):
     msa_features_step = {}
     mlp_features_step = {}
@@ -248,14 +270,14 @@ class FeatureChangeAnalyzer:
 
 def threshold_ananlyse(
     model, diffusion, class_labels, input_size,
-    # fast (default): step=0.45, msa=0.45, mlp=0.10;
-    # balanced: step=0.40, msa=0.40, mlp=0.00;
-    # slow: step=0.30, msa=0.30, mlp=0.10.
-    step_thres=0.45,
+    # fast (default): step=0.50, msa=0.30, mlp=0.10;
+    # balanced: step=0.45, msa=0.40, mlp=0.00;
+    # slow: step=0.35, msa=0.30, mlp=0.00.
+    step_thres=0.50,
     nonskip_rate=0,
-    msa_thres=0.45,
+    msa_thres=0.30,
     mlp_thres=0.10,
-    num_analysis=10, # len(class_labels) normally not smaller than num_analysis
+    num_analysis=1, # single-image calibration by default
     ): 
 
     device = next(model.parameters()).device
@@ -465,7 +487,8 @@ def save_cache_books(
     step_thres,
     msa_thres,
     mlp_thres,
-    cache_book_path="./cache_books"
+    cache_book_path="./cache_books",
+    calibration_classes=None,
 ):
     config = cache_book_config(
         num_timesteps,
@@ -479,6 +502,12 @@ def save_cache_books(
         "cache_scope": CACHE_SCOPE,
         "config": config,
         "rate_method": RATE_METHOD,
+        "calibration_count": (
+            len(calibration_classes) if calibration_classes is not None else None
+        ),
+        "calibration_classes": (
+            list(calibration_classes) if calibration_classes is not None else None
+        ),
         "step_cache_book": step_cache_book.tolist() if torch.is_tensor(step_cache_book) else step_cache_book,
         "msa_cache_book": msa_cache_book.tolist() if torch.is_tensor(msa_cache_book) else msa_cache_book,
         "mlp_cache_book": mlp_cache_book.tolist() if torch.is_tensor(mlp_cache_book) else mlp_cache_book
@@ -544,10 +573,20 @@ def main(args):
     # class_labels = [970, 972, 975, 977, 980, 937, 947, 919]
     # class_labels = [402, 579, 760, 541, 504, 850, 892, 522]
     # class_labels = [9, 84, 292, 291, 355, 105, 88, 309]
-    if args.num_analysis <= 1:
+    explicit_calibration_classes = parse_calibration_classes(
+        args.calibration_classes, args.num_classes
+    )
+    if explicit_calibration_classes is not None:
+        measure_labels = explicit_calibration_classes
+        analysis_count = (
+            len(measure_labels) if args.num_analysis <= 1 else args.num_analysis
+        )
+    elif args.num_analysis <= 1:
         measure_labels = [class_labels[0]]
+        analysis_count = 1
     else:
         measure_labels = random.sample(all_classes, min(args.num_analysis, len(all_classes)))
+        analysis_count = args.num_analysis
 
     if args.generate_cache_books:
         step_cache_book, msa_cache_book, mlp_cache_book, avg_msa_differences, avg_mlp_differences = threshold_ananlyse(
@@ -556,7 +595,7 @@ def main(args):
             nonskip_rate=args.nonskip_rate,
             msa_thres=args.msa_thres, 
             mlp_thres=args.mlp_thres, 
-            num_analysis=args.num_analysis
+            num_analysis=analysis_count
         )
 
         cache_book_file = save_cache_books(
@@ -568,7 +607,8 @@ def main(args):
             step_thres=args.step_thres,
             msa_thres=args.msa_thres,
             mlp_thres=args.mlp_thres,
-            cache_book_path=args.cache_book_path
+            cache_book_path=args.cache_book_path,
+            calibration_classes=measure_labels,
         )
         if args.calibration_only:
             return
@@ -624,6 +664,8 @@ def main(args):
     
     times = []
     for _ in range(args.sample_times):
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
         start_time = time.time()
         samples = diffusion.ddim_sample_loop(
             Dynamic_DiT.forward_with_cfg, z.shape, z, 
@@ -632,6 +674,8 @@ def main(args):
             progress=True,
             device=device
         )
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
         times.append(time.time() - start_time)
         Dynamic_DiT.reset_inference()
     
@@ -686,17 +730,27 @@ if __name__ == "__main__":
     
     parser.add_argument('--nonskip-rate', type=float, default=0, # little effect on DiT
                         help="Proportion of initial timesteps that are forced not to be skipped")
-    # fast (default): step=0.45, msa=0.45, mlp=0.10;
-    # balanced: step=0.40, msa=0.40, mlp=0.00;
-    # slow: step=0.30, msa=0.30, mlp=0.10.
-    parser.add_argument('--step-thres', type=float, default=0.45,
+    # fast (default): step=0.50, msa=0.30, mlp=0.10;
+    # balanced: step=0.45, msa=0.40, mlp=0.00;
+    # slow: step=0.35, msa=0.30, mlp=0.00.
+    parser.add_argument('--step-thres', type=float, default=0.50,
                         help="Quantile threshold for step skipping.")
-    parser.add_argument('--msa-thres', type=float, default=0.45,
+    parser.add_argument('--msa-thres', type=float, default=0.30,
                         help='Quantile threshold for MSA module skipping.')
     parser.add_argument('--mlp-thres', type=float, default=0.10,
                         help='Quantile threshold for MLP module skipping.')
-    parser.add_argument('--num-analysis', type=int, default=16,
-                        help='Number of sampling runs for stable feature analysis.')
+    parser.add_argument('--num-analysis', type=int, default=1,
+                        help='Number of calibration trajectories; 1 uses single-image calibration.')
+    parser.add_argument(
+        '--calibration-classes',
+        type=str,
+        default=None,
+        help=(
+            'Optional comma/space-separated class IDs for reproducible multi-image '
+            'calibration. If provided without --num-analysis, all listed classes '
+            'are used once.'
+        ),
+    )
     parser.add_argument('--output-dir', type=str, default='images')
     parser.add_argument('--calibration-only', action='store_true')
     
@@ -708,11 +762,11 @@ if __name__ == "__main__":
         '--dit-ckpt', './pretrained_models/DiT-XL-2-512x512.pt',
         '--num-sample-classes', '1',
         '--cfg-scale', '4.0',
-        '--seed', '0',
+        '--seed', '42',
         '--sample-times', '1',
         '--nonskip-rate', '0',
-        '--step-thres', '0.45',
-        '--msa-thres', '0.45',
+        '--step-thres', '0.50',
+        '--msa-thres', '0.30',
         '--mlp-thres', '0.10',
         '--num-analysis', '1',
         # '--generate-cache-books', 

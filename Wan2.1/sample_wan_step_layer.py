@@ -1424,7 +1424,7 @@ if __name__ == "__main__":
     "--use_invardiff",
 
     "--cache_book_path", "./cache_books",
-    # "--cache_book_file", "cache_book_stplayer_t2v-1.3B_832x480_f81_steps30_ns0.1_stepth0.58_sattnth0.5_cattnth0.5_ffnth0.5.json",
+    # "--cache_book_file", "cache_book_stplayer_t2v-1.3B_832x480_f81_steps30_ns0.1_stepth0.40_sattnth0.3_cattnth0.2_ffnth0.01.json",
 
     "--nonskip_rate", "0.1",
     "--step_thres", "0.40",

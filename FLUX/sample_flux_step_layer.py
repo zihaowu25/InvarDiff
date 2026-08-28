@@ -757,13 +757,13 @@ def threshold_analyse(
     pipe,
     measure_prompts,
     nonskip_rate=0.1,
-    # fast (default): step=0.50, attn=0.30, context_attn=0.30,
+    # fast (default): step=0.58, attn=0.30, context_attn=0.30,
     # single_attn=0.12, ff=0.22, context_ff=0.40, single_mlp=0.30;
-    # balanced: step=0.40, attn=0.30, context_attn=0.30,
+    # balanced: step=0.50, attn=0.30, context_attn=0.30,
     # single_attn=0.12, ff=0.22, context_ff=0.40, single_mlp=0.20;
-    # slow: step=0.30, attn=0.20, context_attn=0.20,
+    # slow: step=0.35, attn=0.20, context_attn=0.20,
     # single_attn=0.06, ff=0.10, context_ff=0.20, single_mlp=0.10.
-    step_thres=0.50,
+    step_thres=0.58,
     attn_thres=0.30,
     context_attn_thres=0.30,
     ff_thres=0.22,
@@ -1024,12 +1024,10 @@ def _cache_book_config(
     context_ff_thres,
     single_attn_thres,
     single_mlp_thres,
-    calibration_count,
 ):
     return {
         "policy": POLICY_VARIANT,
         "steps": num_inference_steps,
-        "calibration_count": calibration_count,
         "nonskip": nonskip_rate,
         "step": step_thres,
         "attn": attn_thres,
@@ -1044,8 +1042,7 @@ def _cache_book_config(
 def _cache_book_name(config):
     fmt = lambda value: format(float(value), "g")
     return (
-        f"cache_book_stplayer_calib{config['calibration_count']}"
-        f"_steps{config['steps']}_ns{fmt(config['nonskip'])}"
+        f"cache_book_stplayer_steps{config['steps']}_ns{fmt(config['nonskip'])}"
         f"_stepth{fmt(config['step'])}"
         f"_attnth{fmt(config['attn'])}_ffth{fmt(config['ff'])}"
         f"_cattnth{fmt(config['context_attn'])}"
@@ -1070,11 +1067,11 @@ def main(args):
     original_transformer = pipe.transformer
     # Default calibration uses two prompts (seed=42).  The following settings
     # are the validated reference presets for the step + layer policy.
-    # fast (default): step=0.50, attn=0.30, context_attn=0.30,
+    # fast (default): step=0.58, attn=0.30, context_attn=0.30,
     # single_attn=0.12, ff=0.22, context_ff=0.40, single_mlp=0.30;
-    # balanced: step=0.40, attn=0.30, context_attn=0.30,
+    # balanced: step=0.50, attn=0.30, context_attn=0.30,
     # single_attn=0.12, ff=0.22, context_ff=0.40, single_mlp=0.20;
-    # slow: step=0.30, attn=0.20, context_attn=0.20,
+    # slow: step=0.35, attn=0.20, context_attn=0.20,
     # single_attn=0.06, ff=0.10, context_ff=0.20, single_mlp=0.10.
 
     # Experiment controls are local to this standalone comparison script.
@@ -1121,7 +1118,6 @@ def main(args):
         context_ff_thres,
         single_attn_thres,
         single_mlp_thres,
-        len(calibration_prompts),
     )
     cache_book_file = args.cache_book_file or _cache_book_name(cache_config)
     cache_book_full_path = os.path.join(cache_book_path, cache_book_file)
@@ -1203,6 +1199,8 @@ def main(args):
     images = []
     times = []
     for prompt in prompts:
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
         start_time = time.time()
         image = pipe(
             prompt,
@@ -1210,6 +1208,8 @@ def main(args):
                 guidance_scale=args.guidance_scale,
             generator=torch.Generator(device="cpu").manual_seed(seed),
         ).images[0]
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
         times.append(time.time() - start_time)
         images.append(image)
 
@@ -1264,10 +1264,13 @@ if __name__ == "__main__":
     parser.add_argument("--cache-book-file", default=None)
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
     # fast (default, two calibration prompts):
-    # step=0.50, layer=(0.30, 0.30, 0.12, 0.22, 0.40, 0.30);
-    # balanced: step=0.40, layer=(0.30, 0.30, 0.12, 0.22, 0.40, 0.11);
-    # slow: step=0.20, layer=(0.30, 0.30, 0.06, 0.21, 0.40, 0.06).
-    parser.add_argument("--step-thres", type=float, default=0.50)
+    # step=0.58, layer=(attn=0.30, context_attn=0.30, single_attn=0.12,
+    #        ff=0.22, context_ff=0.40, single_mlp=0.30);
+    # balanced: step=0.50, layer=(attn=0.30, context_attn=0.30, single_attn=0.12,
+    #        ff=0.22, context_ff=0.40, single_mlp=0.20);
+    # slow: step=0.35, layer=(attn=0.20, context_attn=0.20, single_attn=0.06,
+    #        ff=0.10, context_ff=0.20, single_mlp=0.10).
+    parser.add_argument("--step-thres", type=float, default=0.58)
     parser.add_argument("--attn-thres", type=float, default=0.30)
     parser.add_argument("--context-attn-thres", type=float, default=0.30)
     parser.add_argument("--ff-thres", type=float, default=0.22)
