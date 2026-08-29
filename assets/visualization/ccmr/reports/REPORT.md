@@ -161,9 +161,12 @@ different block families are not silently pooled.  The rho panels use
 `step_idx`.  Pairwise distance matrices aggregate repeated layer/time
 observations by median, display raw/difference distances on a `log10` scale,
 and mask the unobserved diagonal and pairs.  ECDFs are sorted step functions;
-time-gap panels are split by model and show median/IQR.  When an optional table
-is unavailable, the figure is rendered with an explicit no-data annotation
-instead of an axes-only blank image.
+time-gap panels are split by model and show median/IQR.  For the compact
+two-prompt FLUX pilot, mean/median rho heatmaps use a clearly labelled
+pair-difference diagnostic fallback; condition-level rho dispersion remains
+unavailable until the dedicated per-prompt collector is run.  When an optional
+table is unavailable, the figure is rendered with an explicit no-data
+annotation instead of an axes-only blank image.
 
 ## Validation performed
 

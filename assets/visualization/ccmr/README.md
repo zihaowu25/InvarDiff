@@ -60,8 +60,11 @@ condition-distance plots expose raw, difference, and contraction panels.  The
 FLUX pairwise time-gap path persists current/previous/difference pair energies
 so aggregation applies the finite-population correction before computing dB
 gain; it does not average per-pair gains.
-Optional plots with no valid rows are emitted with an explicit no-data
-annotation.
+For the compact two-prompt FLUX pilot, the rho mean/median heatmaps use a
+clearly labelled pair-difference diagnostic fallback, while condition-level
+rho dispersion and subset stability remain unavailable until the dedicated
+per-prompt rho collector is run.  Optional plots with no valid rows are emitted
+with an explicit no-data annotation.
 
 The pairwise FLUX collector stores compact prompt differences.  Those rows are
 valid for pair-level CCMR and time-gap diagnostics, but must not be interpreted

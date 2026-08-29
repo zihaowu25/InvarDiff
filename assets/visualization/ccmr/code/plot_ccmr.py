@@ -114,7 +114,16 @@ def _empty_figure(output: Path, name: str, title: str, message: str, dpi: int) -
     """Write an explicit no-data figure instead of a misleading blank plot."""
 
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    ax.text(0.5, 0.5, message, ha="center", va="center", transform=ax.transAxes)
+    ax.set_facecolor("#F2F2F2")
+    ax.text(
+        0.5,
+        0.5,
+        message,
+        ha="center",
+        va="center",
+        transform=ax.transAxes,
+        bbox={"boxstyle": "round,pad=0.6", "facecolor": "white", "edgecolor": "#777777"},
+    )
     ax.set_title(title)
     ax.set_axis_off()
     _save(fig, output, name, dpi)
@@ -417,6 +426,48 @@ def _distance_figure(
     _save(fig, output, name, dpi)
 
 
+def _pair_rho_summary(rows: list[dict[str, Any]], model: str) -> list[dict[str, Any]]:
+    """Reduce compact pair-difference rho rows to diagnostic heatmap cells.
+
+    A compact FLUX row represents ``rho(Z_i-Z_j)``, not a prompt-level rho.
+    It is still useful for a descriptive mean/median trajectory, provided the
+    scope is kept explicit in the caller and it is never fed to condition
+    dispersion or subset-stability statistics.
+    """
+    grouped: dict[tuple[Any, ...], list[float]] = defaultdict(list)
+    for row in rows:
+        scope = str(row.get("rho_scope") or "").lower()
+        # Older smoke files predate the rho_scope column.  Their FLUX rho was
+        # produced by the compact two-prompt path, so it is safe to treat an
+        # absent scope as a legacy pair-difference diagnostic here.  The
+        # aggregator still excludes it from condition-level stability.
+        legacy_flux_pair = model == "flux" and scope == ""
+        if row.get("model") != model or (scope != "pair_difference" and not legacy_flux_pair):
+            continue
+        if str(row.get("valid", "True")).lower() == "false":
+            continue
+        value = _finite_value(row.get("rho_clean"))
+        if value is None:
+            continue
+        key = (
+            row.get("source_run"), row.get("model"), row.get("seed"),
+            row.get("module_family"), row.get("module_name"),
+            row.get("layer_idx"), row.get("score_step_idx"),
+        )
+        grouped[key].append(value)
+    result = []
+    for key, values in grouped.items():
+        result.append({
+            "source_run": key[0], "model": key[1], "seed": key[2],
+            "module_family": key[3], "module_name": key[4],
+            "layer_idx": key[5], "score_step_idx": key[6],
+            "rho_mean": float(np.mean(values)),
+            "rho_median": float(np.median(values)),
+            "rho_scope": "pair_difference", "valid": True,
+        })
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Plot CCMR scalar results")
     parser.add_argument("--config", required=True)
@@ -661,7 +712,19 @@ def main() -> None:
     fig, ax = plt.subplots(figsize=(7, 4.5))
     for model in ("dit", "flux"):
         values = _finite([row for row in rho_rows if row.get("model") == model], "rho_mean")
-        _ecdf(ax, np.log10(np.maximum(values, 1.0e-30)), model.upper())
+        label = model.upper()
+        if not values.size and model == "flux":
+            pair_values = _finite(
+                [
+                    row for row in rho
+                    if row.get("model") == model
+                    and str(row.get("rho_scope") or "").lower() in {"", "pair_difference"}
+                ],
+                "rho_clean",
+            )
+            values = pair_values
+            label = "FLUX pair-difference"
+        _ecdf(ax, np.log10(np.maximum(values, 1.0e-30)), label)
     if not rho_rows:
         _set_no_data(ax)
     ax.axvline(0, ls="--", color="gray")
@@ -672,6 +735,10 @@ def main() -> None:
     for key, name in (("rho_mean", "rho_mean_heatmaps"), ("rho_median", "rho_median_heatmaps"), ("log_rho_mad", "rho_condition_dispersion_heatmaps")):
         for model in ("dit", "flux"):
             model_stability = [row for row in stability if row.get("model") == model]
+            diagnostic_scope = False
+            if not model_stability and model == "flux" and key in {"rho_mean", "rho_median"}:
+                model_stability = _pair_rho_summary(rho, model)
+                diagnostic_scope = bool(model_stability)
             if key == "log_rho_mad":
                 mad_values = _finite(model_stability, key)
                 if mad_values.size == 0 or float(np.nanmax(np.abs(mad_values))) <= 0.0:
@@ -685,6 +752,8 @@ def main() -> None:
                 "rho_median": f"{model.upper()} log10 median rho by module",
                 "log_rho_mad": f"{model.upper()} log10 rho MAD by module",
             }[key]
+            if diagnostic_scope:
+                panel_title += " (pair-difference diagnostic)"
             _heat_panels(
                 model_stability,
                 key,
