@@ -3,12 +3,12 @@
     "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/dit_smoke",
     "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/flux_smoke"
   ],
-  "rho_stability": 832,
+  "rho_stability": 224,
   "runs": [
     "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/dit_smoke",
     "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/flux_smoke"
   ],
-  "subset_stability": 0,
+  "subset_stability": 400,
   "tables": {
     "ccmr_metrics": 1248,
     "condition_distance": 1040,

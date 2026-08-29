@@ -17,6 +17,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib import colors as mpl_colors
 import numpy as np
 
 from common import load_yaml, read_rows, save_json_atomic
@@ -77,6 +78,8 @@ def _read_tables(input_dir: Path) -> dict[str, list[dict[str, Any]]]:
         "condition_j",
         "estimator",
         "valid",
+        "rho_scope",
+        "pair_id",
         "pair_id_or_condition_group",
     }
     for name in TABLES:
@@ -219,6 +222,8 @@ def _heat_panels(
     transform: Callable[[float], float] | None = None,
     vmin: float | None = None,
     vmax: float | None = None,
+    colorbar_label: str | None = None,
+    center: float | None = None,
     mask_color: str = "#BDBDBD",
     dpi: int = 300,
 ) -> None:
@@ -261,7 +266,10 @@ def _heat_panels(
             continue
         matrix, steps, layers = result
         masked = np.ma.masked_invalid(matrix)
-        image = ax.imshow(masked, aspect="auto", origin="upper", cmap=cmap, vmin=vmin, vmax=vmax)
+        norm = None
+        if center is not None and vmin is not None and vmax is not None and vmin < center < vmax:
+            norm = mpl_colors.TwoSlopeNorm(vmin=vmin, vcenter=center, vmax=vmax)
+        image = ax.imshow(masked, aspect="auto", origin="upper", cmap=cmap, vmin=None if norm else vmin, vmax=None if norm else vmax, norm=norm)
         ax.set_title(label)
         ax.set_xlabel("inference execution step")
         ax.set_ylabel("layer (0 at top)")
@@ -273,14 +281,25 @@ def _heat_panels(
         ax.set_axis_off()
     fig.suptitle(title)
     if image is not None:
-        fig.colorbar(image, ax=axes.ravel().tolist(), fraction=0.025, pad=0.02)
+        colorbar = fig.colorbar(image, ax=axes.ravel().tolist(), fraction=0.025, pad=0.02)
+        if colorbar_label:
+            colorbar.set_label(colorbar_label)
     _save(fig, output, name, dpi)
 
 
+def _ecdf_points(values: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Return sorted x values and a monotone empirical CDF."""
+    x = np.sort(np.asarray(values, dtype=float)[np.isfinite(values)])
+    if x.size == 0:
+        return x, np.asarray([], dtype=float)
+    y = np.arange(1, x.size + 1, dtype=float) / x.size
+    return x, y
+
+
 def _ecdf(ax: Any, values: np.ndarray, label: str, color: str | None = None) -> None:
-    values = values[np.isfinite(values)]
-    if values.size:
-        ax.plot(values, np.arange(1, values.size + 1) / values.size, label=label, color=color)
+    x, y = _ecdf_points(values)
+    if x.size:
+        ax.step(x, y, where="post", label=label, color=color)
 
 
 def _set_no_data(ax: Any, message: str = "No finite data available") -> None:
@@ -323,16 +342,23 @@ def _distance_figure(
     dpi: int,
     mask_color: str,
 ) -> None:
-    model_rows = []
-    for row in rows:
-        if row.get("model") != model:
-            continue
-        if _finite_value(row.get("raw_pair_distance")) is not None:
-            model_rows.append(row)
+    model_rows = [
+        row for row in rows
+        if row.get("model") == model
+        and _finite_value(row.get("raw_pair_distance")) is not None
+        and _finite_value(row.get("diff_pair_distance")) is not None
+    ]
     name = f"condition_distance_matrices_{model}"
     title = f"{model.upper()} condition distance"
     if not model_rows:
-        _empty_figure(output, name, title, "No finite pair distances available", dpi)
+        _empty_figure(output, name, title, "No finite condition-pair distances available", dpi)
+        return
+    unique_pairs = {
+        tuple(sorted((str(row.get("condition_i")), str(row.get("condition_j"))), key=_condition_sort_key))
+        for row in model_rows
+    }
+    if len(unique_pairs) < 2:
+        _empty_figure(output, name, title, "At least two observed condition pairs are required", dpi)
         return
     conditions = sorted(
         {str(row.get("condition_i")) for row in model_rows}
@@ -342,27 +368,52 @@ def _distance_figure(
     positions = {value: index for index, value in enumerate(conditions)}
     # A pair occurs at multiple layers and time steps.  Aggregate those
     # observations instead of letting the last CSV row overwrite the matrix.
-    pair_values: dict[tuple[str, str], list[float]] = defaultdict(list)
+    pair_values: dict[tuple[str, str], dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
     for row in model_rows:
-        value = _finite_value(row.get("raw_pair_distance"))
-        if value is None:
+        raw = _finite_value(row.get("raw_pair_distance"))
+        diff = _finite_value(row.get("diff_pair_distance"))
+        if raw is None or diff is None or raw <= 0.0:
             continue
         left = str(row.get("condition_i"))
         right = str(row.get("condition_j"))
-        pair_values[tuple(sorted((left, right), key=_condition_sort_key))].append(value)
-    matrix = np.full((len(conditions), len(conditions)), np.nan, dtype=float)
+        pair = tuple(sorted((left, right), key=_condition_sort_key))
+        pair_values[pair]["raw"].append(raw)
+        pair_values[pair]["diff"].append(diff)
+    matrices = {name: np.full((len(conditions), len(conditions)), np.nan, dtype=float) for name in ("raw", "diff", "gain")}
     for (left, right), values in pair_values.items():
         i = positions[left]
         j = positions[right]
-        matrix[i, j] = matrix[j, i] = float(np.median(values))
-    np.fill_diagonal(matrix, 0.0)
-    fig, ax = plt.subplots(figsize=(max(5.0, len(conditions) * 0.45), max(4.5, len(conditions) * 0.4)))
-    cmap = _cmap("cividis", mask_color)
-    image = ax.imshow(np.ma.masked_invalid(matrix), cmap=cmap)
-    ax.set_title(title)
-    ax.set_xticks(range(len(conditions)), conditions, rotation=90)
-    ax.set_yticks(range(len(conditions)), conditions)
-    fig.colorbar(image, ax=ax)
+        raw_value = float(np.median(values["raw"]))
+        diff_value = float(np.median(values["diff"]))
+        matrices["raw"][i, j] = matrices["raw"][j, i] = raw_value
+        matrices["diff"][i, j] = matrices["diff"][j, i] = diff_value
+        matrices["gain"][i, j] = matrices["gain"][j, i] = 10.0 * math.log10(raw_value / max(diff_value, 1.0e-30))
+    # The diagonal is not an observed condition pair.  Keep it masked rather
+    # than displaying a zero that would dominate the logarithmic distance
+    # scale and make the off-diagonal structure unreadable.
+    np.fill_diagonal(matrices["raw"], np.nan)
+    np.fill_diagonal(matrices["diff"], np.nan)
+    np.fill_diagonal(matrices["gain"], np.nan)
+    fig, axes = plt.subplots(1, 3, figsize=(max(13.0, len(conditions) * 1.2), max(4.5, len(conditions) * 0.45)), constrained_layout=True)
+    panel_specs = (
+        ("raw", "log10 raw condition distance", "cividis", "log10 distance"),
+        ("diff", "log10 difference condition distance", "cividis", "log10 distance"),
+        ("gain", "diff/raw contraction (dB)", "BrBG", "dB"),
+    )
+    images = []
+    for ax, (matrix_key, panel_title, cmap_name, label) in zip(axes, panel_specs):
+        matrix = matrices[matrix_key]
+        display = matrix
+        if matrix_key in {"raw", "diff"}:
+            display = np.log10(np.maximum(matrix, 1.0e-30))
+        image = ax.imshow(np.ma.masked_invalid(display), cmap=_cmap(cmap_name, mask_color))
+        images.append(image)
+        ax.set_title(panel_title)
+        ax.set_xticks(range(len(conditions)), conditions, rotation=90)
+        ax.set_yticks(range(len(conditions)), conditions)
+        colorbar = fig.colorbar(image, ax=ax, fraction=0.046, pad=0.04)
+        colorbar.set_label(label)
+    fig.suptitle(title)
     _save(fig, output, name, dpi)
 
 
@@ -388,13 +439,21 @@ def main() -> None:
     v_diff = _finite(ccmr, "v_diff")
     gain = _finite(ccmr, "g_ccmr_db")
     rho_clean = _finite(rho, "rho_clean")
-    log_v = np.log10(np.maximum(np.concatenate([v_raw, v_diff]), 1.0e-30)) if v_raw.size and v_diff.size else np.asarray([], dtype=float)
+    log_v_values = [values for values in (v_raw, v_diff) if values.size]
+    log_v = np.log10(np.maximum(np.concatenate(log_v_values), 1.0e-30)) if log_v_values else np.asarray([], dtype=float)
     log_rho = np.log10(np.maximum(rho_clean, 1.0e-30))
     resolved = dict(config)
     resolved["global_limits"] = {
         "log_v": _global_limits(log_v, quantiles, (-10.0, 1.0)),
         "gain_db": _global_limits(gain, quantiles, (0.0, 1.0)),
         "log_rho": _global_limits(log_rho, quantiles, (-3.0, 1.0)),
+    }
+    resolved["scale_notes"] = {
+        "variance_heatmaps": "log10 variance",
+        "gain_heatmaps": "diverging dB centered at gain_center_db",
+        "condition_distance": "log10 raw/difference distance and dB contraction",
+        "rho_mean_median_heatmaps": "log10 rho centered at log_rho_center",
+        "rho_dispersion_heatmaps": "nonnegative log-rho MAD with vmin=0",
     }
     save_json_atomic(output / "plot_config_resolved.json", resolved)
 
@@ -412,6 +471,7 @@ def main() -> None:
             transform=lambda value: math.log10(max(value, 1.0e-30)),
             vmin=resolved["global_limits"]["log_v"][0],
             vmax=resolved["global_limits"]["log_v"][1],
+            colorbar_label="log10 variance",
             mask_color=mask_color,
             dpi=dpi,
         )
@@ -425,6 +485,7 @@ def main() -> None:
             transform=lambda value: math.log10(max(value, 1.0e-30)),
             vmin=resolved["global_limits"]["log_v"][0],
             vmax=resolved["global_limits"]["log_v"][1],
+            colorbar_label="log10 variance",
             mask_color=mask_color,
             dpi=dpi,
         )
@@ -437,6 +498,8 @@ def main() -> None:
             str(config.get("gain_cmap", "BrBG")),
             vmin=resolved["global_limits"]["gain_db"][0],
             vmax=resolved["global_limits"]["gain_db"][1],
+            colorbar_label="gain (dB)",
+            center=float(config.get("gain_center_db", 0.0)),
             mask_color=mask_color,
             dpi=dpi,
         )
@@ -473,6 +536,10 @@ def main() -> None:
                 ax.plot([low, high], [low, high], "k--", lw=0.8)
                 ax.plot([low, high], [low - 1.0, high - 1.0], "k:", lw=0.8)
                 ax.plot([low, high], [low - 2.0, high - 2.0], "k-.", lw=0.8)
+                x_label = low + 0.04 * (high - low)
+                ax.text(x_label, x_label, "0 dB: Vdiff = Vbase", fontsize=8, va="bottom")
+                ax.text(x_label, x_label - 1.0, "10 dB: Vdiff = 0.1 Vbase", fontsize=8, va="bottom")
+                ax.text(x_label, x_label - 2.0, "20 dB: Vdiff = 0.01 Vbase", fontsize=8, va="bottom")
                 ax.set_xlim(low, high)
                 ax.set_ylim(low, high)
             else:
@@ -558,16 +625,31 @@ def main() -> None:
     else:
         _empty_figure(output, "condition_adjacent_similarity_heatmap", "Condition adjacent similarity", "No finite similarity data available", dpi)
 
-    aligned = _finite(similarity, "aligned_g_ccmr_db")
-    shuffled = _finite(similarity, "shuffled_g_ccmr_db")
-    if aligned.size and shuffled.size:
-        fig, ax = plt.subplots(figsize=(7, 4.5))
-        ax.boxplot([aligned, shuffled], tick_labels=["aligned", "shuffled"], showfliers=False)
-        ax.set_ylabel("gain (dB)")
-        ax.set_title("Condition alignment shuffle control")
+    # Keep the alignment control separate for each model.  Mixing DiT and
+    # FLUX into one pair of boxes hides model-specific scale differences.
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.5), sharey=True)
+    has_alignment = False
+    for model, ax in zip(("dit", "flux"), axes):
+        model_rows = [row for row in similarity if row.get("model") == model]
+        # Keep the aligned/shuffled values paired by cell.  Independent
+        # filtering would shift the arrays whenever one side contains an
+        # invalid value and would make the displayed median delta meaningless.
+        aligned, shuffled = _paired_finite(model_rows, "aligned_g_ccmr_db", "shuffled_g_ccmr_db")
+        if aligned.size and shuffled.size:
+            ax.boxplot([aligned, shuffled], tick_labels=["aligned", "shuffled"], showfliers=False)
+            difference = aligned - shuffled
+            ax.text(0.98, 0.04, f"median Δ={float(np.median(difference)):.2f} dB", transform=ax.transAxes, ha="right", fontsize=8)
+            has_alignment = True
+        else:
+            _set_no_data(ax)
+        ax.set_title(model.upper())
         ax.grid(alpha=0.2)
+    axes[0].set_ylabel("gain (dB)")
+    fig.suptitle("Condition alignment shuffle control")
+    if has_alignment:
         _save(fig, output, "condition_alignment_shuffle", dpi)
     else:
+        plt.close(fig)
         _empty_figure(output, "condition_alignment_shuffle", "Condition alignment shuffle control", "No finite aligned/shuffled data available", dpi)
 
     for model in ("dit", "flux"):
@@ -589,40 +671,95 @@ def main() -> None:
     _save(fig, output, "rho_distributions", dpi)
     for key, name in (("rho_mean", "rho_mean_heatmaps"), ("rho_median", "rho_median_heatmaps"), ("log_rho_mad", "rho_condition_dispersion_heatmaps")):
         for model in ("dit", "flux"):
+            model_stability = [row for row in stability if row.get("model") == model]
+            if key == "log_rho_mad":
+                mad_values = _finite(model_stability, key)
+                if mad_values.size == 0 or float(np.nanmax(np.abs(mad_values))) <= 0.0:
+                    _empty_figure(output, f"{name}_{model}", f"{model.upper()} rho dispersion", "Unavailable for mirrored pair diagnostics", dpi)
+                    continue
+                mad_vmax = max(float(np.nanmax(mad_values)), 1.0e-12)
+            else:
+                mad_vmax = None
+            panel_title = {
+                "rho_mean": f"{model.upper()} log10 mean rho by module",
+                "rho_median": f"{model.upper()} log10 median rho by module",
+                "log_rho_mad": f"{model.upper()} log10 rho MAD by module",
+            }[key]
             _heat_panels(
-                [row for row in stability if row.get("model") == model],
+                model_stability,
                 key,
-                f"{model.upper()} {key} by module",
+                panel_title,
                 output,
                 f"{name}_{model}",
                 str(config.get("rho_dispersion_cmap", "magma")) if "mad" in key else str(config.get("rho_cmap", "PuOr")),
                 step_key="score_step_idx",
                 transform=(lambda value: math.log10(max(value, 1.0e-30))) if key in {"rho_mean", "rho_median"} else None,
+                vmin=0.0 if key == "log_rho_mad" else None,
+                vmax=mad_vmax,
+                colorbar_label="log10 rho" if key in {"rho_mean", "rho_median"} else "log10 rho MAD",
+                center=float(config.get("log_rho_center", 0.0)) if key in {"rho_mean", "rho_median"} else None,
                 mask_color=mask_color,
                 dpi=dpi,
             )
 
-    # Optional subset stability is still rendered when unavailable, with an
-    # explicit explanation rather than an empty axes-only image.
+    # Optional subset stability is rendered as a low-rho selection-overlap
+    # diagnostic. It is not a complete two-stage Cache Book claim unless the
+    # upstream table explicitly contains that experiment.
     subset = data["subset_stability"]
     if subset:
-        grouped_subset: dict[int, list[float]] = defaultdict(list)
+        grouped_subset: dict[tuple[int, float], dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
         for row in subset:
             size = _parse_index(row.get("subset_size"))
-            value = _finite_value(row.get("jaccard"))
-            if size is not None and value is not None:
-                grouped_subset[size].append(value)
+            fraction = _finite_value(row.get("cache_fraction"))
+            if size is None or fraction is None:
+                continue
+            for metric in ("spearman", "kendall", "jaccard"):
+                value = _finite_value(row.get(metric))
+                if value is not None:
+                    grouped_subset[(size, fraction)][metric].append(value)
         if grouped_subset:
-            fig, ax = plt.subplots(figsize=(7, 4.5))
-            xs = sorted(grouped_subset)
-            ax.plot(xs, [float(np.mean(grouped_subset[x])) for x in xs], "o-")
-            ax.set(xlabel="subset size", ylabel="Cache Book Jaccard", title="Few-sample subset stability")
+            fig, axes = plt.subplots(1, 2, figsize=(12, 4.8), constrained_layout=True)
+            sizes = sorted({key[0] for key in grouped_subset})
+            ax = axes[0]
+            for metric, color in (("spearman", "#0072B2"), ("kendall", "#009E73")):
+                medians = []; lows = []; highs = []; xs = []
+                for size in sizes:
+                    values = np.asarray([value for key, metrics in grouped_subset.items() if key[0] == size for value in metrics.get(metric, [])], dtype=float)
+                    values = values[np.isfinite(values)]
+                    if values.size:
+                        xs.append(size); medians.append(float(np.median(values)))
+                        lows.append(float(np.percentile(values, 25))); highs.append(float(np.percentile(values, 75)))
+                if xs:
+                    ax.plot(xs, medians, "o-", color=color, label=metric)
+                    ax.fill_between(xs, lows, highs, color=color, alpha=0.15)
+            ax.set(xlabel="calibration sample count", ylabel="rank correlation", title="Rank stability")
+            ax.set_ylim(-1.05, 1.05)
+            ax.legend(loc="best")
             ax.grid(alpha=0.2)
+            ax = axes[1]
+            fractions = sorted({key[1] for key in grouped_subset})
+            colors = ["#D55E00", "#E69F00", "#56B4E9", "#CC79A7"]
+            for fraction, color in zip(fractions, colors):
+                medians = []; lows = []; highs = []; xs = []
+                for size in sizes:
+                    values = np.asarray(grouped_subset.get((size, fraction), {}).get("jaccard", []), dtype=float)
+                    values = values[np.isfinite(values)]
+                    if values.size:
+                        xs.append(size); medians.append(float(np.median(values)))
+                        lows.append(float(np.percentile(values, 25))); highs.append(float(np.percentile(values, 75)))
+                if xs:
+                    ax.plot(xs, medians, "o-", color=color, label=f"Jaccard@{fraction:g}")
+                    ax.fill_between(xs, lows, highs, color=color, alpha=0.15)
+            ax.set(xlabel="calibration sample count", ylabel="low-rho overlap", title="Low-rho selection overlap")
+            ax.set_ylim(-0.02, 1.02)
+            ax.legend(loc="best", fontsize=8)
+            ax.grid(alpha=0.2)
+            fig.suptitle("Low-rho selection overlap")
             _save(fig, output, "rho_few_sample_vs_reference", dpi)
         else:
-            _empty_figure(output, "rho_few_sample_vs_reference", "Few-sample subset stability", "No finite subset stability data available", dpi)
+            _empty_figure(output, "rho_few_sample_vs_reference", "Low-rho selection overlap", "No finite subset stability data available", dpi)
     else:
-        _empty_figure(output, "rho_few_sample_vs_reference", "Few-sample subset stability", "Subset stability was not available for this aggregate", dpi)
+        _empty_figure(output, "rho_few_sample_vs_reference", "Low-rho selection overlap", "Subset stability was not available for this aggregate", dpi)
 
     temporal = data["temporal_metrics"]
     temporal_x, temporal_y = _paired_finite(temporal, "output_rms", "diff_rms")
@@ -652,19 +789,45 @@ def main() -> None:
         _empty_figure(output, "temporal_rate_ecdf", "Temporal rate ECDF", "No finite temporal rate data available", dpi)
 
     gaps = data["time_gap_metrics"]
-    grouped_gaps: dict[int, list[float]] = defaultdict(list)
+    grouped_gaps: dict[tuple[str, str, int], list[float]] = defaultdict(list)
     for row in gaps:
+        model = str(row.get("model", "unknown"))
         gap = _parse_index(row.get("time_gap"))
         value = _finite_value(row.get("g_ccmr_gap_db"))
         if gap is not None and value is not None:
-            grouped_gaps[gap].append(value)
+            grouped_gaps[(model, _module_label(row), gap)].append(value)
     if grouped_gaps:
-        fig, ax = plt.subplots(figsize=(7, 4.5))
-        xs = sorted(grouped_gaps)
-        ax.plot(xs, [float(np.median(grouped_gaps[x])) for x in xs], "o-")
-        ax.set(xlabel="time gap", ylabel="median gain (dB)", title="CCMR time-gap ablation")
-        ax.grid(alpha=0.2)
-        _save(fig, output, "ccmr_time_gap_ablation", dpi)
+        fig, axes = plt.subplots(1, 2, figsize=(12, 4.8), sharey=True, constrained_layout=True)
+        has_gap = False
+        for model, ax in zip(("dit", "flux"), axes):
+            model_groups = {(module, gap): values for (row_model, module, gap), values in grouped_gaps.items() if row_model == model}
+            modules = sorted({module for module, _ in model_groups})
+            for module in modules:
+                points = [(gap, values) for (name, gap), values in model_groups.items() if name == module]
+                points.sort()
+                if not points:
+                    continue
+                xs = [gap for gap, _ in points]
+                medians = [float(np.median(values)) for _, values in points]
+                lows = [float(np.percentile(values, 25)) for _, values in points]
+                highs = [float(np.percentile(values, 75)) for _, values in points]
+                color = _module_color(module)
+                ax.plot(xs, medians, "o-", color=color, label=module)
+                ax.fill_between(xs, lows, highs, color=color, alpha=0.15)
+                has_gap = True
+            if not modules:
+                _set_no_data(ax)
+            ax.set_title(model.upper())
+            ax.set_xlabel("time gap")
+            ax.grid(alpha=0.2)
+            ax.legend(loc="best", fontsize=8)
+        axes[0].set_ylabel("gain (dB), median with IQR")
+        fig.suptitle("CCMR time-gap ablation by model and module")
+        if has_gap:
+            _save(fig, output, "ccmr_time_gap_ablation", dpi)
+        else:
+            plt.close(fig)
+            _empty_figure(output, "ccmr_time_gap_ablation", "CCMR time-gap ablation", "No finite time-gap data available", dpi)
     else:
         _empty_figure(output, "ccmr_time_gap_ablation", "CCMR time-gap ablation", "No finite time-gap data available", dpi)
 

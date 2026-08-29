@@ -37,5 +37,12 @@
   "png_dpi": 300,
   "rho_cmap": "PuOr",
   "rho_dispersion_cmap": "magma",
+  "scale_notes": {
+    "condition_distance": "log10 raw/difference distance and dB contraction",
+    "gain_heatmaps": "diverging dB centered at gain_center_db",
+    "rho_dispersion_heatmaps": "nonnegative log-rho MAD with vmin=0",
+    "rho_mean_median_heatmaps": "log10 rho centered at log_rho_center",
+    "variance_heatmaps": "log10 variance"
+  },
   "sequential_cmap": "cividis"
 }

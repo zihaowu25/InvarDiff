@@ -36,6 +36,7 @@ Aggregate only after all shards are complete:
 python assets/visualization/ccmr/code/aggregate_ccmr.py \
   --input assets/visualization/ccmr/data/runs/dit_final \
           assets/visualization/ccmr/data/runs/flux_final \
+  --config assets/visualization/ccmr/configs/aggregate.yaml \
   --output-dir assets/visualization/ccmr/data/combined
 python assets/visualization/ccmr/code/plot_ccmr.py \
   --config assets/visualization/ccmr/configs/plot.yaml \
@@ -53,5 +54,28 @@ Plotting is robust to the `NaN` values used for invalid boundary steps.  Raw
 and difference variance heatmaps use `log10` values with a global robust
 0.5--99.5 percentile color range, and each module is shown in its own panel.
 Rho heatmaps use the table's `score_step_idx`; repeated condition-distance
-observations are reduced by their median across layers and time.  Optional
-plots with no valid rows are emitted with an explicit no-data annotation.
+observations are reduced by their median across layers and time.  ECDFs are
+sorted step functions, time-gap plots are split by model with IQR bands, and
+condition-distance plots expose raw, difference, and contraction panels.  The
+FLUX pairwise time-gap path persists current/previous/difference pair energies
+so aggregation applies the finite-population correction before computing dB
+gain; it does not average per-pair gains.
+Optional plots with no valid rows are emitted with an explicit no-data
+annotation.
+
+The pairwise FLUX collector stores compact prompt differences.  Those rows are
+valid for pair-level CCMR and time-gap diagnostics, but must not be interpreted
+as per-prompt rho.  Run the lightweight condition-scope collector when rho
+dispersion or calibration-subset stability is needed:
+
+```bash
+python assets/visualization/ccmr/code/collect_flux_rho.py \
+  --config assets/visualization/ccmr/configs/flux_final.yaml \
+  --output-dir assets/visualization/ccmr/data/runs/flux_rho_final \
+  --resume
+```
+
+It runs one prompt at a time, reuses one latent per seed, and persists a
+complete `seed_<seed>_prompt_<id>` shard after every prompt.  The regular FLUX
+collector uses the same durable per-pair shard layout, so interrupted long
+jobs can resume without losing completed pair statistics.

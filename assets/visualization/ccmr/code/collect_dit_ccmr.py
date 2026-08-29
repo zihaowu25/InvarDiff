@@ -225,7 +225,7 @@ def _run_trajectory(model, diffusion, class_ids: list[int], seed: int, config: d
                                 rho_code = code_rho(prev[condition_idx], current[condition_idx], current[condition_idx], 1.0e-8) if False else None
                                 rows["rho_per_condition"].append({
                                     "run_id": output_dir.name, "model": "dit", "seed": seed,
-                                    "condition_id": class_ids[condition_idx], "module_family": "dit",
+                                    "condition_id": class_ids[condition_idx], "rho_scope": "condition", "module_family": "dit",
                                     "module_name": module, "layer_idx": layer, "score_step_idx": step_idx - 1,
                                     "l1_prev": float(previous_l1[module][layer][condition_idx].cpu()), "l1_next": float(l1_now[condition_idx].cpu()),
                                     "rho_clean": rho_clean, "rho_code": rho_code, "valid": True,

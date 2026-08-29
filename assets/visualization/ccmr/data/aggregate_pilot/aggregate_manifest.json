@@ -1,14 +1,14 @@
 {
   "inputs": [
     "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/dit_final_pilot",
-    "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/flux_final_single_pilot"
+    "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/flux_timegap_fixed"
   ],
-  "rho_stability": 6640,
+  "rho_stability": 2688,
   "runs": [
     "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/dit_final_pilot",
-    "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/flux_final_single_pilot"
+    "/root/autodl-tmp/InvarDiff/assets/visualization/ccmr/data/runs/flux_timegap_fixed"
   ],
-  "subset_stability": 0,
+  "subset_stability": 1000,
   "tables": {
     "ccmr_metrics": 7056,
     "condition_distance": 333384,

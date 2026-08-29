@@ -60,8 +60,11 @@ The collector wraps the local dynamic transformer with all six module families:
 pair difference `feature[0]-feature[1]`, which is mathematically sufficient
 for K=2 population variance, aligned/shuffled gain and pair distance.  This
 compact path avoids retaining both 1024px activations.  Per-condition temporal
-and rho diagnostics are mirrored from the pair representation and are marked
-as diagnostic rather than a K>2 population estimate.
+and rho diagnostics are mirrored from the pair representation and are
+explicitly marked `rho_scope=pair_difference`; they are not used for
+condition-level dispersion or subset-stability conclusions.  A separate
+`collect_flux_rho.py` collector is available when true per-prompt rho is
+required.
 
 ## Statistics
 
@@ -88,36 +91,44 @@ population size so the aggregator can apply the finite-population correction.
 | `dit_smoke` | 2 | 6 | 0.874 s | 3.350 GiB | complete |
 | `flux_smoke` | 2 | 6 | 8.537 s | 44.189 GiB | complete (pre-compact path) |
 | `dit_final_pilot` | 16 | 50 | 132.804 s | 43.903 GiB | complete, seed 0 |
-| `flux_final_single_pilot` | 1 pair | 28 | 959.771 s (15:59.8) | 32.785 GiB | complete, seed 0 |
+| `flux_timegap_fixed` | 1 pair | 28 | 996.068 s (16:36.1) | 32.785 GiB | complete, seed 0; corrected compact time-gap path |
 
 The first FLUX smoke run is retained as a regression record for the original
-full-feature hook path.  The formal pilot uses the compact pair path and stays
-below the 96-GB process memory limit.  An experimental all-GPU compact path
-was rejected after an immediate CUDA OOM (47.34 GiB allocated); it is not used
-in the reported runs.
+full-feature hook path.  The earlier `flux_final_single_pilot` output is also
+retained as a historical run, but its compact time-gap table is not used after
+the token/condition indexing bug was found.  The corrected
+`flux_timegap_fixed` run uses the same compact pair path and stays below the
+96-GB process memory limit.  An experimental all-GPU compact path was rejected
+after an immediate CUDA OOM (47.34 GiB allocated); it is not used in the
+reported runs.
 
 The formal pilot aggregate contains 7,056 CCMR rows, 6,848 condition-similarity
 rows, 333,384 condition-distance rows, 52,112 temporal rows, 12,112 time-gap
-rows and 50,912 rho rows.  The aggregate summary reports 56 invalid DiT
-first-step cells and 152 invalid FLUX first-step cells, exactly matching the
-expected boundary initialization.
+rows and 50,912 rho rows.  The aggregate summary reports 2,688
+condition-scope rho-stability cells (DiT only) and 1,000 fixed-subset stability
+rows; compact FLUX pair-difference rho is correctly excluded from those
+condition-level statistics.  It also reports 56 invalid DiT first-step cells
+and 152 invalid FLUX first-step cells, exactly matching the expected boundary
+initialization.
 
 ## Pilot quantitative summary
 
 The following values are from
-`data/aggregate_pilot/summary.json`; gain intervals are bootstrap summaries over
-valid rows.
+`data/aggregate_pilot/summary.json`.  Values are first averaged within each
+seed and module; the interval is therefore a seed-level bootstrap summary.  As
+this pilot contains one seed per model, the displayed interval collapses to the
+observed value and must not be interpreted as population uncertainty.
 
 | Model/module | Gain mean (dB) | Gain median (dB) | 2.5–97.5% bootstrap interval |
 | --- | ---: | ---: | ---: |
-| DiT MSA | 18.613 | 18.726 | [18.413, 18.815] |
-| DiT MLP | 17.277 | 17.430 | [17.090, 17.465] |
-| FLUX double attention | 15.047 | 16.117 | [14.530, 15.528] |
-| FLUX double context attention | 16.691 | 18.351 | [16.172, 17.182] |
-| FLUX double FF | 13.600 | 14.618 | [13.099, 14.078] |
-| FLUX double context FF | 20.460 | 20.680 | [19.859, 21.083] |
-| FLUX single attention | 9.226 | 9.296 | [8.959, 9.500] |
-| FLUX single MLP | 6.588 | 6.860 | [6.364, 6.819] |
+| DiT MSA | 18.613 | 18.613 | [18.613, 18.613] |
+| DiT MLP | 17.277 | 17.277 | [17.277, 17.277] |
+| FLUX double attention | 16.129 | 16.129 | [16.129, 16.129] |
+| FLUX double context attention | 17.786 | 17.786 | [17.786, 17.786] |
+| FLUX double FF | 14.680 | 14.680 | [14.680, 14.680] |
+| FLUX double context FF | 21.574 | 21.574 | [21.574, 21.574] |
+| FLUX single attention | 10.357 | 10.357 | [10.357, 10.357] |
+| FLUX single MLP | 7.713 | 7.713 | [7.713, 7.713] |
 
 The lower single-stream gains indicate larger temporal mismatch than the
 double-stream context FF in this pilot; this is a descriptive observation, not
@@ -148,13 +159,17 @@ finite robust limits, while each heatmap panel remains module-specific so
 different block families are not silently pooled.  The rho panels use
 `score_step_idx` (the rho table's schema) rather than the CCMR table's
 `step_idx`.  Pairwise distance matrices aggregate repeated layer/time
-observations by median.  When an optional table is unavailable, the figure is
-rendered with an explicit no-data annotation instead of an axes-only blank
-image.
+observations by median, display raw/difference distances on a `log10` scale,
+and mask the unobserved diagonal and pairs.  ECDFs are sorted step functions;
+time-gap panels are split by model and show median/IQR.  When an optional table
+is unavailable, the figure is rendered with an explicit no-data annotation
+instead of an axes-only blank image.
 
 ## Validation performed
 
-* Thirteen synthetic tests passed (`pytest assets/visualization/ccmr/code/tests -q`).
+* Eighteen synthetic tests passed (`pytest assets/visualization/ccmr/code/tests -q`),
+  including a check that pairwise time-gap gains are computed from aggregated
+  energies rather than averaged per-pair dB values.
 * All collector, aggregator and plotting modules pass `py_compile`.
 * All four CLIs respond to `--help` without initializing a model.
 * DiT smoke and 512px pilot completed with the expected hook counts and no
@@ -162,6 +177,17 @@ image.
 * FLUX smoke and 1024px single-pair pilot completed with deterministic latent
   duplication, correct module hook counts and no GPU OOM in the compact CPU
   path.
+* The corrected FLUX compact time-gap implementation was rerun.  For all
+  4,104 gap-1 cells, `g_ccmr_gap_db` matches the adjacent CCMR gain exactly
+  (maximum absolute difference 0.0 dB).
+* Pairwise aggregation now emits one row per
+  `(source_run, model, seed, module, layer, step)` cell, applies the same
+  finite-population scaling to current and previous variance, and avoids pair
+  duplication.
+* Fixed-subset stability selects condition IDs once per trial and reuses that
+  subset across every layer and step.  Compact FLUX rho mirrors are filtered
+  from condition-level stability; use `collect_flux_rho.py` for true prompt
+  rho.
 * All regenerated pilot/smoke PNGs contain finite plotted data or an explicit
   no-data annotation; no figure relies on unfiltered `NaN` values.
 * The aggregator duplication bug found during smoke processing was fixed and
@@ -174,9 +200,10 @@ image.
 2. The FLUX formal pilot uses one pair and `time_gaps=[1]` in its temporary
    execution config to control memory.  The checked-in formal YAML still
    specifies `[1,2,4]` and the full prompt bank.
-3. K=2 compact FLUX temporal/rho rows are diagnostic mirrors; full condition
-   consistency requires running the planned 24 unordered pairs and aggregating
-   across the 12-prompt population.
+3. K=2 compact FLUX temporal/rho rows are pair-difference diagnostics; they do
+   not provide per-prompt rho dispersion.  Full condition consistency requires
+   running the planned 24 unordered pairs and the lightweight per-prompt rho
+   collector across the 12-prompt population.
 4. LPIPS, CLIP/DINO, VBench and video metrics are outside this CCMR collector;
    they belong to the separate cache-tuning experiments.
 

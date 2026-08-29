@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -26,6 +27,8 @@ from common import (  # noqa: E402
     DEGENERATE_THRESHOLD,
     centered_variance,
     clean_rho,
+    compact_gap_delta,
+    compact_pair_difference,
     configure_determinism,
     environment_snapshot,
     gain_db,
@@ -114,12 +117,12 @@ def _pair_statistics(current: torch.Tensor, previous: torch.Tensor | None):
     """
     cur = current.detach().float()
     compact = cur.ndim == 2
-    cur_pair = cur if compact else cur[0] - cur[1]
+    cur_pair = compact_pair_difference(cur)
     raw = float((cur_pair.square().mean() * 0.25).item())
     if previous is None:
         return cur, raw, None
     prev = previous.detach().float()
-    prev_pair = prev if compact else prev[0] - prev[1]
+    prev_pair = compact_pair_difference(prev)
     delta = cur - prev
     delta_pair = delta if compact else cur_pair - prev_pair
     diff_var = float((delta_pair.square().mean() * 0.25).item())
@@ -261,7 +264,7 @@ def _run_pair(
                                 d = float(stats["temporal_d"][condition_idx].item())
                                 rows["temporal_metrics"].append({
                                     "run_id": output_dir.name, "model": "flux", "seed": seed,
-                                    "condition_id": prompt_ids[condition_idx], "module_family": family,
+                                    "condition_id": prompt_ids[condition_idx], "rho_scope": "pair_difference", "module_family": family,
                                     "module_name": module_name, "layer_idx": layer, "step_idx": step_idx,
                                     "scheduler_timestep": float(state["timestep"].detach().cpu()), "output_rms": a,
                                     "diff_rms": d, "r_time": d / (a + float(config.get("epsilon", EPS))), "valid": True,
@@ -277,23 +280,36 @@ def _run_pair(
                             })
                             rows["condition_distance"].append({
                                 "run_id": output_dir.name, "model": "flux", "seed": seed,
-                                "condition_i": prompt_ids[0], "condition_j": prompt_ids[1], "module_family": family,
+                                "pair_id": f"{prompt_ids[0]}__{prompt_ids[1]}", "condition_i": prompt_ids[0], "condition_j": prompt_ids[1], "module_family": family,
                                 "module_name": module_name, "layer_idx": layer, "step_idx": step_idx,
                                 "raw_pair_distance": stats["raw_pair_distance"],
+                                "raw_prev_pair_distance": float((compact_pair_difference(prev).square().mean() * 0.5).item()),
                                 "diff_pair_distance": stats["diff_pair_distance"], "valid": True,
                             })
                             for gap in config.get("time_gaps", [1]):
                                 gap = int(gap)
                                 if gap <= len(history[key][layer]):
                                     gap_feature = history[key][layer][-gap].float()
-                                    gap_pair = gap_feature if gap_feature.ndim == 2 else gap_feature[0] - gap_feature[1]
+                                    gap_pair = compact_pair_difference(gap_feature)
                                     gap_raw = float((gap_pair.square().mean() * 0.25).item())
-                                    gap_delta_pair = cur_float[0] - cur_float[1] - gap_pair
+                                    gap_delta_pair = compact_gap_delta(cur_float, gap_feature)
                                     gap_diff = float((gap_delta_pair.square().mean() * 0.25).item())
+                                    current_pair = compact_pair_difference(cur_float)
                                     rows["time_gap_metrics"].append({
                                         "run_id": output_dir.name, "model": "flux", "seed": seed,
+                                        "estimator": "pairwise", "num_conditions": total_conditions,
+                                        "pair_id": f"{prompt_ids[0]}__{prompt_ids[1]}",
+                                        "condition_i": prompt_ids[0], "condition_j": prompt_ids[1],
                                         "module_family": family, "module_name": module_name, "layer_idx": layer,
                                         "step_idx": step_idx, "time_gap": gap, "v_raw_base": 0.5 * (raw + gap_raw),
+                                        # Persist pair energies so the
+                                        # aggregator can apply the same
+                                        # finite-population correction as the
+                                        # ordinary pairwise CCMR table when
+                                        # multiple FLUX pairs are collected.
+                                        "raw_current_pair_distance": float((current_pair.square().mean() * 0.5).item()),
+                                        "raw_previous_pair_distance": float((gap_pair.square().mean() * 0.5).item()),
+                                        "diff_pair_distance": float((gap_delta_pair.square().mean() * 0.5).item()),
                                         "v_diff_gap": gap_diff, "r_ccmr_gap": gap_diff / max(0.5 * (raw + gap_raw), float(config.get("epsilon", EPS))),
                                         "g_ccmr_gap_db": gain_db(0.5 * (raw + gap_raw), gap_diff, float(config.get("epsilon", EPS))), "valid": True,
                                     })
@@ -317,7 +333,7 @@ def _run_pair(
                                 for condition_idx in range(2):
                                     rows["rho_per_condition"].append({
                                         "run_id": output_dir.name, "model": "flux", "seed": seed,
-                                        "condition_id": prompt_ids[condition_idx], "module_family": family,
+                                        "condition_id": prompt_ids[condition_idx], "rho_scope": "pair_difference", "module_family": family,
                                         "module_name": module_name, "layer_idx": layer, "score_step_idx": step_idx - 1,
                                         "l1_prev": float(previous_l1[key][layer][condition_idx].cpu()), "l1_next": float(l1_now[condition_idx].cpu()),
                                         "rho_clean": clean_rho(previous_l1[key][layer][condition_idx], l1_now[condition_idx], float(config.get("epsilon", EPS))),
@@ -365,7 +381,13 @@ def _run_pair(
     return rows, latent_hashes
 
 
-def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str, Any]], pipe, dynamic_model, checkpoint: Path) -> None:
+def _write_rows_atomic(path: Path, rows: list[dict[str, Any]]) -> None:
+    temporary = path.with_name(f".{path.name}.tmp.gz")
+    write_rows(temporary, rows)
+    os.replace(temporary, path)
+
+
+def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str, Any]], pipe, dynamic_model, checkpoint: Path, resume: bool = False) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     save_json_atomic(output_dir / "config.json", config)
     save_json_atomic(output_dir / "conditions.json", prompts)
@@ -379,6 +401,34 @@ def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str,
     for seed in config.get("seeds", [0]):
         seed = int(seed); configure_determinism(seed)
         for pair_idx, (i, j) in enumerate(pairs):
+            shard_dir = output_dir / "shards" / f"seed_{seed}_pair_{pair_idx}"
+            marker = shard_dir / "manifest.json"
+            if resume and marker.exists():
+                try:
+                    marker_value = json.loads(marker.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    marker_value = {}
+                if marker_value.get("status") == "complete":
+                    shard_rows: dict[str, list[dict[str, Any]]] = {}
+                    complete = True
+                    for table in ("ccmr_metrics", "condition_similarity", "condition_distance", "temporal_metrics", "time_gap_metrics", "rho_per_condition", "pair_metrics"):
+                        table_path = shard_dir / f"{table}.csv.gz"
+                        if not table_path.exists():
+                            complete = False
+                            break
+                        shard_rows[table] = read_rows(table_path)
+                    if complete:
+                        for key, values in shard_rows.items():
+                            all_rows.setdefault(key, []).extend(values)
+                        # New shards persist the duplicated-latent hashes so a
+                        # resumed run still has a complete reproducibility
+                        # manifest.  Older shards may not contain this field;
+                        # they remain readable, but their hash entry is left
+                        # absent rather than fabricated.
+                        if marker_value.get("latent_hashes") is not None:
+                            all_hashes[f"{seed}:{pair_idx}"] = marker_value["latent_hashes"]
+                        manifest["shards"][f"{seed}:{pair_idx}"] = marker_value
+                        continue
             rows, hashes = _run_pair(
                 pipe,
                 dynamic_model,
@@ -391,10 +441,19 @@ def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str,
             all_hashes[f"{seed}:{pair_idx}"] = hashes
             for key, values in rows.items():
                 all_rows.setdefault(key, []).extend(values)
-            save_json_atomic(output_dir / "shards" / f"seed_{seed}_pair_{pair_idx}.json", {"seed": seed, "pair_idx": pair_idx, "row_counts": {key: len(value) for key, value in rows.items()}})
-            manifest["shards"][f"{seed}:{pair_idx}"] = {"status": "complete", "rows": {key: len(value) for key, value in rows.items()}}
+            for table, values in rows.items():
+                _write_rows_atomic(shard_dir / f"{table}.csv.gz", values)
+            marker_value = {
+                "status": "complete",
+                "seed": seed,
+                "pair_idx": pair_idx,
+                "latent_hashes": hashes,
+                "row_counts": {key: len(value) for key, value in rows.items()},
+            }
+            save_json_atomic(marker, marker_value)
+            manifest["shards"][f"{seed}:{pair_idx}"] = marker_value
     for key, values in all_rows.items():
-        write_rows(output_dir / "tables" / f"{key}.csv.gz", values)
+        _write_rows_atomic(output_dir / "tables" / f"{key}.csv.gz", values)
     save_json_atomic(output_dir / "latent_hashes.json", all_hashes)
     save_json_atomic(output_dir / "summary.json", {"model": "flux", "run_id": output_dir.name, "num_seeds": len(config.get("seeds", [0])), "num_pairs": len(pairs), "elapsed_s": time.perf_counter() - started, "row_counts": {key: len(value) for key, value in all_rows.items()}})
     save_json_atomic(output_dir / "run_manifest.json", manifest)
@@ -432,7 +491,7 @@ def main() -> None:
     prompts = _load_prompts(config)
     if device.type == "cuda":
         torch.cuda.reset_peak_memory_stats(device)
-    _write_run(config, output_dir, prompts, pipe, dynamic_model, checkpoint)
+    _write_run(config, output_dir, prompts, pipe, dynamic_model, checkpoint, resume=args.resume)
     if device.type == "cuda":
         peak = torch.cuda.max_memory_allocated(device) / 1024 ** 3
         save_json_atomic(output_dir / "memory.json", {"peak_allocated_gib": peak})

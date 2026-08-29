@@ -140,6 +140,26 @@ def pair_energy(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     return ((af - bf) ** 2).mean() / 2.0
 
 
+def compact_pair_difference(value: torch.Tensor) -> torch.Tensor:
+    """Return a two-condition difference from either compact or batched data.
+
+    FLUX pairwise collection stores ``Z_i-Z_j`` directly in compact mode,
+    while non-compact tensors keep the condition axis as the first
+    dimension.  Keeping this conversion in one helper prevents token and
+    condition axes from being confused in time-gap statistics.
+    """
+    if value.ndim == 2:
+        return value
+    if value.ndim >= 3 and value.shape[0] == 2:
+        return value[0] - value[1]
+    raise ValueError(f"Expected compact pair or a two-condition batch, got {tuple(value.shape)}")
+
+
+def compact_gap_delta(current: torch.Tensor, previous: torch.Tensor) -> torch.Tensor:
+    """Compute the pair difference between two temporal observations."""
+    return compact_pair_difference(current) - compact_pair_difference(previous)
+
+
 def pairwise_population_variance(energies: Sequence[float], num_conditions: int) -> float:
     if not energies:
         return float("nan")

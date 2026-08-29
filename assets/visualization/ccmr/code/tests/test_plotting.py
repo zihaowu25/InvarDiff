@@ -11,7 +11,7 @@ CODE = Path(__file__).resolve().parents[1]
 if str(CODE) not in sys.path:
     sys.path.insert(0, str(CODE))
 
-from plot_ccmr import _finite, _global_limits, _heat_matrix, _paired_finite  # noqa: E402
+from plot_ccmr import _ecdf_points, _finite, _global_limits, _heat_matrix, _paired_finite  # noqa: E402
 
 
 def test_plot_helpers_drop_nan_and_inf_values():
@@ -45,3 +45,11 @@ def test_global_limits_interpret_fractional_robust_quantiles():
     limits = _global_limits(values, [0.005, 0.995], (0.0, 1.0))
     assert limits[0] < 10.0
     assert limits[1] > 990.0
+
+
+def test_ecdf_is_sorted_and_monotone():
+    x, y = _ecdf_points(np.asarray([3.0, np.nan, 1.0, 2.0]))
+    assert np.array_equal(x, np.asarray([1.0, 2.0, 3.0]))
+    assert np.all(np.diff(x) >= 0)
+    assert np.all(np.diff(y) >= 0)
+    assert y[-1] == 1.0

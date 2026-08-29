@@ -1,0 +1,9 @@
+# Aggregation-only settings.  These values do not rerun the model collectors.
+shuffle_seed: 2027
+subset_trials: 50
+cache_fractions: [0.1, 0.2, 0.3, 0.5]
+subset_sizes:
+  dit: [1, 2, 4, 8, 16]
+  flux: [1, 2, 4, 6, 12]
+bootstrap_trials: 2000
+epsilon: 1.0e-12
