@@ -657,6 +657,47 @@ def main() -> None:
     fig.suptitle("CCMR gain over time")
     _save(fig, output, "ccmr_gain_over_time", dpi)
 
+    # Depth profile: normalize layer indices within each module trajectory so
+    # DiT and FLUX can be compared despite different block counts.  Each point
+    # is the median over valid seeds/steps at that normalized depth.
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), sharey=True)
+    has_depth = False
+    for model, ax in zip(("dit", "flux"), axes):
+        grouped_depth: dict[tuple[str, int], list[float]] = defaultdict(list)
+        max_layers: dict[str, int] = {}
+        for row in ccmr:
+            if row.get("model") != model:
+                continue
+            layer = _parse_index(row.get("layer_idx"))
+            value = _finite_value(row.get("g_ccmr_db"))
+            label = _module_label(row)
+            if layer is None or value is None:
+                continue
+            max_layers[label] = max(max_layers.get(label, 0), layer)
+            grouped_depth[(label, layer)].append(value)
+        for label in sorted({key[0] for key in grouped_depth}):
+            denom = max(max_layers.get(label, 1), 1)
+            points = [(layer / denom, values) for (name, layer), values in grouped_depth.items() if name == label]
+            points.sort(key=lambda item: item[0])
+            if not points:
+                continue
+            has_depth = True
+            ax.plot([x for x, _ in points], [float(np.median(v)) for _, v in points], "-", lw=1.2, label=label, color=_module_color(label))
+        ax.set_title(model.upper())
+        ax.set_xlabel("normalized module depth")
+        ax.grid(alpha=0.2)
+        if grouped_depth:
+            ax.legend(fontsize=7, loc="best")
+        else:
+            _set_no_data(ax)
+    axes[0].set_ylabel("median CCMR gain (dB)")
+    fig.suptitle("CCMR gain over normalized depth")
+    if has_depth:
+        _save(fig, output, "ccmr_gain_over_depth", dpi)
+    else:
+        plt.close(fig)
+        _empty_figure(output, "ccmr_gain_over_depth", "CCMR gain over normalized depth", "No finite depth data available", dpi)
+
     # Condition similarity and alignment shuffle controls.
     similarity = data["condition_similarity"]
     grouped_similarity: dict[str, list[float]] = defaultdict(list)
@@ -770,6 +811,53 @@ def main() -> None:
                 mask_color=mask_color,
                 dpi=dpi,
             )
+
+    # Link CCMR gain to condition-wise rho dispersion.  The rho score is
+    # indexed by the segment ending at score_step_idx+1, so align it with the
+    # corresponding CCMR cell before plotting.  Pair-difference FLUX rows are
+    # intentionally excluded because they do not carry condition dispersion.
+    dispersion = {}
+    for row in stability:
+        mad = _finite_value(row.get("log_rho_mad"))
+        model = row.get("model")
+        if mad is None or model is None:
+            continue
+        key = (model, row.get("source_run"), row.get("seed"), row.get("module_family"), row.get("module_name"), row.get("layer_idx"), _parse_index(row.get("score_step_idx")))
+        dispersion[key] = mad
+    paired_gain_dispersion: dict[str, list[tuple[float, float]]] = defaultdict(list)
+    for row in ccmr:
+        gain_value = _finite_value(row.get("g_ccmr_db"))
+        step = _parse_index(row.get("step_idx"))
+        if gain_value is None or step is None:
+            continue
+        key = (row.get("model"), row.get("run_id"), row.get("seed"), row.get("module_family"), row.get("module_name"), row.get("layer_idx"), step - 1)
+        mad = dispersion.get(key)
+        if mad is not None and math.isfinite(mad):
+            paired_gain_dispersion[str(row.get("model"))].append((mad, gain_value))
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), sharey=True)
+    has_relation = False
+    for model, ax in zip(("dit", "flux"), axes):
+        pairs = paired_gain_dispersion.get(model, [])
+        if pairs:
+            has_relation = True
+            x = np.asarray([p[0] for p in pairs], dtype=float)
+            y = np.asarray([p[1] for p in pairs], dtype=float)
+            ax.hexbin(x, y, gridsize=30, bins="log", mincnt=1, cmap=str(config.get("density_cmap", "cividis")))
+            if x.size > 2 and np.ptp(x) > 0:
+                order = np.argsort(x)
+                ax.plot(x[order], np.asarray([float(np.median(y[max(0, i-25):min(len(y), i+26)])) for i in order]), color="#D55E00", lw=1.0)
+        else:
+            _set_no_data(ax, "No condition-scope rho dispersion")
+        ax.set_title(model.upper())
+        ax.set_xlabel("log-rho MAD")
+        ax.grid(alpha=0.2)
+    axes[0].set_ylabel("CCMR gain (dB)")
+    fig.suptitle("CCMR gain versus rho condition dispersion")
+    if has_relation:
+        _save(fig, output, "ccmr_vs_rho_stability", dpi)
+    else:
+        plt.close(fig)
+        _empty_figure(output, "ccmr_vs_rho_stability", "CCMR gain versus rho condition dispersion", "Condition-scope rho dispersion was unavailable", dpi)
 
     # Optional subset stability is rendered as a low-rho selection-overlap
     # diagnostic. It is not a complete two-stage Cache Book claim unless the

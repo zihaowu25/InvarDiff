@@ -1,0 +1,18 @@
+formats: [pdf, png]
+png_dpi: 300
+sequential_cmap: cividis
+density_cmap: cividis
+gain_cmap: BrBG
+gain_center_db: 0.0
+rho_cmap: PuOr
+log_rho_center: 0.0
+rho_dispersion_cmap: magma
+global_robust_quantiles: [0.005, 0.995]
+mask_color: "#BDBDBD"
+module_colors:
+  attention: "#0072B2"
+  context_attention: "#CC79A7"
+  ffn: "#E69F00"
+  context_ffn: "#009E73"
+  single_attention: "#56B4E9"
+  single_mlp: "#D55E00"

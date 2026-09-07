@@ -1,0 +1,36 @@
+experiment: flux_ccmr_final
+hardware_target: RTX_4090_48GB
+model: FLUX.1-dev
+model_path: FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21
+height: 1024
+width: 1024
+num_inference_steps: 28
+guidance_scale: 3.5
+true_cfg_scale: 1.0
+max_sequence_length: 512
+prompt_ids: [p00, p01, p02, p03, p04, p05, p06, p07, p08, p09, p10, p11]
+seeds: [0, 1, 2]
+modules: [double.attn, double.context_attn, double.ff, double.context_ff, single.attn, single.mlp]
+condition_backend: pairwise
+condition_batch_size: 2
+num_condition_pairs: 24
+pair_selection_seed: 2027
+model_dtype: bfloat16
+statistics_dtype: float32
+cache_enabled: false
+save_raw_activations: false
+epsilon: 1.0e-12
+degenerate_relative_threshold: 1.0e-8
+rho_repeat_rtol: 1.0e-4
+rho_repeat_atol: 1.0e-6
+subset_sizes: [1, 2, 4, 6, 12]
+cache_fractions: [0.1, 0.2, 0.3, 0.5]
+subset_trials: 50
+bootstrap_trials: 2000
+alignment_shuffle: true
+shuffle_seed: 2027
+time_gaps: [1, 2, 4]
+condition_matrix_ids: [p00, p01, p05, p08, p09, p11]
+pca_snapshots:
+  - {module: double.attn, layer: 9, steps: [7, 14, 21]}
+  - {module: single.attn, layer: 18, steps: [7, 14, 21]}

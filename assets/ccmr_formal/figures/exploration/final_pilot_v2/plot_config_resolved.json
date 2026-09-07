@@ -1,0 +1,48 @@
+{
+  "density_cmap": "cividis",
+  "formats": [
+    "pdf",
+    "png"
+  ],
+  "gain_center_db": 0.0,
+  "gain_cmap": "BrBG",
+  "global_limits": {
+    "gain_db": [
+      -0.8605715553075615,
+      30.418645875816562
+    ],
+    "log_rho": [
+      -0.24229240922669423,
+      0.5109849634656841
+    ],
+    "log_v": [
+      -3.7005582585358594,
+      2.150321919110355
+    ]
+  },
+  "global_robust_quantiles": [
+    0.005,
+    0.995
+  ],
+  "log_rho_center": 0.0,
+  "mask_color": "#BDBDBD",
+  "module_colors": {
+    "attention": "#0072B2",
+    "context_attention": "#CC79A7",
+    "context_ffn": "#009E73",
+    "ffn": "#E69F00",
+    "single_attention": "#56B4E9",
+    "single_mlp": "#D55E00"
+  },
+  "png_dpi": 300,
+  "rho_cmap": "PuOr",
+  "rho_dispersion_cmap": "magma",
+  "scale_notes": {
+    "condition_distance": "log10 raw/difference distance and dB contraction",
+    "gain_heatmaps": "diverging dB centered at gain_center_db",
+    "rho_dispersion_heatmaps": "nonnegative log-rho MAD with vmin=0",
+    "rho_mean_median_heatmaps": "log10 rho centered at log_rho_center",
+    "variance_heatmaps": "log10 variance"
+  },
+  "sequential_cmap": "cividis"
+}

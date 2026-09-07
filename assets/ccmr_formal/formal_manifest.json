@@ -1,0 +1,36 @@
+{
+  "experiment": "ccmr_formal",
+  "status": "dit_complete_flux_formal_resolution_pilot",
+  "commit": "e775e746698a48a8193843e9c2df1dfd5b92b383",
+  "hardware": "NVIDIA GeForce RTX 4090 48GB",
+  "tests": {"pytest": "19 passed", "py_compile": "passed", "cli_help": "passed"},
+  "runs": {
+    "dit_final": {
+      "path": "data/runs/dit_final",
+      "seeds": [0, 1, 2, 3, 4],
+      "conditions": 16,
+      "steps": 50,
+      "elapsed_s": 359.66078319307417,
+      "peak_allocated_gib": 12.885093688964844,
+      "status": "complete"
+    },
+    "flux_final_pilot": {
+      "path": "data/runs/flux_final_pilot",
+      "seeds": [0],
+      "pairs": 1,
+      "configured_pairs": 24,
+      "steps": 28,
+      "elapsed_s": 1342.4772971179336,
+      "peak_allocated_gib": 32.78542995452881,
+      "status": "complete_pilot_only"
+    },
+    "flux_final": {
+      "configured_seeds": [0, 1, 2],
+      "configured_pairs": 24,
+      "status": "pending_resource_budget",
+      "estimated_wall_time_h": 28.1
+    }
+  },
+  "aggregate": "data/combined/final_pilot",
+  "figures": "figures/exploration/final_pilot_v2"
+}

@@ -1,0 +1,14 @@
+[
+  {"id": "p00", "category": "animal", "prompt": "A cinematic photograph of a red fox sitting beside a moss-covered tree in a sunlit forest, detailed fur and natural colors."},
+  {"id": "p01", "category": "portrait", "prompt": "A studio portrait of an elderly astronaut, weathered face, soft rim lighting, highly detailed photography."},
+  {"id": "p02", "category": "urban", "prompt": "A stylish woman walking down a Tokyo street at night, warm neon signs reflecting on wet pavement."},
+  {"id": "p03", "category": "product", "prompt": "A transparent glass teapot on a dark wooden table, premium product photography, soft window light."},
+  {"id": "p04", "category": "food", "prompt": "A gourmet cheeseburger with crisp lettuce and melted cheese, restaurant food photography."},
+  {"id": "p05", "category": "landscape", "prompt": "A snowy mountain village at dusk, glowing windows, smoke rising from chimneys, cinematic wide view."},
+  {"id": "p06", "category": "fantasy", "prompt": "A surreal underwater city with glowing jellyfish, crystal towers and schools of colorful fish."},
+  {"id": "p07", "category": "art_style", "prompt": "A watercolor painting of a lighthouse on a rocky coast during a storm, expressive brush strokes."},
+  {"id": "p08", "category": "text", "prompt": "A clean white poster with the large black word INVAR centered on it, minimal graphic design."},
+  {"id": "p09", "category": "spatial", "prompt": "A red cube placed to the left of a blue sphere on a plain gray surface, orthographic studio view."},
+  {"id": "p10", "category": "vehicle", "prompt": "A vintage steam train crossing a desert valley at sunrise, long shadows and cinematic atmosphere."},
+  {"id": "p11", "category": "composition", "prompt": "A small friendly robot watering yellow flowers inside a glass greenhouse filled with morning light."}
+]

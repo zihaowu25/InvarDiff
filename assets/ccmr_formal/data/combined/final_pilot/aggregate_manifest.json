@@ -1,0 +1,20 @@
+{
+  "inputs": [
+    "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs/dit_final",
+    "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs/flux_final_pilot"
+  ],
+  "rho_stability": 13440,
+  "runs": [
+    "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs/dit_final",
+    "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs/flux_final_pilot"
+  ],
+  "subset_stability": 5000,
+  "tables": {
+    "ccmr_metrics": 18256,
+    "condition_distance": 1650504,
+    "condition_similarity": 17824,
+    "rho_per_condition": 222944,
+    "temporal_metrics": 227728,
+    "time_gap_metrics": 51744
+  }
+}
