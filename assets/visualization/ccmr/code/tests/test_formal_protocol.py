@@ -207,6 +207,8 @@ def test_smoke_validator_fails_all_missing_runs(tmp_path):
     result = validate_smokes(tmp_path / "dit", tmp_path / "pair", tmp_path / "rho")
     assert not result["passed"]
     assert result["checks"]["dit.atomic"]["status"] == "failed"
+    # The partial-progress manifest must remain strict-JSON serializable.
+    json.dumps(result, allow_nan=False)
 
 
 def test_formal_command_file_requires_explicit_approval():

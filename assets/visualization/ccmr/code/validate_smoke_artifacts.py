@@ -128,10 +128,13 @@ def validate_smokes(dit: Path, flux_pair: Path, flux_rho: Path) -> dict[str, Any
     audits = {}
     for label, rows, config_path in (("dit", dit_rho, dit / "config.json"), ("flux_rho", flux_rho_rows, flux_rho / "config.json")):
         config = _load(config_path)
-        try:
-            passed, audit = tolerance_check(rows, float(config.get("rho_repeat_rtol", 1e-4)), float(config.get("rho_repeat_atol", 1e-6)))
-        except Exception as exc:
-            passed, audit = False, {"passed": False, "error": f"{type(exc).__name__}: {exc}"}
+        if not rows:
+            passed, audit = False, {"passed": False, "status": "not_run", "failure_count": 0}
+        else:
+            try:
+                passed, audit = tolerance_check(rows, float(config.get("rho_repeat_rtol", 1e-4)), float(config.get("rho_repeat_atol", 1e-6)))
+            except Exception as exc:
+                passed, audit = False, {"passed": False, "error": f"{type(exc).__name__}: {exc}"}
         audits[label] = audit
         record(f"{label}.rho_live_code", [] if passed else [audit.get("error", f"tolerance failures: {audit.get('failure_count', 'unknown')}")])
 
