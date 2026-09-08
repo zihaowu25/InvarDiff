@@ -38,6 +38,7 @@ from common import (  # noqa: E402
     load_yaml,
     load_attempt_history,
     make_generator,
+    read_rows,
     save_json_atomic,
     select_pairs,
     sha256_file,

@@ -25,6 +25,7 @@ from common import (  # noqa: E402
     online_rho,
 )
 from collect_dit_ccmr import _detach_conditional_clone  # noqa: E402
+import collect_flux_ccmr  # noqa: E402
 from compose_main_figure import _subset_hierarchical_summary  # noqa: E402
 from formal_protocol import (  # noqa: E402
     rho_consistency,
@@ -71,6 +72,13 @@ def test_dit_conditional_clone_does_not_share_cfg_storage():
     assert cloned.untyped_storage().data_ptr() != cfg_batch.untyped_storage().data_ptr()
     cfg_batch.zero_()
     assert torch.count_nonzero(cloned) > 0
+
+
+def test_flux_resume_has_checksum_table_reader_available():
+    # The resume path validates every completed table before model execution.
+    # Keep this explicit import check so a missing dependency cannot consume a
+    # full formal model load before failing with NameError.
+    assert callable(collect_flux_ccmr.read_rows)
 
 
 def test_derangement_validation_is_scoped_per_cell():
