@@ -26,8 +26,9 @@ from deployment evidence based on independently generated calibration items.
 cache distance/rate implementation, including elementwise epsilon, and the
 formal gate checks configured numerical tolerances.
 
-The natural-language report is outside the repository at
-`/root/autodl-tmp/CCMR_FORMAL_REPORT_V2.md` and must never be staged.
+The natural-language reports are stored locally in the Git-ignored
+`agent_skills/report/` directory. Their sortable naming convention is
+`CCMR_REPORT_R<round>_<stage>_<YYYYMMDD>.md`; they must never be staged.
 
 This directory contains the CCMR formal-evaluation workflow and retained
 legacy exploratory artifacts. It is separate from earlier development plots
