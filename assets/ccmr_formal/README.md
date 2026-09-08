@@ -1,8 +1,35 @@
 # Formal CCMR experiment bundle
 
-This directory contains the formal CCMR collection requested for the ICLR 2027
-analysis.  It is deliberately separate from the earlier smoke and pilot
-outputs in `assets/visualization/ccmr/`.
+> Current legacy status: **DiT-256 complete mechanism run plus FLUX-1024
+> one-pair pilot**. These artifacts are exploratory and not paper eligible.
+> Formal v2 results are admitted only by `validate_artifacts.py`; paper tools
+> never fall back to pilot data.
+
+## Audited v2 workflow
+
+The v2 protocol is under `configs_v2/`; exact commands are in
+`commands_v2.sh`. Phase 0 changes and tests code only. Expensive DiT-512 and
+FLUX-1024 runs begin only after code review and the three smoke runs.
+
+Formal scalar shards live under `data/runs_v2/`. Each completed shard records
+a resolved-config hash, row counts, SHA-256 checksums, latent hashes, and an
+explicit status. `--resume` reuses a shard only after these checks pass. Full
+activation trajectories are never persisted.
+
+The mechanism experiment shares an initial latent within each seed and varies
+only the class or prompt. This isolates the CCMR mechanism; it is distinct
+from deployment evidence based on independently generated calibration items.
+
+`rho_clean` is the pure-L1 mathematical diagnostic. `rho_code` calls the live
+cache distance/rate implementation, including elementwise epsilon, and the
+formal gate checks configured numerical tolerances.
+
+The natural-language report is outside the repository at
+`/root/autodl-tmp/CCMR_FORMAL_REPORT_V2.md` and must never be staged.
+
+This directory contains the CCMR formal-evaluation workflow and retained
+legacy exploratory artifacts. It is separate from earlier development plots
+in `assets/visualization/ccmr/`.
 
 The collectors are read-only observers: all DiT and FLUX cache decisions are
 disabled, the initial latent is fixed while conditions change, and statistics
@@ -10,19 +37,19 @@ are accumulated in FP32.  The implementation lives in
 `assets/visualization/ccmr/code/`; this directory contains the immutable run
 configuration copies, logs, compressed scalar tables, figures, and manifests.
 
-## Formal configurations
+## Legacy configurations
 
 * DiT: `configs/dit_final.yaml`, 256x256, 50 DDIM steps, CFG 4, 16 exact
-  ImageNet conditions, seeds 0--4, float32.
-* FLUX: `configs/flux_final.yaml`, 1024x1024, 28 steps, BF16, guidance 3.5,
-  12 prompts and 24 uniformly selected unordered pairs per seed.
+  ImageNet conditions, seeds 0--4, float32. This is an explicit exploratory
+  protocol deviation.
+* FLUX: the completed legacy artifact is a 1024x1024, one-seed, one-pair
+  pilot. The old `configs/flux_final.yaml` describes intended coverage, not
+  completed coverage.
 
-The DiT 256 checkpoint is available on the RTX 4090 host and was used for the
-formal run.  A one-pair FLUX pilot is stored separately before attempting the
-full pair matrix; its runtime is recorded in the report.  A full FLUX matrix
-must not be inferred from that pilot.
+The DiT-256 and one-pair FLUX artifacts remain useful regression references.
+Neither may be mixed into the v2 aggregate or presented as paper-complete.
 
-## Reproduction
+## Legacy reproduction only
 
 ```bash
 cd /root/autodl-tmp/InvarDiff
@@ -43,8 +70,7 @@ python assets/visualization/ccmr/code/plot_ccmr.py \
   --output-dir assets/ccmr_formal/figures/exploration/final
 ```
 
-Each run stores `config.json`, `conditions.json`, `environment.json`,
-`latent_hashes.json`, `memory.json`, per-seed shards, and an atomic
-`summary.json`.  Aggregated tables are compressed CSV and can be plotted again
-without loading model weights.  The report is kept under
-`agent_skills/report/` as requested.
+These commands reproduce exploratory v1 outputs only. For formal collection,
+use `commands_v2.sh`. V2 runs store auditable scalar shard manifests and can
+be aggregated and plotted without model weights. Natural-language reports are
+not stored under `agent_skills/` or any other tracked repository path.

@@ -1,4 +1,6 @@
-experiment: dit_ccmr_final
+experiment: dit_ccmr_exploratory_256
+experiment_level: exploratory_protocol_deviation
+paper_eligible: false
 hardware_target: RTX_4090_48GB
 model: DiT-XL/2
 checkpoint: DiT/pretrained_models/DiT-XL-2-256x256.pt
@@ -19,14 +21,14 @@ cache_enabled: false
 save_raw_activations: false
 epsilon: 1.0e-12
 degenerate_relative_threshold: 1.0e-8
-subset_sizes: [1, 2, 4, 8, 16]
+subset_sizes: [1, 2, 3, 4, 8, 16]
 cache_fractions: [0.1, 0.2, 0.3, 0.5]
-subset_trials: 50
+subset_trials: 100
 bootstrap_trials: 2000
 alignment_shuffle: true
+alignment_shuffle_trials: 100
 shuffle_seed: 2027
 time_gaps: [1, 2, 4]
-condition_matrix_ids: [0, 207, 387, 569, 933, 992]
 condition_matrix_ids: [0, 207, 387, 569, 933, 992]
 pca_snapshots:
   - {module: msa, layer: 14, steps: [10, 25, 40]}

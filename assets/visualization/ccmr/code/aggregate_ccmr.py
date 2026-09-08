@@ -13,8 +13,11 @@ from typing import Any
 import numpy as np
 
 from common import (  # noqa: E402
+    ccmr_ratio,
+    deterministic_unique_subsets,
     flatten_jsonable,
     gain_db,
+    hierarchical_bootstrap,
     jaccard_at_fraction,
     load_yaml,
     pairwise_population_variance,
@@ -24,15 +27,17 @@ from common import (  # noqa: E402
     save_json_atomic,
     write_rows,
 )
+from formal_protocol import rho_consistency, tolerance_check  # noqa: E402
 
 
-TABLES = ("ccmr_metrics", "condition_similarity", "condition_distance", "temporal_metrics", "time_gap_metrics", "rho_per_condition")
+TABLES = ("ccmr_metrics", "condition_similarity", "condition_distance", "temporal_metrics", "time_gap_metrics", "rho_per_condition", "alignment_control")
 NUMERIC = {
-    "ccmr_metrics": ("seed", "num_conditions", "layer_idx", "step_idx", "scheduler_timestep", "feature_numel", "v_raw", "v_raw_prev", "v_base", "v_diff", "r_ccmr", "g_ccmr_db"),
+    "ccmr_metrics": ("seed", "num_conditions", "layer_idx", "step_idx", "scheduler_timestep", "denoising_progress", "feature_numel", "v_raw", "v_raw_prev", "v_base", "v_diff", "r_ccmr", "g_ccmr_db"),
     "condition_distance": ("seed", "layer_idx", "step_idx", "raw_pair_distance", "raw_prev_pair_distance", "diff_pair_distance"),
     "rho_per_condition": ("seed", "layer_idx", "score_step_idx", "l1_prev", "l1_next", "rho_clean", "rho_code"),
     "temporal_metrics": ("seed", "layer_idx", "step_idx", "output_rms", "diff_rms", "r_time"),
     "time_gap_metrics": ("seed", "layer_idx", "step_idx", "time_gap", "v_raw_base", "v_diff_gap", "r_ccmr_gap", "g_ccmr_gap_db", "raw_current_pair_distance", "raw_previous_pair_distance", "diff_pair_distance"),
+    "alignment_control": ("seed", "shuffle_trial", "layer_idx", "step_idx", "scheduler_timestep", "denoising_progress", "g_aligned_db", "g_shuffled_db", "delta_g_db"),
 }
 
 
@@ -135,7 +140,7 @@ def _recompute_pairwise_ccmr(ccmr: list[dict[str, Any]], distance: list[dict[str
             "v_raw_prev": prev,
             "v_base": v_base,
             "v_diff": diff,
-            "r_ccmr": diff / max(v_base, 1.0e-12),
+            "r_ccmr": ccmr_ratio(v_base, diff),
             "g_ccmr_db": gain_db(v_base, diff),
             "pair_count": len(raw_values),
             "input_pair_rows": len(input_rows),
@@ -177,7 +182,7 @@ def _recompute_pairwise_time_gap(rows: list[dict[str, Any]]) -> list[dict[str, A
         representative.update({
             "v_raw_base": v_base,
             "v_diff_gap": v_difference,
-            "r_ccmr_gap": v_difference / max(v_base, 1.0e-12),
+            "r_ccmr_gap": ccmr_ratio(v_base, v_difference),
             "g_ccmr_gap_db": gain_db(v_base, v_difference),
             "pair_count": len(input_rows),
             "input_pair_rows": len(input_rows),
@@ -187,13 +192,7 @@ def _recompute_pairwise_time_gap(rows: list[dict[str, Any]]) -> list[dict[str, A
 
 
 def _rho_stability(rho_rows: list[dict[str, Any]], ccmr_rows: list[dict[str, Any]], config: dict[str, Any]):
-    """Aggregate condition rho and evaluate fixed-subset stability.
-
-    A calibration subset is selected once per model/source/seed/trial and is
-    then applied to every layer and timestep.  Pair-difference rho rows are
-    intentionally excluded because they do not represent individual prompt
-    trajectories.
-    """
+    """Condition-mean primary stability plus separately labelled median robustness."""
     cell_condition_values: dict[tuple[Any, ...], dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
     population: dict[tuple[Any, ...], set[str]] = defaultdict(set)
     for row in rho_rows:
@@ -218,7 +217,9 @@ def _rho_stability(rho_rows: list[dict[str, Any]], ccmr_rows: list[dict[str, Any
     out: list[dict[str, Any]] = []
     reduced_cells: dict[tuple[Any, ...], dict[str, float]] = {}
     for cell_key, condition_values in cell_condition_values.items():
-        reduced = {condition: float(np.median(values)) for condition, values in condition_values.items() if values}
+        # Repeated observations are implementation repeats, not a change to
+        # the algorithm's condition-mean aggregation.
+        reduced = {condition: float(np.mean(values)) for condition, values in condition_values.items() if values}
         if not reduced:
             continue
         reduced_cells[cell_key] = reduced
@@ -241,35 +242,60 @@ def _rho_stability(rho_rows: list[dict[str, Any]], ccmr_rows: list[dict[str, Any
             configured = configured.get(str(model), [])
         return [int(x) for x in configured]
 
-    fractions = [float(x) for x in config.get("cache_fractions", [0.1, 0.2, 0.3, 0.5])]
+    fractions = [float(x) for x in config.get("cache_fractions", [0.3])]
     subset_rows: list[dict[str, Any]] = []
-    rng = np.random.default_rng(int(config.get("shuffle_seed", 2027)))
     for run_key, conditions in sorted(population.items(), key=lambda item: tuple(str(x) for x in item[0])):
         condition_ids = sorted(conditions)
-        cells = {key: values for key, values in reduced_cells.items() if key[:3] == run_key}
-        if not cells:
-            continue
+        all_cells = {key: values for key, values in reduced_cells.items() if key[:3] == run_key}
+        family_names = sorted({f"{key[3]}.{key[4]}" for key in all_cells})
         for size in sizes_for(run_key[1]):
             if size > len(condition_ids):
                 continue
-            for trial in range(int(config.get("subset_trials", 50))):
-                selected = sorted(str(x) for x in rng.choice(condition_ids, size=size, replace=False).tolist())
-                common = [key for key, values in cells.items() if all(condition in values for condition in selected)]
-                if not common:
-                    continue
-                ref = [float(np.mean([cells[key][condition] for condition in condition_ids if condition in cells[key]])) for key in common]
-                est = [float(np.mean([cells[key][condition] for condition in selected])) for key in common]
-                spearman, kendall = rank_corr(ref, est)
-                for fraction in fractions:
-                    subset_rows.append({
-                        "model": run_key[1], "source_run": run_key[0], "seed": run_key[2],
-                        "subset_size": size, "trial": trial,
-                        "selected_condition_ids": json.dumps(selected, separators=(",", ":")),
-                        "cache_fraction": fraction, "spearman": spearman, "kendall": kendall,
-                        "jaccard": jaccard_at_fraction(ref, est, fraction),
-                        "num_reference_conditions": len(condition_ids), "num_cells": len(common),
-                        "num_points": len(common),
-                    })
+            subsets = deterministic_unique_subsets(
+                condition_ids, size, int(config.get("subset_trials", 100)),
+                int(config.get("shuffle_seed", 2027)) + int(float(run_key[2])) * 10_000 + size,
+            )
+            for trial, selected_tuple in enumerate(subsets):
+                selected = list(selected_tuple)
+                for family_name in family_names:
+                    cells = {
+                        key: values for key, values in all_cells.items()
+                        if f"{key[3]}.{key[4]}" == family_name
+                    }
+                    common = [
+                        key for key, values in cells.items()
+                        if all(condition in values for condition in condition_ids)
+                    ]
+                    if not common:
+                        continue
+                    for aggregation_method in ("mean", "median"):
+                        reducer = np.mean if aggregation_method == "mean" else np.median
+                        ref = [float(reducer([cells[key][condition] for condition in condition_ids])) for key in common]
+                        est = [float(reducer([cells[key][condition] for condition in selected])) for key in common]
+                        spearman, kendall = rank_corr(ref, est)
+                        tie_count = (len(ref) - len(np.unique(ref))) + (len(est) - len(np.unique(est)))
+                        valid = len(common) >= 2 and math.isfinite(spearman) and math.isfinite(kendall)
+                        base = {
+                            "model": run_key[1], "source_run": run_key[0], "seed": run_key[2],
+                            "module_family": family_name, "subset_size": size, "trial": trial,
+                            "selected_condition_ids": json.dumps(selected, separators=(",", ":")),
+                            "aggregation_method": aggregation_method,
+                            "is_primary": aggregation_method == "mean",
+                            "num_reference_conditions": len(condition_ids), "valid_cells": len(common),
+                            "tie_count": tie_count, "valid": valid,
+                        }
+                        # Rank metrics are emitted once; cache-fraction overlap
+                        # rows do not duplicate them in uncertainty estimates.
+                        subset_rows.append({
+                            **base, "metric_scope": "rank", "cache_fraction": None,
+                            "spearman": spearman, "kendall": kendall, "jaccard": None,
+                        })
+                        for fraction in fractions:
+                            subset_rows.append({
+                                **base, "metric_scope": "overlap", "cache_fraction": fraction,
+                                "spearman": None, "kendall": None,
+                                "jaccard": jaccard_at_fraction(ref, est, fraction),
+                            })
     return out, subset_rows
 
 
@@ -291,7 +317,12 @@ def _summary(ccmr: list[dict[str, Any]], rho_stability: list[dict[str, Any]], su
         stats.update({"std": float(np.std(values, ddof=1)) if len(values) > 1 else 0.0, "min": float(np.min(values)), "max": float(np.max(values)), "num_seeds": len(values)})
         summary["models"].setdefault(model, {}).setdefault(module, {}).setdefault("gain_db", {})[source] = stats
     for row in subset_rows:
-        group = (str(row.get("model")), str(row.get("source_run")), int(row.get("subset_size", 0)), float(row.get("cache_fraction", 0.0)))
+        if (str(row.get("valid", "True")).lower() == "false"
+                or str(row.get("is_primary", "True")).lower() != "true"):
+            continue
+        fraction = row.get("cache_fraction")
+        fraction_key = "rank" if fraction in (None, "") else str(float(fraction))
+        group = (str(row.get("model")), str(row.get("source_run")), str(row.get("module_family")), int(row.get("subset_size", 0)), fraction_key)
         key = "|".join(str(x) for x in group)
         summary["subset_stability"].setdefault(key, {})
         for metric in ("spearman", "kendall", "jaccard"):
@@ -306,6 +337,39 @@ def _summary(ccmr: list[dict[str, Any]], rho_stability: list[dict[str, Any]], su
     return flatten_jsonable(summary)
 
 
+def _alignment_clusters(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[tuple[Any, ...], list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        if str(row.get("valid", "True")).lower() == "false":
+            continue
+        family = f"{row.get('module_family')}.{row.get('module_name')}"
+        cluster = row.get("pair_id") if row.get("model") == "flux" else row.get("shuffle_trial")
+        grouped[(row.get("source_run"), row.get("model"), row.get("seed"), family, cluster)].append(row)
+    result = []
+    for (source, model, seed, family, cluster), values in grouped.items():
+        aligned = [float(row["g_aligned_db"]) for row in values]
+        shuffled = [float(row["g_shuffled_db"]) for row in values]
+        result.append({
+            "source_run": source, "model": model, "seed": seed,
+            "module_family": family, "cluster_id": cluster,
+            "g_aligned_db": float(np.mean(aligned)),
+            "g_shuffled_db": float(np.mean(shuffled)),
+            "delta_g_db": float(np.mean(np.asarray(aligned) - np.asarray(shuffled))),
+            "num_cells": len(values), "valid": True,
+        })
+    return result
+
+
+def _hierarchical_summary(alignment_clusters: list[dict[str, Any]], trials: int) -> dict[str, Any]:
+    groups: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in alignment_clusters:
+        groups[(str(row["model"]), str(row["module_family"]))].append(row)
+    return {
+        f"{model}|{family}": hierarchical_bootstrap(rows, "delta_g_db", trials=trials)
+        for (model, family), rows in groups.items()
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Aggregate CCMR tables")
     parser.add_argument("--input", nargs="+", required=True)
@@ -318,10 +382,21 @@ def main() -> None:
     tables["ccmr_metrics"] = _recompute_pairwise_ccmr(tables["ccmr_metrics"], tables["condition_distance"])
     tables["time_gap_metrics"] = _recompute_pairwise_time_gap(tables["time_gap_metrics"])
     stability, subset_rows = _rho_stability(tables["rho_per_condition"], tables["ccmr_metrics"], config)
+    alignment_clusters = _alignment_clusters(tables["alignment_control"])
     for table, rows in tables.items():
         write_rows(output / f"{table}.csv.gz", rows)
     write_rows(output / "rho_stability.csv.gz", stability)
     write_rows(output / "subset_stability.csv.gz", subset_rows)
+    write_rows(output / "alignment_cluster_summary.csv.gz", alignment_clusters)
+    valid_rho = [row for row in tables["rho_per_condition"] if str(row.get("valid", "True")).lower() == "true" and str(row.get("rho_scope")) == "condition"]
+    rho_audit = rho_consistency(valid_rho) if valid_rho else {"valid_cells": 0}
+    _, tolerance = tolerance_check(
+        valid_rho,
+        float(config.get("rho_repeat_rtol", 1e-4)),
+        float(config.get("rho_repeat_atol", 1e-6)),
+    ) if valid_rho else (False, {"passed": False, "failure_count": 0})
+    save_json_atomic(output / "rho_consistency.json", {**rho_audit, **tolerance})
+    save_json_atomic(output / "hierarchical_bootstrap.json", _hierarchical_summary(alignment_clusters, int(config.get("bootstrap_trials", 2000))))
     save_json_atomic(output / "summary.json", _summary(tables["ccmr_metrics"], stability, subset_rows, runs))
     save_json_atomic(output / "aggregate_manifest.json", {"inputs": [str(Path(x).resolve()) for x in args.input], "runs": [str(r["path"]) for r in runs], "tables": {key: len(value) for key, value in tables.items()}, "rho_stability": len(stability), "subset_stability": len(subset_rows)})
     print(json.dumps({"output": str(output), "runs": len(runs), "tables": {key: len(value) for key, value in tables.items()}}, indent=2))

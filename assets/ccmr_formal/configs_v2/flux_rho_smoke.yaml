@@ -1,0 +1,22 @@
+experiment: flux_rho_smoke_v2
+experiment_level: smoke
+paper_eligible: false
+model: FLUX.1-dev
+model_path: FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21
+height: 1024
+width: 1024
+num_inference_steps: 28
+guidance_scale: 3.5
+true_cfg_scale: 1.0
+max_sequence_length: 512
+prompt_ids: [p00]
+seeds: [0]
+modules: [double.attn, double.context_attn, double.ff, double.context_ff, single.attn, single.mlp]
+model_dtype: bfloat16
+statistics_dtype: float32
+feature_device: cpu
+cache_enabled: false
+decode_output: false
+epsilon: 1.0e-12
+rho_repeat_rtol: 1.0e-4
+rho_repeat_atol: 1.0e-6

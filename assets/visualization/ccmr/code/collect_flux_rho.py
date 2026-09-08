@@ -27,16 +27,21 @@ from common import (  # noqa: E402
     EPS,
     configure_determinism,
     environment_snapshot,
+    json_hash,
     l1_distance,
     load_yaml,
     make_generator,
     read_rows,
     save_json_atomic,
+    sha256_file,
+    table_artifact,
     tensor_sha256,
     valid_rho_index,
+    utc_now,
     write_rows,
 )
 from dynamic_flux import DynamicFluxTransformer2DModel, flux_sample_loop_progressive  # noqa: E402
+from sample_flux import compute_l1_distance as online_l1_distance, compute_rate as online_compute_rate  # noqa: E402
 
 
 MODULES = {
@@ -82,8 +87,17 @@ def _run_prompt(pipe, dynamic_model, prompt: dict[str, Any], seed: int, config: 
         hooks.append(block.register_forward_hook(_hook(storage, "double", layer, feature_device)))
     for layer, block in enumerate(dynamic_model.single_transformer_blocks):
         hooks.append(block.register_forward_hook(_hook(storage, "single", layer, feature_device)))
-    previous: dict[str, torch.Tensor | None] = {key: None for key in storage}
-    previous_l1: dict[str, torch.Tensor | None] = {key: None for key in storage}
+    module_counts = {"double": len(dynamic_model.transformer_blocks), "single": len(dynamic_model.single_transformer_blocks)}
+    previous = {
+        key: [None] * module_counts[key.split(".", 1)[0]] for key in storage
+    }
+    previous_l1 = {
+        key: [None] * module_counts[key.split(".", 1)[0]] for key in storage
+    }
+    previous_code_l1 = {
+        key: [None] * module_counts[key.split(".", 1)[0]] for key in storage
+    }
+    previous_timestep: float | None = None
     rows: list[dict[str, Any]] = []
     original_prepare_latents = pipe.prepare_latents
 
@@ -115,11 +129,12 @@ def _run_prompt(pipe, dynamic_model, prompt: dict[str, Any], seed: int, config: 
                 for key, layer_values in storage.items():
                     for layer, current in layer_values.items():
                         current = current.detach().contiguous()
-                        previous_feature = previous[key]
+                        previous_feature = previous[key][layer]
                         if previous_feature is not None:
                             increment = l1_distance(previous_feature, current)
-                            if previous_l1[key] is not None and valid_rho_index(step_idx - 1, n_steps):
-                                denominator = max(float(previous_l1[key].item()), float(config.get("epsilon", EPS)))
+                            code_increment = online_l1_distance(previous_feature, current)
+                            if previous_l1[key][layer] is not None and valid_rho_index(step_idx - 1, n_steps):
+                                denominator = max(float(previous_l1[key][layer].item()), float(config.get("epsilon", EPS)))
                                 rows.append({
                                     "run_id": output_dir.name,
                                     "model": "flux",
@@ -130,22 +145,38 @@ def _run_prompt(pipe, dynamic_model, prompt: dict[str, Any], seed: int, config: 
                                     "module_name": key.split(".", 1)[1],
                                     "layer_idx": layer,
                                     "score_step_idx": step_idx - 1,
-                                    "scheduler_timestep": float(state["timestep"].detach().cpu()),
-                                    "l1_prev": float(previous_l1[key].item()),
+                                    "scheduler_timestep": previous_timestep,
+                                    "denoising_progress": (step_idx - 1) / max(n_steps - 1, 1),
+                                    "l1_prev": float(previous_l1[key][layer].item()),
                                     "l1_next": float(increment.item()),
                                     "rho_clean": float(increment.item()) / denominator,
-                                    "rho_code": None,
+                                    "rho_code": float(online_compute_rate(code_increment, previous_code_l1[key][layer]).detach().float().cpu()),
                                     "valid": True,
                                 })
-                            previous_l1[key] = increment.detach().float().cpu()
-                        previous[key] = current
+                            previous_l1[key][layer] = increment.detach().float().cpu()
+                            previous_code_l1[key][layer] = code_increment.detach().float()
+                        previous[key][layer] = current
                 for values in storage.values():
                     values.clear()
+                previous_timestep = float(state["timestep"].detach().cpu())
     finally:
         pipe.prepare_latents = original_prepare_latents
         for hook in hooks:
             hook.remove()
         dynamic_model.reset()
+    for key in storage:
+        family, module_name = key.split(".", 1)
+        for layer in range(module_counts[family]):
+            for score_idx in (0, n_steps - 1):
+                rows.append({
+                    "run_id": output_dir.name, "model": "flux", "seed": seed,
+                    "condition_id": prompt["id"], "rho_scope": "condition",
+                    "module_family": family, "module_name": module_name, "layer_idx": layer,
+                    "score_step_idx": score_idx, "scheduler_timestep": None,
+                    "denoising_progress": score_idx / max(n_steps - 1, 1),
+                    "l1_prev": None, "l1_next": None, "rho_clean": None, "rho_code": None,
+                    "valid": False, "invalid_reason": "three_observation_boundary",
+                })
     return rows
 
 
@@ -182,8 +213,16 @@ def main() -> None:
     prompts = _load_prompts(config)
     save_json_atomic(output_dir / "config.json", config)
     save_json_atomic(output_dir / "conditions.json", prompts)
-    save_json_atomic(output_dir / "environment.json", environment_snapshot(REPO_ROOT, [checkpoint]))
-    manifest = {"run_id": output_dir.name, "model": "flux", "rho_scope": "condition", "shards": {}}
+    environment = environment_snapshot(REPO_ROOT, [checkpoint])
+    save_json_atomic(output_dir / "environment.json", environment)
+    resolved_hash = json_hash(config)
+    manifest = {
+        "run_id": output_dir.name, "model": "flux", "rho_scope": "condition",
+        "cache_enabled": False, "decode_output": False, "resolved_config_hash": resolved_hash,
+        "experiment_level": config.get("experiment_level", "smoke"),
+        "paper_eligible": bool(config.get("paper_eligible", False)),
+        "started_at": utc_now(), "shards": {},
+    }
     started = time.perf_counter()
     all_rows: list[dict[str, Any]] = []
     latent_hashes: dict[str, str] = {}
@@ -208,14 +247,54 @@ def main() -> None:
             marker = shard_dir / "manifest.json"
             shard_key = f"{seed}:{prompt['id']}"
             if args.resume and marker.exists() and shard_path.exists():
-                rows = read_rows(shard_path)
-                all_rows.extend(rows)
-                manifest["shards"][shard_key] = json.loads(marker.read_text(encoding="utf-8"))
-                continue
-            rows = _run_prompt(pipe, dynamic_model, prompt, seed, config, one, one_ids, output_dir)
+                marker_value = json.loads(marker.read_text(encoding="utf-8"))
+                artifact = marker_value.get("table", {})
+                if (marker_value.get("status") == "complete"
+                        and marker_value.get("resolved_config_hash") == resolved_hash
+                        and sha256_file(shard_path) == artifact.get("sha256")):
+                    rows = read_rows(shard_path)
+                    if len(rows) == int(artifact.get("row_count", -1)):
+                        all_rows.extend(rows)
+                        manifest["shards"][shard_key] = marker_value
+                        continue
+            shard_started_at = utc_now()
+            shard_started = time.perf_counter()
+            if device.type == "cuda":
+                torch.cuda.reset_peak_memory_stats(device)
+            try:
+                rows = _run_prompt(pipe, dynamic_model, prompt, seed, config, one, one_ids, output_dir)
+            except Exception as exc:
+                save_json_atomic(marker, {
+                    "status": "failed", "seed": seed, "condition_id": prompt["id"],
+                    "resolved_config_hash": resolved_hash,
+                    "experiment_level": config.get("experiment_level", "smoke"),
+                    "started_at": shard_started_at, "failed_at": utc_now(),
+                    "wall_time_s": time.perf_counter() - shard_started,
+                    "oom": isinstance(exc, torch.cuda.OutOfMemoryError),
+                    "error_type": type(exc).__name__, "error": str(exc),
+                    "peak_allocated_gib": torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
+                    "peak_reserved_gib": torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
+                })
+                raise
             shard_dir.mkdir(parents=True, exist_ok=True)
             _write_gzip_rows_atomic(shard_path, rows)
-            marker_value = {"status": "complete", "seed": seed, "condition_id": prompt["id"], "rows": len(rows), "latent_hash": latent_hashes[str(seed)]}
+            marker_value = {
+                "status": "complete", "seed": seed, "condition_id": prompt["id"],
+                "resolved_config_hash": resolved_hash, "latent_hash": latent_hashes[str(seed)],
+                "branch": environment.get("git_branch"), "commit": environment.get("git_commit"),
+                "dirty_status": environment.get("git_status"), "exact_command": [sys.executable, *sys.argv],
+                "checkpoint": environment.get("checkpoints", [{}])[0], "environment_file": "../../environment.json",
+                "condition_bank_hash": json_hash(prompts), "model_dtype": config.get("model_dtype"),
+                "statistics_dtype": config.get("statistics_dtype"), "cache_enabled": False, "decode_output": False,
+                "hook_locations": ["FluxTransformerBlock.forward:block_outputs", "FluxSingleTransformerBlock.forward:block_outputs"],
+                "hook_count": len(dynamic_model.transformer_blocks) + len(dynamic_model.single_transformer_blocks),
+                "experiment_level": config.get("experiment_level", "smoke"), "paper_eligible": bool(config.get("paper_eligible", False)),
+                "offload": False, "resume_requested": bool(args.resume), "retry_count": 0, "oom": False,
+                "started_at": shard_started_at, "completed_at": utc_now(), "wall_time_s": time.perf_counter() - shard_started,
+                "peak_allocated_gib": torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
+                "peak_reserved_gib": torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
+                "table": table_artifact(shard_path, len(rows)),
+            }
             save_json_atomic(marker, marker_value)
             manifest["shards"][shard_key] = marker_value
             all_rows.extend(rows)
@@ -227,6 +306,7 @@ def main() -> None:
         "elapsed_s": time.perf_counter() - started, "row_counts": {"rho_per_condition": len(all_rows)},
     }
     save_json_atomic(output_dir / "summary.json", summary)
+    manifest["completed_at"] = utc_now()
     save_json_atomic(output_dir / "run_manifest.json", manifest)
     print(f"FLUX condition rho run complete: {output_dir} ({len(all_rows)} rows)")
 

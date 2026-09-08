@@ -63,7 +63,9 @@ def test_subset_selection_uses_one_fixed_condition_set_per_trial():
         {"subset_sizes": {"dit": [2]}, "subset_trials": 4, "cache_fractions": [0.1, 0.2], "shuffle_seed": 7},
     )
     assert len(stability) == 2
-    assert len(subsets) == 8
+    # C(3, 2)=3 unique subsets; mean/median each emit one rank row and two
+    # overlap rows. No duplicate random trials are manufactured.
+    assert len(subsets) == 18
     selected_by_trial = {}
     for row in subsets:
         selected_by_trial.setdefault(row["trial"], row["selected_condition_ids"])

@@ -1,0 +1,13 @@
+{
+  "description": "DiT-256 complete mechanism run plus FLUX-1024 one-pair pilot",
+  "experiment_level": "exploratory_protocol_deviation",
+  "paper_eligible": false,
+  "formal_coverage": false,
+  "limitations": [
+    "DiT used 256 rather than the preregistered 512 resolution",
+    "DiT alignment used one ordinary permutation rather than 100 derangements",
+    "FLUX contains only one prompt pair and one seed",
+    "rho_code was not recorded",
+    "pilot-derived paper_v2 figures are not paper figures"
+  ]
+}

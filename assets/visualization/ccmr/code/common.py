@@ -12,6 +12,8 @@ import math
 import os
 import random
 import tempfile
+from datetime import datetime, timezone
+from itertools import combinations
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -25,8 +27,25 @@ DEGENERATE_THRESHOLD = 1.0e-8
 def load_yaml(path: str | os.PathLike[str]) -> dict[str, Any]:
     import yaml
 
+    class UniqueKeyLoader(yaml.SafeLoader):
+        pass
+
+    def construct_mapping(loader, node, deep=False):
+        mapping = {}
+        for key_node, value_node in node.value:
+            key = loader.construct_object(key_node, deep=deep)
+            if key in mapping:
+                raise ValueError(f"Duplicate YAML key {key!r} in {path}")
+            mapping[key] = loader.construct_object(value_node, deep=deep)
+        return mapping
+
+    UniqueKeyLoader.add_constructor(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+        construct_mapping,
+    )
+
     with open(path, "r", encoding="utf-8") as handle:
-        value = yaml.safe_load(handle)
+        value = yaml.load(handle, Loader=UniqueKeyLoader)
     if not isinstance(value, dict):
         raise ValueError(f"Configuration must be a mapping: {path}")
     return value
@@ -125,6 +144,20 @@ def code_rho(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, eps: float = 1.0
     return numerator / max(denominator, eps)
 
 
+def online_rho(
+    a: torch.Tensor,
+    b: torch.Tensor,
+    c: torch.Tensor,
+    distance_fn,
+    denominator_eps: float = 1.0e-8,
+) -> float:
+    """Evaluate rho through the live cache implementation's distance helper."""
+    previous = distance_fn(a, b)
+    current = distance_fn(b, c)
+    value = current / previous.clamp_min(float(denominator_eps))
+    return float(value.detach().float().cpu())
+
+
 def centered_variance(x: torch.Tensor) -> torch.Tensor:
     """Population condition variance normalized by feature element count."""
     xf = x.detach().float()
@@ -185,6 +218,11 @@ def gain_db(v_base: float, v_diff: float, eps: float = EPS) -> float:
     return 10.0 * safe_log10((float(v_base) + eps) / (float(v_diff) + eps))
 
 
+def ccmr_ratio(v_base: float, v_diff: float, eps: float = EPS) -> float:
+    """Formal CCMR ratio with the additive stabilization used in the paper."""
+    return float(v_diff) / (float(v_base) + float(eps))
+
+
 def valid_rho_index(step_idx: int, num_steps: int) -> bool:
     return 1 <= int(step_idx) <= int(num_steps) - 2
 
@@ -200,6 +238,51 @@ def select_pairs(num_conditions: int, count: int, seed: int) -> list[tuple[int, 
     rng = np.random.default_rng(int(seed))
     indices = rng.choice(len(pairs), size=int(count), replace=False)
     return [pairs[int(i)] for i in sorted(indices)]
+
+
+def deterministic_derangements(size: int, count: int, seed: int) -> list[list[int]]:
+    """Generate deterministic unique derangements without fixed points."""
+    if size < 2:
+        raise ValueError("A derangement requires at least two conditions")
+    rng = np.random.default_rng(int(seed))
+    identity = np.arange(size)
+    result: list[list[int]] = []
+    seen: set[tuple[int, ...]] = set()
+    attempts = 0
+    limit = max(10_000, int(count) * 10_000)
+    while len(result) < int(count) and attempts < limit:
+        permutation = rng.permutation(size)
+        attempts += 1
+        key = tuple(int(x) for x in permutation)
+        if np.any(permutation == identity) or key in seen:
+            continue
+        seen.add(key)
+        result.append(list(key))
+    if len(result) != int(count):
+        raise RuntimeError(f"Could only construct {len(result)} unique derangements, requested {count}")
+    return result
+
+
+def deterministic_unique_subsets(
+    condition_ids: Sequence[str],
+    size: int,
+    max_trials: int,
+    seed: int,
+) -> list[tuple[str, ...]]:
+    """Enumerate small subset spaces, otherwise sample unique subsets."""
+    ordered = tuple(sorted(str(value) for value in condition_ids))
+    if size < 1 or size > len(ordered):
+        return []
+    all_count = math.comb(len(ordered), int(size))
+    target = min(int(max_trials), all_count)
+    if all_count <= int(max_trials):
+        return list(combinations(ordered, int(size)))
+    rng = np.random.default_rng(int(seed))
+    selected: set[tuple[str, ...]] = set()
+    while len(selected) < target:
+        subset = tuple(sorted(rng.choice(ordered, size=int(size), replace=False).tolist()))
+        selected.add(subset)
+    return sorted(selected)
 
 
 def flatten_jsonable(value: Any) -> Any:
@@ -234,6 +317,16 @@ def write_rows(path: str | os.PathLike[str], rows: Sequence[Mapping[str, Any]]) 
         writer = csv.DictWriter(handle, fieldnames=keys, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
+    return str(target)
+
+
+def write_rows_atomic(path: str | os.PathLike[str], rows: Sequence[Mapping[str, Any]]) -> str:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    suffix = ".tmp.gz" if target.suffix == ".gz" else ".tmp"
+    temporary = target.with_name(f".{target.name}{suffix}")
+    write_rows(temporary, rows)
+    os.replace(temporary, target)
     return str(target)
 
 
@@ -280,6 +373,8 @@ def rank_corr(x: Sequence[float], y: Sequence[float]) -> tuple[float, float]:
         a = np.asarray(x, dtype=np.float64); b = np.asarray(y, dtype=np.float64)
         if len(a) < 2 or len(b) < 2:
             return float("nan"), float("nan")
+        if np.all(a == a[0]) or np.all(b == b[0]):
+            return float("nan"), float("nan")
         return float(spearmanr(a, b).statistic), float(kendalltau(a, b).statistic)
     except Exception:
         return float("nan"), float("nan")
@@ -319,11 +414,18 @@ def environment_snapshot(repo_root: Path, checkpoint_paths: Sequence[Path] = ())
     }
     try:
         snapshot["git_commit"] = subprocess.check_output(["git", "-C", str(repo_root), "rev-parse", "HEAD"], text=True).strip()
+        snapshot["git_branch"] = subprocess.check_output(["git", "-C", str(repo_root), "branch", "--show-current"], text=True).strip()
         snapshot["git_status"] = subprocess.check_output(["git", "-C", str(repo_root), "status", "--short"], text=True)
     except Exception as exc:
         snapshot["git_error"] = repr(exc)
     if torch.cuda.is_available():
         snapshot["gpu"] = [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]
+        snapshot["gpu_total_memory_bytes"] = [torch.cuda.get_device_properties(i).total_memory for i in range(torch.cuda.device_count())]
+    try:
+        import diffusers
+        snapshot["diffusers"] = diffusers.__version__
+    except Exception:
+        snapshot["diffusers"] = None
     snapshot["checkpoints"] = []
     for checkpoint in checkpoint_paths:
         item = {"path": str(checkpoint), "exists": checkpoint.exists()}
@@ -345,3 +447,78 @@ def environment_snapshot(repo_root: Path, checkpoint_paths: Sequence[Path] = ())
 def json_hash(value: Any) -> str:
     encoded = json.dumps(flatten_jsonable(value), sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def table_artifact(path: str | os.PathLike[str], row_count: int) -> dict[str, Any]:
+    target = Path(path)
+    return {
+        "path": str(Path(target.parent.name) / target.name),
+        "row_count": int(row_count),
+        "size_bytes": target.stat().st_size,
+        "sha256": sha256_file(target),
+    }
+
+
+def validate_table_artifact(root: Path, artifact: Mapping[str, Any]) -> tuple[bool, str]:
+    path = Path(str(artifact.get("path", "")))
+    if not path.is_absolute():
+        path = root / path
+    if not path.is_file():
+        return False, f"missing table: {path}"
+    if sha256_file(path) != artifact.get("sha256"):
+        return False, f"checksum mismatch: {path}"
+    if len(read_rows(path)) != int(artifact.get("row_count", -1)):
+        return False, f"row-count mismatch: {path}"
+    return True, "ok"
+
+
+def hierarchical_bootstrap(
+    rows: Sequence[Mapping[str, Any]],
+    value_key: str,
+    seed_key: str = "seed",
+    cluster_key: str = "cluster_id",
+    trials: int = 2000,
+    random_seed: int = 2027,
+) -> dict[str, Any]:
+    """Bootstrap seed first, then clusters within each selected seed.
+
+    Module/layer/step observations are averaged inside their condition/pair
+    cluster and are never sampled as top-level IID observations.
+    """
+    grouped: dict[str, dict[str, list[float]]] = {}
+    for row in rows:
+        value = row.get(value_key)
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(number):
+            continue
+        seed = str(row.get(seed_key))
+        cluster = str(row.get(cluster_key))
+        grouped.setdefault(seed, {}).setdefault(cluster, []).append(number)
+    seeds = sorted(grouped)
+    if not seeds:
+        return {"estimate": float("nan"), "p025": float("nan"), "p975": float("nan"), "seed_points": [], "trials": 0}
+    seed_points = [float(np.mean([np.mean(values) for values in grouped[seed].values()])) for seed in seeds]
+    rng = np.random.default_rng(int(random_seed))
+    estimates = []
+    for _ in range(int(trials)):
+        sampled_seeds = rng.choice(seeds, size=len(seeds), replace=True)
+        per_seed = []
+        for seed in sampled_seeds:
+            clusters = sorted(grouped[str(seed)])
+            sampled_clusters = rng.choice(clusters, size=len(clusters), replace=True)
+            per_seed.append(float(np.mean([np.mean(grouped[str(seed)][str(cluster)]) for cluster in sampled_clusters])))
+        estimates.append(float(np.mean(per_seed)))
+    return {
+        "estimate": float(np.mean(seed_points)),
+        "p025": float(np.percentile(estimates, 2.5)),
+        "p975": float(np.percentile(estimates, 97.5)),
+        "seed_points": seed_points,
+        "trials": int(trials),
+    }

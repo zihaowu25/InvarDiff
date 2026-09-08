@@ -22,3 +22,11 @@ images/
 **/cache_books/
 raw_cache_books/
 agent_skills
+
+# Local CCMR v1 exploratory duplicates. The audited v2 paths are explicitly
+# selected for synchronization; keep these regenerated copies on disk only.
+/assets/ccmr_formal/data/combined/dit_only/
+/assets/ccmr_formal/figures/appendix/
+/assets/ccmr_formal/figures/paper/
+/assets/ccmr_formal/figures/exploration/dit_only/
+/assets/ccmr_formal/figures/exploration/final_pilot/

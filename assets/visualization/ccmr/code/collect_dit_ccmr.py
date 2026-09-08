@@ -26,20 +26,27 @@ from common import (  # noqa: E402
     DEGENERATE_THRESHOLD,
     centered_variance,
     clean_rho,
-    code_rho,
+    ccmr_ratio,
     configure_determinism,
     environment_snapshot,
     gain_db,
-    l1_distance,
+    json_hash,
+    deterministic_derangements,
     load_yaml,
     make_generator,
+    read_rows,
     rms_feature,
     save_json_atomic,
+    sha256_file,
     tensor_sha256,
+    table_artifact,
     temporal_metrics,
     valid_rho_index,
+    utc_now,
     write_rows,
+    write_rows_atomic,
 )
+from models.dynamic_cache import SimilarityAnalyzer  # noqa: E402
 
 
 MODULES = ("msa", "mlp")
@@ -70,6 +77,9 @@ def _make_model(config: dict[str, Any], device: torch.device):
     checkpoint = Path(config["checkpoint"])
     if not checkpoint.is_absolute():
         checkpoint = REPO_ROOT / checkpoint
+    expected_hash = config.get("checkpoint_sha256")
+    if expected_hash and sha256_file(checkpoint) != expected_hash:
+        raise ValueError(f"Checkpoint SHA-256 mismatch: {checkpoint}")
     state = find_model(str(checkpoint))
     model.load_state_dict(state)
     model.eval()
@@ -97,6 +107,25 @@ def _cosine_rows(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     return torch.nn.functional.cosine_similarity(af, bf, dim=1)
 
 
+def _shuffled_difference_variances(
+    current: torch.Tensor,
+    previous: torch.Tensor,
+    permutations: list[list[int]],
+) -> list[float]:
+    """Exact condition variance for many derangements without 100 tensor copies."""
+    cur = current.detach().float().reshape(current.shape[0], -1)
+    prev = previous.detach().float().reshape(previous.shape[0], -1)
+    cur = cur - cur.mean(dim=0, keepdim=True)
+    prev = prev - prev.mean(dim=0, keepdim=True)
+    feature_count = float(cur.shape[1])
+    constant = cur.square().sum() + prev.square().sum()
+    cross = cur @ prev.transpose(0, 1)
+    indices = torch.tensor(permutations, device=cross.device, dtype=torch.long)
+    rows = torch.arange(cur.shape[0], device=cross.device).expand(indices.shape[0], -1)
+    values = (constant - 2.0 * cross[rows, indices].sum(dim=1)) / (float(cur.shape[0]) * feature_count)
+    return [float(value) for value in values.cpu()]
+
+
 def _run_trajectory(model, diffusion, class_ids: list[int], seed: int, config: dict[str, Any], output_dir: Path):
     device = next(model.parameters()).device
     k = len(class_ids)
@@ -114,18 +143,30 @@ def _run_trajectory(model, diffusion, class_ids: list[int], seed: int, config: d
     n_layers = len(model.blocks)
     storage = {name: {} for name in MODULES}
     hooks = [block.register_forward_hook(_feature_hook(storage, idx)) for idx, block in enumerate(model.blocks)]
-    rows: dict[str, list[dict[str, Any]]] = {name: [] for name in ("ccmr_metrics", "condition_similarity", "condition_distance", "temporal_metrics", "time_gap_metrics", "rho_per_condition")}
+    rows: dict[str, list[dict[str, Any]]] = {name: [] for name in ("ccmr_metrics", "condition_similarity", "condition_distance", "temporal_metrics", "time_gap_metrics", "rho_per_condition", "alignment_control")}
     previous: dict[str, list[torch.Tensor | None]] = {name: [None] * n_layers for name in MODULES}
     previous_var: dict[str, list[float | None]] = {name: [None] * n_layers for name in MODULES}
     previous_l1: dict[str, list[torch.Tensor | None]] = {name: [None] * n_layers for name in MODULES}
+    previous_code_l1: dict[str, list[torch.Tensor | None]] = {name: [None] * n_layers for name in MODULES}
     history: dict[str, list[list[torch.Tensor]]] = {name: [[] for _ in range(n_layers)] for name in MODULES}
     max_gap = max([int(x) for x in config.get("time_gaps", [1])], default=1)
-    shuffle = torch.randperm(k, generator=make_generator(int(config.get("shuffle_seed", 2027)) + seed, "cpu")).to(device)
-    if k > 1 and torch.all(shuffle == torch.arange(k, device=device)):
-        shuffle = torch.roll(torch.arange(k, device=device), 1)
+    permutations = deterministic_derangements(
+        k,
+        int(config.get("alignment_shuffle_trials", 100)),
+        int(config.get("shuffle_seed", 2027)) + seed,
+    )
+    permutation_hashes = [tensor_sha256(torch.tensor(value, dtype=torch.int64)) for value in permutations]
+
+    observed_timestep: dict[str, float] = {"value": float("nan")}
+    previous_scheduler_timestep: float | None = None
+    original_forward = model.forward_with_cfg
+
+    def observed_forward(x, t, y, cfg_scale):
+        observed_timestep["value"] = float(t.detach().reshape(-1)[0].cpu())
+        return original_forward(x, t, y, cfg_scale)
 
     sampler = diffusion.ddim_sample_loop_progressive(
-        model.forward_with_cfg,
+        observed_forward,
         z.shape,
         z,
         clip_denoised=False,
@@ -137,6 +178,8 @@ def _run_trajectory(model, diffusion, class_ids: list[int], seed: int, config: d
         for step_idx, _sample in enumerate(sampler):
             if not storage["msa"]:
                 raise RuntimeError(f"DiT hooks did not capture features at step {step_idx}")
+            scheduler_timestep = observed_timestep["value"]
+            denoising_progress = step_idx / max(n_steps - 1, 1)
             for module in MODULES:
                 for layer in range(n_layers):
                     # Clone only the conditional half; this prevents the hook
@@ -167,20 +210,34 @@ def _run_trajectory(model, diffusion, class_ids: list[int], seed: int, config: d
                                 "run_id": output_dir.name, "model": "dit", "seed": seed,
                                 "condition_id": class_ids[condition_idx], "module_family": "dit",
                                 "module_name": module, "layer_idx": layer, "step_idx": step_idx,
-                                "scheduler_timestep": step_idx, "output_rms": a_val,
+                                "scheduler_timestep": scheduler_timestep, "denoising_progress": denoising_progress, "output_rms": a_val,
                                 "diff_rms": d_val, "r_time": d_val / (a_val + float(config.get("epsilon", EPS))), "valid": True,
                             })
-                        permuted = prev[shuffle].float()
-                        shuffled_delta = current.float() - permuted
-                        shuffled_diff = float(centered_variance(shuffled_delta).cpu())
+                        shuffled_variances = _shuffled_difference_variances(current, prev, permutations)
+                        shuffled_gains = [gain_db(v_base, value, float(config.get("epsilon", EPS))) for value in shuffled_variances]
                         rows["condition_similarity"].append({
                             "run_id": output_dir.name, "model": "dit", "seed": seed,
                             "estimator": "exact_batch", "pair_id_or_condition_group": "all",
                             "module_family": "dit", "module_name": module, "layer_idx": layer,
-                            "step_idx": step_idx, "scheduler_timestep": step_idx,
+                            "step_idx": step_idx, "scheduler_timestep": scheduler_timestep, "denoising_progress": denoising_progress,
                             "adjacent_condition_cosine": sim, "aligned_g_ccmr_db": gain,
-                            "shuffled_g_ccmr_db": gain_db(v_base, shuffled_diff, float(config.get("epsilon", EPS))), "valid": True,
+                            "shuffled_g_ccmr_db": float(torch.tensor(shuffled_gains).mean()), "valid": True,
                         })
+                        for shuffle_trial, (permutation, permutation_hash, shuffled_gain) in enumerate(
+                            zip(permutations, permutation_hashes, shuffled_gains)
+                        ):
+                            rows["alignment_control"].append({
+                                "run_id": output_dir.name, "model": "dit", "seed": seed,
+                                "shuffle_trial": shuffle_trial,
+                                "permutation_seed": int(config.get("shuffle_seed", 2027)) + seed,
+                                "permutation": json.dumps(permutation, separators=(",", ":")),
+                                "permutation_hash": permutation_hash,
+                                "module_family": "dit", "module_name": module, "layer_idx": layer,
+                                "step_idx": step_idx, "scheduler_timestep": scheduler_timestep,
+                                "denoising_progress": denoising_progress,
+                                "g_aligned_db": gain, "g_shuffled_db": shuffled_gain,
+                                "delta_g_db": gain - shuffled_gain, "valid": True,
+                            })
                         for i in range(k):
                             for j in range(i + 1, k):
                                 raw_pair = float((((current[i].float() - current[j].float()) ** 2).mean() / 2.0).cpu())
@@ -190,7 +247,8 @@ def _run_trajectory(model, diffusion, class_ids: list[int], seed: int, config: d
                                     "run_id": output_dir.name, "model": "dit", "seed": seed,
                                     "condition_i": class_ids[i], "condition_j": class_ids[j],
                                     "module_family": "dit", "module_name": module, "layer_idx": layer,
-                                    "step_idx": step_idx, "raw_pair_distance": raw_pair,
+                                    "step_idx": step_idx, "scheduler_timestep": scheduler_timestep,
+                                    "denoising_progress": denoising_progress, "raw_pair_distance": raw_pair,
                                     "diff_pair_distance": diff_pair, "valid": True,
                                 })
                         for gap in config.get("time_gaps", [1]):
@@ -203,34 +261,43 @@ def _run_trajectory(model, diffusion, class_ids: list[int], seed: int, config: d
                                 rows["time_gap_metrics"].append({
                                     "run_id": output_dir.name, "model": "dit", "seed": seed,
                                     "module_family": "dit", "module_name": module, "layer_idx": layer,
-                                    "step_idx": step_idx, "time_gap": gap, "v_raw_base": 0.5 * (raw + gap_prev),
-                                    "v_diff_gap": gap_diff, "r_ccmr_gap": gap_diff / max(0.5 * (raw + gap_prev), float(config.get("epsilon", EPS))),
+                                    "step_idx": step_idx, "scheduler_timestep": scheduler_timestep,
+                                    "denoising_progress": denoising_progress, "time_gap": gap, "v_raw_base": 0.5 * (raw + gap_prev),
+                                    "v_diff_gap": gap_diff, "r_ccmr_gap": ccmr_ratio(0.5 * (raw + gap_prev), gap_diff, float(config.get("epsilon", EPS))),
                                     "g_ccmr_gap_db": gain_db(0.5 * (raw + gap_prev), gap_diff, float(config.get("epsilon", EPS))), "valid": True,
                                 })
                     rows["ccmr_metrics"].append({
                         "run_id": output_dir.name, "model": "dit", "model_revision": str(config.get("checkpoint")),
                         "seed": seed, "estimator": "exact_batch", "num_conditions": k,
                         "module_family": "dit", "module_name": module, "layer_idx": layer,
-                        "step_idx": step_idx, "scheduler_timestep": step_idx,
+                        "step_idx": step_idx, "scheduler_timestep": scheduler_timestep, "denoising_progress": denoising_progress,
                         "feature_numel": int(current[0].numel()), "v_raw": raw,
                         "v_raw_prev": prev_var if prev_var is not None else float("nan"),
-                        "v_base": v_base, "v_diff": diff_var, "r_ccmr": diff_var / max(v_base, float(config.get("epsilon", EPS))) if valid else float("nan"),
+                        "v_base": v_base, "v_diff": diff_var, "r_ccmr": ccmr_ratio(v_base, diff_var, float(config.get("epsilon", EPS))) if valid else float("nan"),
                         "g_ccmr_db": gain, "degenerate": bool(valid and v_base < float(config.get("degenerate_relative_threshold", DEGENERATE_THRESHOLD))), "valid": valid,
                     })
                     if prev is not None:
                         l1_now = _per_sample_l1(current, prev)
+                        code_l1_now = torch.stack([
+                            SimilarityAnalyzer.compute_l1_distance(prev[i], current[i]).detach().float().cpu()
+                            for i in range(k)
+                        ])
                         if previous_l1[module][layer] is not None and valid_rho_index(step_idx - 1, n_steps):
                             for condition_idx in range(k):
                                 rho_clean = clean_rho(previous_l1[module][layer][condition_idx], l1_now[condition_idx], float(config.get("epsilon", EPS)))
-                                rho_code = code_rho(prev[condition_idx], current[condition_idx], current[condition_idx], 1.0e-8) if False else None
+                                rho_code = float(SimilarityAnalyzer.compute_rate(
+                                    code_l1_now[condition_idx], previous_code_l1[module][layer][condition_idx]
+                                ).cpu())
                                 rows["rho_per_condition"].append({
                                     "run_id": output_dir.name, "model": "dit", "seed": seed,
                                     "condition_id": class_ids[condition_idx], "rho_scope": "condition", "module_family": "dit",
                                     "module_name": module, "layer_idx": layer, "score_step_idx": step_idx - 1,
+                                    "scheduler_timestep": previous_scheduler_timestep, "denoising_progress": (step_idx - 1) / max(n_steps - 1, 1),
                                     "l1_prev": float(previous_l1[module][layer][condition_idx].cpu()), "l1_next": float(l1_now[condition_idx].cpu()),
                                     "rho_clean": rho_clean, "rho_code": rho_code, "valid": True,
                                 })
                         previous_l1[module][layer] = l1_now
+                        previous_code_l1[module][layer] = code_l1_now
                     previous[module][layer] = current
                     previous_var[module][layer] = raw
                     history[module][layer].append(current)
@@ -240,30 +307,117 @@ def _run_trajectory(model, diffusion, class_ids: list[int], seed: int, config: d
             # the next diffusion step is captured as well.
             for name in MODULES:
                 storage[name].clear()
+            previous_scheduler_timestep = scheduler_timestep
     for hook in hooks:
         hook.remove()
-    return rows, latent_hashes
+    for module in MODULES:
+        for layer in range(n_layers):
+            for score_idx in (0, n_steps - 1):
+                for condition_id in class_ids:
+                    rows["rho_per_condition"].append({
+                        "run_id": output_dir.name, "model": "dit", "seed": seed,
+                        "condition_id": condition_id, "rho_scope": "condition", "module_family": "dit",
+                        "module_name": module, "layer_idx": layer, "score_step_idx": score_idx,
+                        "scheduler_timestep": None, "denoising_progress": score_idx / max(n_steps - 1, 1),
+                        "l1_prev": None, "l1_next": None, "rho_clean": None, "rho_code": None,
+                        "valid": False, "invalid_reason": "three_observation_boundary",
+                    })
+    return rows, latent_hashes, {
+        "count": len(permutations),
+        "seed": int(config.get("shuffle_seed", 2027)) + seed,
+        "hashes": permutation_hashes,
+    }
 
 
-def _write_run(config: dict[str, Any], output_dir: Path, model, diffusion, checkpoint: Path) -> None:
+def _write_run(config: dict[str, Any], output_dir: Path, model, diffusion, checkpoint: Path, resume: bool = False) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     save_json_atomic(output_dir / "config.json", config)
-    save_json_atomic(output_dir / "conditions.json", _condition_rows(config))
-    save_json_atomic(output_dir / "environment.json", environment_snapshot(REPO_ROOT, [checkpoint]))
-    run_manifest = {"run_id": output_dir.name, "model": "dit", "estimator": "exact_batch", "cache_enabled": False, "shards": {}}
+    conditions = _condition_rows(config)
+    environment = environment_snapshot(REPO_ROOT, [checkpoint])
+    save_json_atomic(output_dir / "conditions.json", conditions)
+    save_json_atomic(output_dir / "environment.json", environment)
+    resolved_hash = json_hash(config)
+    run_manifest = {
+        "run_id": output_dir.name, "model": "dit", "estimator": "exact_batch",
+        "cache_enabled": False, "decode_output": False, "resolved_config_hash": resolved_hash,
+        "experiment_level": config.get("experiment_level", "smoke"),
+        "paper_eligible": bool(config.get("paper_eligible", False)),
+        "started_at": utc_now(), "shards": {},
+    }
     all_rows: dict[str, list[dict[str, Any]]] = {}
     all_hashes: dict[str, Any] = {}
     started = time.perf_counter()
     for seed in config.get("seeds", [0]):
         seed = int(seed)
         configure_determinism(seed)
-        rows, hashes = _run_trajectory(model, diffusion, [int(x) for x in config["class_ids"]], seed, config, output_dir)
+        seed_dir = output_dir / "shards" / f"seed_{seed}"
+        seed_manifest_path = seed_dir / "manifest.json"
+        if resume and seed_manifest_path.exists():
+            candidate = json.loads(seed_manifest_path.read_text(encoding="utf-8"))
+            complete = candidate.get("status") == "complete" and candidate.get("resolved_config_hash") == resolved_hash
+            shard_rows = {}
+            if complete:
+                for table, artifact in candidate.get("tables", {}).items():
+                    path = seed_dir / Path(artifact["path"]).name
+                    if not path.exists():
+                        complete = False
+                        break
+                    if sha256_file(path) != artifact.get("sha256") or len(read_rows(path)) != int(artifact.get("row_count", -1)):
+                        complete = False
+                        break
+                    shard_rows[table] = read_rows(path)
+            if complete:
+                for key, values in shard_rows.items():
+                    all_rows.setdefault(key, []).extend(values)
+                all_hashes[str(seed)] = candidate.get("latent_hashes", {}).get(str(seed), [])
+                run_manifest["shards"][str(seed)] = candidate
+                continue
+        seed_started_at = utc_now()
+        seed_started = time.perf_counter()
+        device = next(model.parameters()).device
+        if device.type == "cuda":
+            torch.cuda.reset_peak_memory_stats(device)
+        try:
+            rows, hashes, permutation_manifest = _run_trajectory(model, diffusion, [int(x) for x in config["class_ids"]], seed, config, output_dir)
+        except Exception as exc:
+            save_json_atomic(seed_manifest_path, {
+                "status": "failed", "seed": seed, "resolved_config_hash": resolved_hash,
+                "experiment_level": config.get("experiment_level", "smoke"),
+                "started_at": seed_started_at, "failed_at": utc_now(),
+                "wall_time_s": time.perf_counter() - seed_started,
+                "oom": isinstance(exc, torch.cuda.OutOfMemoryError),
+                "error_type": type(exc).__name__, "error": str(exc),
+                "peak_allocated_gib": torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
+                "peak_reserved_gib": torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
+            })
+            raise
         all_hashes.update(hashes)
         for key, values in rows.items():
             all_rows.setdefault(key, []).extend(values)
-        seed_path = output_dir / "shards" / f"seed_{seed}.json"
-        save_json_atomic(seed_path, {"seed": seed, "row_counts": {key: len(value) for key, value in rows.items()}})
-        run_manifest["shards"][str(seed)] = {"status": "complete", "rows": {key: len(value) for key, value in rows.items()}}
+        artifacts = {}
+        for key, values in rows.items():
+            path = seed_dir / f"{key}.csv.gz"
+            write_rows_atomic(path, values)
+            artifacts[key] = table_artifact(path, len(values))
+        shard_manifest = {
+            "status": "complete", "seed": seed, "resolved_config_hash": resolved_hash,
+            "latent_hashes": hashes, "derangements": permutation_manifest,
+            "branch": environment.get("git_branch"), "commit": environment.get("git_commit"),
+            "dirty_status": environment.get("git_status"), "exact_command": [sys.executable, *sys.argv],
+            "checkpoint": environment.get("checkpoints", [{}])[0], "environment_file": "../../environment.json",
+            "condition_bank_hash": json_hash(conditions), "model_dtype": config.get("model_dtype"),
+            "statistics_dtype": config.get("statistics_dtype"), "cache_enabled": False, "decode_output": False,
+            "hook_locations": ["DiTBlock.forward:block_output.msa", "DiTBlock.forward:block_output.mlp"],
+            "hook_count": len(model.blocks), "experiment_level": config.get("experiment_level", "smoke"),
+            "paper_eligible": bool(config.get("paper_eligible", False)), "offload": False,
+            "resume_requested": bool(resume), "retry_count": 0, "oom": False,
+            "started_at": seed_started_at, "completed_at": utc_now(), "wall_time_s": time.perf_counter() - seed_started,
+            "peak_allocated_gib": torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
+            "peak_reserved_gib": torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
+            "tables": artifacts,
+        }
+        save_json_atomic(seed_manifest_path, shard_manifest)
+        run_manifest["shards"][str(seed)] = shard_manifest
     save_json_atomic(output_dir / "latent_hashes.json", all_hashes)
     data_dir = output_dir / "tables"
     for key, values in all_rows.items():
@@ -274,6 +428,7 @@ def _write_run(config: dict[str, Any], output_dir: Path, model, diffusion, check
         "row_counts": {key: len(value) for key, value in all_rows.items()}, "invalid": {},
     }
     save_json_atomic(output_dir / "summary.json", summary)
+    run_manifest["completed_at"] = utc_now()
     save_json_atomic(output_dir / "run_manifest.json", run_manifest)
 
 
@@ -288,14 +443,11 @@ def main() -> None:
     config = load_yaml(config_path)
     if config.get("cache_enabled", False):
         raise ValueError("CCMR collector requires cache_enabled=false")
-    if args.resume and (output_dir / "summary.json").exists():
-        print(f"Already complete: {output_dir}")
-        return
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device.type == "cuda":
         torch.cuda.reset_peak_memory_stats(device)
     model, diffusion, checkpoint = _make_model(config, device)
-    _write_run(config, output_dir, model, diffusion, checkpoint)
+    _write_run(config, output_dir, model, diffusion, checkpoint, resume=args.resume)
     if device.type == "cuda":
         peak = torch.cuda.max_memory_allocated(device) / 1024 ** 3
         save_json_atomic(output_dir / "memory.json", {"peak_allocated_gib": peak})
