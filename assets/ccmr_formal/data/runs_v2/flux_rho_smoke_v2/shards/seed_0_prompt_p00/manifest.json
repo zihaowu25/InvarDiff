@@ -1,0 +1,146 @@
+{
+  "branch": "dev-local",
+  "cache_enabled": false,
+  "checkpoint": {
+    "exists": true,
+    "files": [
+      {
+        "path": "model_index.json",
+        "size_bytes": 536
+      },
+      {
+        "path": "scheduler/scheduler_config.json",
+        "size_bytes": 273
+      },
+      {
+        "path": "text_encoder/config.json",
+        "size_bytes": 613
+      },
+      {
+        "path": "text_encoder/model.safetensors",
+        "size_bytes": 246144352
+      },
+      {
+        "path": "text_encoder_2/config.json",
+        "size_bytes": 782
+      },
+      {
+        "path": "text_encoder_2/model-00001-of-00002.safetensors",
+        "size_bytes": 4994582224
+      },
+      {
+        "path": "text_encoder_2/model-00002-of-00002.safetensors",
+        "size_bytes": 4530066360
+      },
+      {
+        "path": "text_encoder_2/model.safetensors.index.json",
+        "size_bytes": 19885
+      },
+      {
+        "path": "tokenizer/merges.txt",
+        "size_bytes": 524619
+      },
+      {
+        "path": "tokenizer/special_tokens_map.json",
+        "size_bytes": 588
+      },
+      {
+        "path": "tokenizer/tokenizer_config.json",
+        "size_bytes": 705
+      },
+      {
+        "path": "tokenizer/vocab.json",
+        "size_bytes": 1059962
+      },
+      {
+        "path": "tokenizer_2/special_tokens_map.json",
+        "size_bytes": 2543
+      },
+      {
+        "path": "tokenizer_2/spiece.model",
+        "size_bytes": 791656
+      },
+      {
+        "path": "tokenizer_2/tokenizer.json",
+        "size_bytes": 2424235
+      },
+      {
+        "path": "tokenizer_2/tokenizer_config.json",
+        "size_bytes": 20817
+      },
+      {
+        "path": "transformer/config.json",
+        "size_bytes": 378
+      },
+      {
+        "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+        "size_bytes": 9983040304
+      },
+      {
+        "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+        "size_bytes": 9949328904
+      },
+      {
+        "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+        "size_bytes": 3870584832
+      },
+      {
+        "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+        "size_bytes": 121262
+      },
+      {
+        "path": "vae/config.json",
+        "size_bytes": 820
+      },
+      {
+        "path": "vae/diffusion_pytorch_model.safetensors",
+        "size_bytes": 167666902
+      }
+    ],
+    "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+    "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+  },
+  "commit": "78794fb80881d379571a48dbc8de2ebb5f084988",
+  "completed_at": "2026-09-08T07:30:06.548676+00:00",
+  "condition_bank_hash": "547fb77d376f555b75e7ff3d03d92934781cc4110c00bc4944e0b06c1c8b75dc",
+  "condition_id": "p00",
+  "decode_output": false,
+  "dirty_status": "",
+  "environment_file": "../../environment.json",
+  "exact_command": [
+    "/root/miniconda3/bin/python",
+    "assets/visualization/ccmr/code/collect_flux_rho.py",
+    "--config",
+    "assets/ccmr_formal/configs_v2/flux_rho_smoke.yaml",
+    "--output-dir",
+    "assets/ccmr_formal/data/runs_v2/flux_rho_smoke_v2",
+    "--resume"
+  ],
+  "experiment_level": "smoke",
+  "hook_count": 57,
+  "hook_locations": [
+    "FluxTransformerBlock.forward:block_outputs",
+    "FluxSingleTransformerBlock.forward:block_outputs"
+  ],
+  "latent_hash": "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960",
+  "model_dtype": "bfloat16",
+  "offload": false,
+  "oom": false,
+  "paper_eligible": false,
+  "peak_allocated_gib": 32.03954458236694,
+  "peak_reserved_gib": 32.64453125,
+  "resolved_config_hash": "91872fbb3ae73d5ed3804413832af22802cafca53813b646afd389ad474b8e0b",
+  "resume_requested": true,
+  "retry_count": 0,
+  "seed": 0,
+  "started_at": "2026-09-08T07:28:35.366969+00:00",
+  "statistics_dtype": "float32",
+  "status": "complete",
+  "table": {
+    "path": "seed_0_prompt_p00/rho_per_condition.csv.gz",
+    "row_count": 4256,
+    "sha256": "c045533234408e3a73558fc7c849379fd133433ea17d17a6fe8bae1c5fd00ae5",
+    "size_bytes": 123953
+  },
+  "wall_time_s": 91.18171862512827
+}

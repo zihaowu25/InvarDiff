@@ -1,0 +1,38 @@
+Loading pipeline components...:   0%|          | 0/7 [00:00<?, ?it/s]Loading pipeline components...:  29%|██▊       | 2/7 [00:00<00:00, 17.94it/s]
+Loading weights:   0%|          | 0/219 [00:00<?, ?it/s][ALoading weights: 100%|██████████| 219/219 [00:00<00:00, 2372.64it/s]
+Loading pipeline components...:  71%|███████▏  | 5/7 [00:00<00:00, 12.25it/s]
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s][A
+Loading checkpoint shards:  67%|██████▋   | 2/3 [00:00<00:00, 10.44it/s][ALoading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 12.95it/s]
+
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s][ALoading weights: 100%|██████████| 196/196 [00:00<00:00, 4514.04it/s]
+Loading pipeline components...: 100%|██████████| 7/7 [00:00<00:00,  8.33it/s]Loading pipeline components...: 100%|██████████| 7/7 [00:00<00:00,  9.32it/s]
+Denoising steps:   0%|          | 0/28 [00:00<?, ?it/s]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:   4%|▎         | 1/28 [00:09<04:09,  9.24s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:   7%|▋         | 2/28 [00:41<09:57, 23.00s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  11%|█         | 3/28 [01:23<13:02, 31.31s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  14%|█▍        | 4/28 [02:11<15:12, 38.01s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  18%|█▊        | 5/28 [03:15<18:12, 47.50s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  21%|██▏       | 6/28 [04:07<17:59, 49.07s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  25%|██▌       | 7/28 [04:53<16:44, 47.83s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  29%|██▊       | 8/28 [05:38<15:42, 47.14s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  32%|███▏      | 9/28 [06:18<14:12, 44.89s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  36%|███▌      | 10/28 [07:05<13:37, 45.40s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  39%|███▉      | 11/28 [07:51<12:54, 45.53s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  43%|████▎     | 12/28 [08:31<11:42, 43.88s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  46%|████▋     | 13/28 [09:09<10:33, 42.20s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  50%|█████     | 14/28 [09:56<10:12, 43.75s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  54%|█████▎    | 15/28 [10:56<10:31, 48.61s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  57%|█████▋    | 16/28 [11:53<10:14, 51.17s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  61%|██████    | 17/28 [12:50<09:41, 52.85s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  64%|██████▍   | 18/28 [13:48<09:03, 54.36s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  68%|██████▊   | 19/28 [14:40<08:03, 53.70s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  71%|███████▏  | 20/28 [15:39<07:22, 55.29s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  75%|███████▌  | 21/28 [16:36<06:29, 55.67s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  79%|███████▊  | 22/28 [17:35<05:39, 56.66s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  82%|████████▏ | 23/28 [18:32<04:44, 56.97s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  86%|████████▌ | 24/28 [19:24<03:42, 55.50s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  89%|████████▉ | 25/28 [20:19<02:45, 55.25s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  93%|█████████▎| 26/28 [21:15<01:50, 55.34s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  96%|█████████▋| 27/28 [22:14<00:56, 56.71s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps: 100%|██████████| 28/28 [23:12<00:00, 56.90s/it]                                                                Peak allocated GPU memory: 32.785 GiB
+FLUX CCMR run complete: /root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/flux_pairwise_smoke_v2

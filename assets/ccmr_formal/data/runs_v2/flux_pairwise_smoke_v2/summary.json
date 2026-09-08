@@ -1,0 +1,17 @@
+{
+  "elapsed_s": 1398.201856485568,
+  "model": "flux",
+  "num_pairs": 1,
+  "num_seeds": 1,
+  "row_counts": {
+    "alignment_control": 4104,
+    "ccmr_metrics": 4256,
+    "condition_distance": 4104,
+    "condition_similarity": 4104,
+    "pair_metrics": 4104,
+    "rho_per_condition": 0,
+    "temporal_metrics": 8208,
+    "time_gap_metrics": 11704
+  },
+  "run_id": "flux_pairwise_smoke_v2"
+}

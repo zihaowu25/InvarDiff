@@ -1,0 +1,17 @@
+{
+  "elapsed_s": 162.97494207229465,
+  "invalid": {},
+  "model": "dit",
+  "num_conditions": 16,
+  "num_seeds": 1,
+  "row_counts": {
+    "alignment_control": 274400,
+    "ccmr_metrics": 2800,
+    "condition_distance": 329280,
+    "condition_similarity": 2744,
+    "rho_per_condition": 44800,
+    "temporal_metrics": 43904,
+    "time_gap_metrics": 8008
+  },
+  "run_id": "dit_512_smoke_v2"
+}

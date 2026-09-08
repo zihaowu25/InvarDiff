@@ -1,0 +1,146 @@
+{
+  "checks": {
+    "dit.atomic": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "dit.boundary": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "dit.coverage": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "dit.finite": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "dit.latents": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "dit.rho_finite": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "dit.rho_live_code": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "dit.runtime": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_pair.atomic": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_pair.coverage": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_pair.finite": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_pair.latents": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_pair.runtime": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_pair.selection": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_rho.atomic": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_rho.boundary": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_rho.coverage": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_rho.latents": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_rho.rho_finite": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_rho.rho_live_code": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_rho.runtime": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    }
+  },
+  "missing_or_failed": [],
+  "paper_eligible": false,
+  "passed": true,
+  "rho_consistency": {
+    "dit": {
+      "atol": 1e-06,
+      "failure_count": 0,
+      "jaccard_at_30pct": 1.0,
+      "kendall": 0.9999995642406746,
+      "max_absolute_error": 2.620510482387317e-06,
+      "max_relative_error": 4.138012043995697e-07,
+      "passed": true,
+      "rtol": 0.0001,
+      "spearman": 0.9999999999693783,
+      "valid_cells": 43008
+    },
+    "flux_rho": {
+      "atol": 1e-06,
+      "failure_count": 0,
+      "jaccard_at_30pct": 1.0,
+      "kendall": 0.9999973742098086,
+      "max_absolute_error": 4.1891564970031325e-05,
+      "max_relative_error": 3.427517320096028e-05,
+      "passed": true,
+      "rtol": 0.0001,
+      "spearman": 0.9999999980072433,
+      "valid_cells": 3952
+    }
+  },
+  "runs": {
+    "dit": "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/dit_512_smoke_v2",
+    "flux_pair": "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/flux_pairwise_smoke_v2",
+    "flux_rho": "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/flux_rho_smoke_v2"
+  },
+  "schema_version": 2,
+  "validated_at": "2026-09-08T07:43:01.797037+00:00",
+  "validation_scope": "smoke"
+}

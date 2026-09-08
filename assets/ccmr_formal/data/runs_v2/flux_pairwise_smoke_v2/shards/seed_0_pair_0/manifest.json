@@ -1,0 +1,205 @@
+{
+  "branch": "dev-local",
+  "cache_enabled": false,
+  "checkpoint": {
+    "exists": true,
+    "files": [
+      {
+        "path": "model_index.json",
+        "size_bytes": 536
+      },
+      {
+        "path": "scheduler/scheduler_config.json",
+        "size_bytes": 273
+      },
+      {
+        "path": "text_encoder/config.json",
+        "size_bytes": 613
+      },
+      {
+        "path": "text_encoder/model.safetensors",
+        "size_bytes": 246144352
+      },
+      {
+        "path": "text_encoder_2/config.json",
+        "size_bytes": 782
+      },
+      {
+        "path": "text_encoder_2/model-00001-of-00002.safetensors",
+        "size_bytes": 4994582224
+      },
+      {
+        "path": "text_encoder_2/model-00002-of-00002.safetensors",
+        "size_bytes": 4530066360
+      },
+      {
+        "path": "text_encoder_2/model.safetensors.index.json",
+        "size_bytes": 19885
+      },
+      {
+        "path": "tokenizer/merges.txt",
+        "size_bytes": 524619
+      },
+      {
+        "path": "tokenizer/special_tokens_map.json",
+        "size_bytes": 588
+      },
+      {
+        "path": "tokenizer/tokenizer_config.json",
+        "size_bytes": 705
+      },
+      {
+        "path": "tokenizer/vocab.json",
+        "size_bytes": 1059962
+      },
+      {
+        "path": "tokenizer_2/special_tokens_map.json",
+        "size_bytes": 2543
+      },
+      {
+        "path": "tokenizer_2/spiece.model",
+        "size_bytes": 791656
+      },
+      {
+        "path": "tokenizer_2/tokenizer.json",
+        "size_bytes": 2424235
+      },
+      {
+        "path": "tokenizer_2/tokenizer_config.json",
+        "size_bytes": 20817
+      },
+      {
+        "path": "transformer/config.json",
+        "size_bytes": 378
+      },
+      {
+        "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+        "size_bytes": 9983040304
+      },
+      {
+        "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+        "size_bytes": 9949328904
+      },
+      {
+        "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+        "size_bytes": 3870584832
+      },
+      {
+        "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+        "size_bytes": 121262
+      },
+      {
+        "path": "vae/config.json",
+        "size_bytes": 820
+      },
+      {
+        "path": "vae/diffusion_pytorch_model.safetensors",
+        "size_bytes": 167666902
+      }
+    ],
+    "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+    "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+  },
+  "commit": "78794fb80881d379571a48dbc8de2ebb5f084988",
+  "completed_at": "2026-09-08T03:14:00.861360+00:00",
+  "condition_bank_hash": "d405c2e0eec42cc468264ed7c40b923c773456e519a1a112c0e19df4c37e1554",
+  "decode_output": false,
+  "dirty_status": "",
+  "environment_file": "../../environment.json",
+  "exact_command": [
+    "/root/miniconda3/bin/python",
+    "assets/visualization/ccmr/code/collect_flux_ccmr.py",
+    "--config",
+    "assets/ccmr_formal/configs_v2/flux_pairwise_smoke.yaml",
+    "--output-dir",
+    "assets/ccmr_formal/data/runs_v2/flux_pairwise_smoke_v2",
+    "--resume"
+  ],
+  "experiment_level": "smoke",
+  "hook_count": 57,
+  "hook_locations": [
+    "FluxTransformerBlock.forward:block_outputs",
+    "FluxSingleTransformerBlock.forward:block_outputs"
+  ],
+  "latent_hashes": [
+    "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960",
+    "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960"
+  ],
+  "model_dtype": "bfloat16",
+  "offload": false,
+  "oom": false,
+  "pair_id": "p04__p08",
+  "pair_idx": 0,
+  "pair_selection_hash": "a2ba539821b4cd42a5a3d7506445317f4dd52f7db5cd9371fc549cfde9472aa1",
+  "paper_eligible": false,
+  "peak_allocated_gib": 32.78542995452881,
+  "peak_reserved_gib": 33.970703125,
+  "resolved_config_hash": "cd893ba09d1653b9236addb12b95a61e0a10b28d8e2037d961da503ada33b82a",
+  "resume_requested": true,
+  "retry_count": 0,
+  "row_counts": {
+    "alignment_control": 4104,
+    "ccmr_metrics": 4256,
+    "condition_distance": 4104,
+    "condition_similarity": 4104,
+    "pair_metrics": 4104,
+    "rho_per_condition": 0,
+    "temporal_metrics": 8208,
+    "time_gap_metrics": 11704
+  },
+  "seed": 0,
+  "started_at": "2026-09-08T02:50:43.849034+00:00",
+  "statistics_dtype": "float32",
+  "status": "complete",
+  "tables": {
+    "alignment_control": {
+      "path": "seed_0_pair_0/alignment_control.csv.gz",
+      "row_count": 4104,
+      "sha256": "b2d4c85bb163e48ab630553450fab2c391761e7293a8b98acf1a8b633d59ec1f",
+      "size_bytes": 139660
+    },
+    "ccmr_metrics": {
+      "path": "seed_0_pair_0/ccmr_metrics.csv.gz",
+      "row_count": 4256,
+      "sha256": "31153ec13da252722b6ccec1ef909c3e34bc194e41e751486e54b6c73b3ad2ae",
+      "size_bytes": 269222
+    },
+    "condition_distance": {
+      "path": "seed_0_pair_0/condition_distance.csv.gz",
+      "row_count": 4104,
+      "sha256": "d0dd641476ef93e2f3d3ca5eb72ce1885f319aa39f70d9121db418dd0c7340a8",
+      "size_bytes": 113558
+    },
+    "condition_similarity": {
+      "path": "seed_0_pair_0/condition_similarity.csv.gz",
+      "row_count": 4104,
+      "sha256": "0d93a5e92c7a5c7eb05a10805eae658f2d5771205313f8f511fd4f8013c163f4",
+      "size_bytes": 133399
+    },
+    "pair_metrics": {
+      "path": "seed_0_pair_0/pair_metrics.csv.gz",
+      "row_count": 4104,
+      "sha256": "f182f102704f9aba54a1f864bb1a1afa03a39e60f478544488aa7cdd54d0c8ff",
+      "size_bytes": 140292
+    },
+    "rho_per_condition": {
+      "path": "seed_0_pair_0/rho_per_condition.csv.gz",
+      "row_count": 0,
+      "sha256": "94cdbee3833bf04fac6e51c276918d713837aeca585418e97ee48b72cb243e91",
+      "size_bytes": 58
+    },
+    "temporal_metrics": {
+      "path": "seed_0_pair_0/temporal_metrics.csv.gz",
+      "row_count": 8208,
+      "sha256": "9d4ecbb29beee1988211704b24b55efbef8c6e2dfdff7dcdd00c24d920796d5b",
+      "size_bytes": 165020
+    },
+    "time_gap_metrics": {
+      "path": "seed_0_pair_0/time_gap_metrics.csv.gz",
+      "row_count": 11704,
+      "sha256": "f4e3602be23aa1129d6eef0e77e17ec6952e44dddf41824cf1e01604e53bf67f",
+      "size_bytes": 786874
+    }
+  },
+  "wall_time_s": 1397.0123404506594
+}

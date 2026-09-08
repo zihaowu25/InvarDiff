@@ -1,0 +1,119 @@
+{
+  "checkpoints": [
+    {
+      "exists": true,
+      "files": [
+        {
+          "path": "model_index.json",
+          "size_bytes": 536
+        },
+        {
+          "path": "scheduler/scheduler_config.json",
+          "size_bytes": 273
+        },
+        {
+          "path": "text_encoder/config.json",
+          "size_bytes": 613
+        },
+        {
+          "path": "text_encoder/model.safetensors",
+          "size_bytes": 246144352
+        },
+        {
+          "path": "text_encoder_2/config.json",
+          "size_bytes": 782
+        },
+        {
+          "path": "text_encoder_2/model-00001-of-00002.safetensors",
+          "size_bytes": 4994582224
+        },
+        {
+          "path": "text_encoder_2/model-00002-of-00002.safetensors",
+          "size_bytes": 4530066360
+        },
+        {
+          "path": "text_encoder_2/model.safetensors.index.json",
+          "size_bytes": 19885
+        },
+        {
+          "path": "tokenizer/merges.txt",
+          "size_bytes": 524619
+        },
+        {
+          "path": "tokenizer/special_tokens_map.json",
+          "size_bytes": 588
+        },
+        {
+          "path": "tokenizer/tokenizer_config.json",
+          "size_bytes": 705
+        },
+        {
+          "path": "tokenizer/vocab.json",
+          "size_bytes": 1059962
+        },
+        {
+          "path": "tokenizer_2/special_tokens_map.json",
+          "size_bytes": 2543
+        },
+        {
+          "path": "tokenizer_2/spiece.model",
+          "size_bytes": 791656
+        },
+        {
+          "path": "tokenizer_2/tokenizer.json",
+          "size_bytes": 2424235
+        },
+        {
+          "path": "tokenizer_2/tokenizer_config.json",
+          "size_bytes": 20817
+        },
+        {
+          "path": "transformer/config.json",
+          "size_bytes": 378
+        },
+        {
+          "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+          "size_bytes": 9983040304
+        },
+        {
+          "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+          "size_bytes": 9949328904
+        },
+        {
+          "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+          "size_bytes": 3870584832
+        },
+        {
+          "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+          "size_bytes": 121262
+        },
+        {
+          "path": "vae/config.json",
+          "size_bytes": 820
+        },
+        {
+          "path": "vae/diffusion_pytorch_model.safetensors",
+          "size_bytes": 167666902
+        }
+      ],
+      "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+      "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+    }
+  ],
+  "cuda": "12.8",
+  "cuda_available": true,
+  "diffusers": "0.39.0",
+  "git_branch": "dev-local",
+  "git_commit": "78794fb80881d379571a48dbc8de2ebb5f084988",
+  "git_status": "",
+  "gpu": [
+    "NVIDIA GeForce RTX 4090"
+  ],
+  "gpu_count": 1,
+  "gpu_total_memory_bytes": [
+    50866487296
+  ],
+  "platform": "Linux-5.15.0-136-generic-x86_64-with-glibc2.35",
+  "python": "3.12.3",
+  "torch": "2.8.0+cu128"
+}
