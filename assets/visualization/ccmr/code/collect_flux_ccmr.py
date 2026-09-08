@@ -27,14 +27,12 @@ from common import (  # noqa: E402
     DEGENERATE_THRESHOLD,
     centered_variance,
     ccmr_ratio,
-    clean_rho,
     compact_gap_delta,
     compact_pair_difference,
     configure_determinism,
     environment_snapshot,
     gain_db,
     json_hash,
-    l1_distance,
     load_yaml,
     make_generator,
     save_json_atomic,
@@ -43,7 +41,6 @@ from common import (  # noqa: E402
     table_artifact,
     tensor_sha256,
     temporal_metrics,
-    valid_rho_index,
     utc_now,
     write_rows,
 )
@@ -215,10 +212,6 @@ def _run_pair(
         f"{family}.{name}": [None] * module_counts[family]
         for family, names in MODULES.items() for name in names
     }
-    previous_l1: dict[str, list[torch.Tensor | None]] = {
-        f"{family}.{name}": [None] * module_counts[family]
-        for family, names in MODULES.items() for name in names
-    }
     history: dict[str, list[list[torch.Tensor]]] = {
         f"{family}.{name}": [[] for _ in range(module_counts[family])]
         for family, names in MODULES.items() for name in names
@@ -347,19 +340,6 @@ def _run_pair(
                             "v_diff": diff_var, "r_ccmr": ccmr_ratio(v_base, diff_var, float(config.get("epsilon", EPS))) if valid else float("nan"),
                             "g_ccmr_db": gain, "degenerate": bool(valid and v_base < float(config.get("degenerate_relative_threshold", DEGENERATE_THRESHOLD))), "valid": valid,
                         })
-                        if prev is not None:
-                            l1_now = stats["l1_now"]
-                            if previous_l1[key][layer] is not None and valid_rho_index(step_idx - 1, n_steps):
-                                for condition_idx in range(2):
-                                    rows["rho_per_condition"].append({
-                                        "run_id": output_dir.name, "model": "flux", "seed": seed,
-                                        "condition_id": prompt_ids[condition_idx], "rho_scope": "pair_difference", "module_family": family,
-                                        "module_name": module_name, "layer_idx": layer, "score_step_idx": step_idx - 1,
-                                        "l1_prev": float(previous_l1[key][layer][condition_idx].cpu()), "l1_next": float(l1_now[condition_idx].cpu()),
-                                        "rho_clean": clean_rho(previous_l1[key][layer][condition_idx], l1_now[condition_idx], float(config.get("epsilon", EPS))),
-                                        "rho_code": None, "valid": True,
-                                    })
-                            previous_l1[key][layer] = l1_now
                         # Persist only the compact pair trajectory.  It is
                         # already FP32 (the pair subtraction happens in the
                         # hook), but has half the batch volume of the original
@@ -414,7 +394,11 @@ def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str,
     save_json_atomic(output_dir / "conditions.json", prompts)
     save_json_atomic(output_dir / "environment.json", environment)
     pairs = select_pairs(len(prompts), int(config.get("num_condition_pairs", 1)), int(config.get("pair_selection_seed", 2027))) if config.get("condition_backend") == "pairwise" else [(0, 1)]
-    save_json_atomic(output_dir / "pair_selection.json", {"seed": config.get("pair_selection_seed"), "pairs": [[prompts[i]["id"], prompts[j]["id"]] for i, j in pairs]})
+    selected_pair_ids = [[prompts[i]["id"], prompts[j]["id"]] for i, j in pairs]
+    save_json_atomic(output_dir / "pair_selection.json", {
+        "seed": config.get("pair_selection_seed"), "pairs": selected_pair_ids,
+        "pair_selection_hash": json_hash(selected_pair_ids),
+    })
     resolved_hash = json_hash(config)
     manifest = {
         "run_id": output_dir.name, "model": "flux", "estimator": config.get("condition_backend"),
@@ -502,7 +486,7 @@ def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str,
                 "branch": environment.get("git_branch"), "commit": environment.get("git_commit"),
                 "dirty_status": environment.get("git_status"), "exact_command": [sys.executable, *sys.argv],
                 "checkpoint": environment.get("checkpoints", [{}])[0], "environment_file": "../../environment.json",
-                "condition_bank_hash": json_hash(prompts), "pair_selection_hash": json_hash([[prompts[a]["id"], prompts[b]["id"]] for a, b in pairs]),
+                "condition_bank_hash": json_hash(prompts), "pair_selection_hash": json_hash(selected_pair_ids),
                 "model_dtype": config.get("model_dtype"), "statistics_dtype": config.get("statistics_dtype"),
                 "cache_enabled": False, "decode_output": False,
                 "hook_locations": ["FluxTransformerBlock.forward:block_outputs", "FluxSingleTransformerBlock.forward:block_outputs"],
@@ -558,7 +542,7 @@ def main() -> None:
     _write_run(config, output_dir, prompts, pipe, dynamic_model, checkpoint, resume=args.resume)
     if device.type == "cuda":
         peak = torch.cuda.max_memory_allocated(device) / 1024 ** 3
-        save_json_atomic(output_dir / "memory.json", {"peak_allocated_gib": peak})
+        save_json_atomic(output_dir / "memory.json", {"peak_allocated_gib": peak, "peak_reserved_gib": torch.cuda.max_memory_reserved(device) / 1024 ** 3})
         print(f"Peak allocated GPU memory: {peak:.3f} GiB")
     print(f"FLUX CCMR run complete: {output_dir}")
 

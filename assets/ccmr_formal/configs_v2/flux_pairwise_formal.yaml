@@ -1,6 +1,7 @@
 experiment: flux_pairwise_formal_v2
 experiment_level: formal
-paper_eligible: true
+paper_candidate: true
+paper_eligible: false
 model: FLUX.1-dev
 model_path: FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21
 height: 1024

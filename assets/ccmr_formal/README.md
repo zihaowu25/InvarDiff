@@ -7,9 +7,11 @@
 
 ## Audited v2 workflow
 
-The v2 protocol is under `configs_v2/`; exact commands are in
-`commands_v2.sh`. Phase 0 changes and tests code only. Expensive DiT-512 and
-FLUX-1024 runs begin only after code review and the three smoke runs.
+The v2 protocol is under `configs_v2/`. Smoke commands are isolated in
+`commands_v2_smoke.sh`. Formal commands are isolated in
+`commands_v2_formal.sh` and additionally require the explicit environment
+gate `CCMR_FORMAL_APPROVED=YES`. Phase 0 changes and tests code only; formal
+DiT-512 and FLUX-1024 collection cannot follow smoke automatically.
 
 Formal scalar shards live under `data/runs_v2/`. Each completed shard records
 a resolved-config hash, row counts, SHA-256 checksums, latent hashes, and an
@@ -71,6 +73,6 @@ python assets/visualization/ccmr/code/plot_ccmr.py \
 ```
 
 These commands reproduce exploratory v1 outputs only. For formal collection,
-use `commands_v2.sh`. V2 runs store auditable scalar shard manifests and can
+use the split v2 command files. V2 runs store auditable scalar shard manifests and can
 be aggregated and plotted without model weights. Natural-language reports are
 not stored under `agent_skills/` or any other tracked repository path.

@@ -210,6 +210,8 @@ def main() -> None:
     dynamic_model.block_cache_enable = False
     dynamic_model.reset()
     pipe.transformer = dynamic_model
+    if device.type == "cuda":
+        torch.cuda.reset_peak_memory_stats(device)
     prompts = _load_prompts(config)
     save_json_atomic(output_dir / "config.json", config)
     save_json_atomic(output_dir / "conditions.json", prompts)
@@ -308,6 +310,13 @@ def main() -> None:
     save_json_atomic(output_dir / "summary.json", summary)
     manifest["completed_at"] = utc_now()
     save_json_atomic(output_dir / "run_manifest.json", manifest)
+    if device.type == "cuda":
+        peak = torch.cuda.max_memory_allocated(device) / 1024 ** 3
+        save_json_atomic(output_dir / "memory.json", {
+            "peak_allocated_gib": peak,
+            "peak_reserved_gib": torch.cuda.max_memory_reserved(device) / 1024 ** 3,
+        })
+        print(f"Peak allocated GPU memory: {peak:.3f} GiB")
     print(f"FLUX condition rho run complete: {output_dir} ({len(all_rows)} rows)")
 
 

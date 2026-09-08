@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
 
 import numpy as np
 
-from common import jaccard_at_fraction, rank_corr, read_rows, sha256_file
+from common import jaccard_at_fraction, json_hash, rank_corr, read_rows, select_pairs, sha256_file
 
 DIT_MODULES = {"dit.msa": 28, "dit.mlp": 28}
 FLUX_MODULES = {
@@ -80,6 +81,8 @@ def validate_atomic_manifest(run: Path) -> list[str]:
     if not manifest_path.is_file():
         return [f"missing {manifest_path}"]
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if not manifest.get("shards"):
+        failures.append("run manifest contains no shards")
     for key, shard in manifest.get("shards", {}).items():
         if shard.get("status") != "complete":
             failures.append(f"shard {key}: status is not complete")
@@ -101,6 +104,8 @@ def validate_atomic_manifest(run: Path) -> list[str]:
 
 
 def validate_boundary(rows: list[dict[str, Any]], steps: int) -> list[str]:
+    if not rows:
+        return ["rho boundary validation has no rows"]
     failures = []
     by_track: dict[tuple[Any, ...], list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
@@ -134,6 +139,8 @@ def validate_modules(rows: list[dict[str, Any]], expected: dict[str, int]) -> li
 
 
 def validate_derangements(rows: list[dict[str, Any]], trials: int = 100) -> list[str]:
+    if not rows:
+        return ["derangement validation has no rows"]
     failures = []
     grouped: dict[tuple[Any, ...], dict[int, tuple[int, ...]]] = defaultdict(dict)
     for row in rows:
@@ -147,4 +154,59 @@ def validate_derangements(rows: list[dict[str, Any]], trials: int = 100) -> list
     for key, permutations in grouped.items():
         if len(permutations) != trials or len(set(permutations.values())) != trials:
             failures.append(f"derangement coverage {key}: {len(permutations)}/{trials}")
+    return failures
+
+
+def validate_valid_rho_finite(rows: list[dict[str, Any]]) -> list[str]:
+    if not rows:
+        return ["rho validation has no rows"]
+    failures = []
+    valid_count = 0
+    for index, row in enumerate(rows):
+        if not is_true(row.get("valid", True)):
+            continue
+        valid_count += 1
+        for field in ("rho_clean", "rho_code"):
+            if not finite(row.get(field)):
+                failures.append(f"valid rho row {index} has non-finite {field}")
+                if len(failures) >= 20:
+                    return failures
+    if valid_count == 0:
+        failures.append("rho validation has no valid rows")
+    return failures
+
+
+def validate_test_log(path: Path) -> list[str]:
+    if not path.is_file():
+        return [f"missing test log: {path}"]
+    text = path.read_text(encoding="utf-8", errors="replace")
+    lowered = text.lower()
+    if any(token in lowered for token in (" failed", " error", "no tests ran")):
+        return ["test log reports failed/error/no tests ran"]
+    match = re.search(r"(?m)^\s*(\d+) passed(?:\s|$)", text)
+    if not match or int(match.group(1)) <= 0:
+        return ["test log does not contain an explicit positive 'N passed' result"]
+    return []
+
+
+def validate_flux_pair_selection(config: dict[str, Any], conditions: list[dict[str, Any]], selection: dict[str, Any]) -> list[str]:
+    failures = []
+    ids = [str(item["id"]) for item in conditions]
+    requested_seed = int(config.get("pair_selection_seed", -1))
+    requested_count = int(config.get("num_condition_pairs", -1))
+    expected_indices = select_pairs(len(ids), requested_count, requested_seed)
+    expected = [[ids[i], ids[j]] for i, j in expected_indices]
+    actual = [[str(pair[0]), str(pair[1])] for pair in selection.get("pairs", [])]
+    if int(selection.get("seed", -2)) != requested_seed:
+        failures.append("pair-selection seed mismatch")
+    if actual != expected:
+        failures.append("pair-selection list does not match deterministic preregistration")
+    canonical = [tuple(sorted(pair)) for pair in actual]
+    if len(canonical) != len(set(canonical)):
+        failures.append("pair-selection contains duplicate unordered pairs")
+    if any(a == b or a not in ids or b not in ids for a, b in actual):
+        failures.append("pair-selection contains illegal pairs")
+    expected_hash = json_hash(expected)
+    if selection.get("pair_selection_hash") != expected_hash:
+        failures.append("pair-selection hash mismatch")
     return failures

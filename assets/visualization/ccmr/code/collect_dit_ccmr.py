@@ -52,6 +52,11 @@ from models.dynamic_cache import SimilarityAnalyzer  # noqa: E402
 MODULES = ("msa", "mlp")
 
 
+def _detach_conditional_clone(value: torch.Tensor, condition_count: int) -> torch.Tensor:
+    """Materialize the conditional half without retaining the CFG backing storage."""
+    return value[:condition_count].detach().clone()
+
+
 def _feature_hook(storage: dict[str, dict[int, torch.Tensor]], layer: int):
     def hook(_module, _inputs, output):
         _x, block_output = output
@@ -184,7 +189,9 @@ def _run_trajectory(model, diffusion, class_ids: list[int], seed: int, config: d
                 for layer in range(n_layers):
                     # Clone only the conditional half; this prevents the hook
                     # dictionary from retaining the unconditional branch.
-                    current = storage[module][layer][:k].detach().contiguous()
+                    captured_cfg_feature = storage[module].pop(layer)
+                    current = _detach_conditional_clone(captured_cfg_feature, k)
+                    del captured_cfg_feature
                     raw = float(centered_variance(current).cpu())
                     prev = previous[module][layer]
                     prev_var = previous_var[module][layer]
@@ -450,7 +457,7 @@ def main() -> None:
     _write_run(config, output_dir, model, diffusion, checkpoint, resume=args.resume)
     if device.type == "cuda":
         peak = torch.cuda.max_memory_allocated(device) / 1024 ** 3
-        save_json_atomic(output_dir / "memory.json", {"peak_allocated_gib": peak})
+        save_json_atomic(output_dir / "memory.json", {"peak_allocated_gib": peak, "peak_reserved_gib": torch.cuda.max_memory_reserved(device) / 1024 ** 3})
         print(f"Peak allocated GPU memory: {peak:.3f} GiB")
     print(f"DiT CCMR run complete: {output_dir}")
 

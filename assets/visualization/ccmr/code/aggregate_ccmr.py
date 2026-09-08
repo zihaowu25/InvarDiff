@@ -6,7 +6,7 @@ import argparse
 import json
 import math
 import statistics
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -25,7 +25,9 @@ from common import (  # noqa: E402
     rank_corr,
     read_rows,
     save_json_atomic,
-    write_rows,
+    sha256_file,
+    utc_now,
+    write_rows_atomic,
 )
 from formal_protocol import rho_consistency, tolerance_check  # noqa: E402
 
@@ -384,10 +386,10 @@ def main() -> None:
     stability, subset_rows = _rho_stability(tables["rho_per_condition"], tables["ccmr_metrics"], config)
     alignment_clusters = _alignment_clusters(tables["alignment_control"])
     for table, rows in tables.items():
-        write_rows(output / f"{table}.csv.gz", rows)
-    write_rows(output / "rho_stability.csv.gz", stability)
-    write_rows(output / "subset_stability.csv.gz", subset_rows)
-    write_rows(output / "alignment_cluster_summary.csv.gz", alignment_clusters)
+        write_rows_atomic(output / f"{table}.csv.gz", rows)
+    write_rows_atomic(output / "rho_stability.csv.gz", stability)
+    write_rows_atomic(output / "subset_stability.csv.gz", subset_rows)
+    write_rows_atomic(output / "alignment_cluster_summary.csv.gz", alignment_clusters)
     valid_rho = [row for row in tables["rho_per_condition"] if str(row.get("valid", "True")).lower() == "true" and str(row.get("rho_scope")) == "condition"]
     rho_audit = rho_consistency(valid_rho) if valid_rho else {"valid_cells": 0}
     _, tolerance = tolerance_check(
@@ -398,7 +400,19 @@ def main() -> None:
     save_json_atomic(output / "rho_consistency.json", {**rho_audit, **tolerance})
     save_json_atomic(output / "hierarchical_bootstrap.json", _hierarchical_summary(alignment_clusters, int(config.get("bootstrap_trials", 2000))))
     save_json_atomic(output / "summary.json", _summary(tables["ccmr_metrics"], stability, subset_rows, runs))
-    save_json_atomic(output / "aggregate_manifest.json", {"inputs": [str(Path(x).resolve()) for x in args.input], "runs": [str(r["path"]) for r in runs], "tables": {key: len(value) for key, value in tables.items()}, "rho_stability": len(stability), "subset_stability": len(subset_rows)})
+    artifact_paths = sorted(path for path in output.iterdir() if path.is_file() and path.name != "aggregate_manifest.json")
+    save_json_atomic(output / "aggregate_manifest.json", {
+        "schema_version": 2, "created_at": utc_now(),
+        "inputs": [str(Path(x).resolve()) for x in args.input],
+        "source_runs": [{
+            "path": str(r["path"]), "run_id": r["summary"].get("run_id"),
+            "model": r["summary"].get("model"),
+        } for r in runs],
+        "tables": {key: len(value) for key, value in tables.items()},
+        "rho_stability": len(stability), "subset_stability": len(subset_rows),
+        "rho_scope_counts": dict(Counter(str(row.get("rho_scope")) for row in tables["rho_per_condition"])),
+        "artifacts": [{"path": path.name, "size_bytes": path.stat().st_size, "sha256": sha256_file(path)} for path in artifact_paths],
+    })
     print(json.dumps({"output": str(output), "runs": len(runs), "tables": {key: len(value) for key, value in tables.items()}}, indent=2))
 
 

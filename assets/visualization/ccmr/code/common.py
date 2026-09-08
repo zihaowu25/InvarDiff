@@ -415,7 +415,10 @@ def environment_snapshot(repo_root: Path, checkpoint_paths: Sequence[Path] = ())
     try:
         snapshot["git_commit"] = subprocess.check_output(["git", "-C", str(repo_root), "rev-parse", "HEAD"], text=True).strip()
         snapshot["git_branch"] = subprocess.check_output(["git", "-C", str(repo_root), "branch", "--show-current"], text=True).strip()
-        snapshot["git_status"] = subprocess.check_output(["git", "-C", str(repo_root), "status", "--short"], text=True)
+        # Generated run directories may be intentionally untracked while a
+        # collector is running. Dirty provenance concerns tracked source
+        # changes, so exclude untracked artifacts from this field.
+        snapshot["git_status"] = subprocess.check_output(["git", "-C", str(repo_root), "status", "--short", "--untracked-files=no"], text=True)
     except Exception as exc:
         snapshot["git_error"] = repr(exc)
     if torch.cuda.is_available():

@@ -22,7 +22,19 @@ from common import (  # noqa: E402
     load_yaml,
     online_rho,
 )
-from formal_protocol import rho_consistency, tolerance_check, validate_boundary, validate_derangements  # noqa: E402
+from collect_dit_ccmr import _detach_conditional_clone  # noqa: E402
+from compose_main_figure import _subset_hierarchical_summary  # noqa: E402
+from formal_protocol import (  # noqa: E402
+    rho_consistency,
+    tolerance_check,
+    validate_boundary,
+    validate_derangements,
+    validate_flux_pair_selection,
+    validate_test_log,
+    validate_valid_rho_finite,
+)
+from validate_artifacts import validate  # noqa: E402
+from validate_smoke_artifacts import validate_smokes  # noqa: E402
 
 
 def test_yaml_duplicate_key_is_rejected(tmp_path):
@@ -36,6 +48,16 @@ def test_one_hundred_unique_derangements_have_no_fixed_points():
     values = deterministic_derangements(16, 100, 2027)
     assert len(values) == len({tuple(value) for value in values}) == 100
     assert all(all(index != target for index, target in enumerate(value)) for value in values)
+
+
+def test_dit_conditional_clone_does_not_share_cfg_storage():
+    cfg_batch = torch.arange(48, dtype=torch.float32).reshape(4, 3, 4)
+    sliced = cfg_batch[:2].detach().contiguous()
+    cloned = _detach_conditional_clone(cfg_batch, 2)
+    assert sliced.untyped_storage().data_ptr() == cfg_batch.untyped_storage().data_ptr()
+    assert cloned.untyped_storage().data_ptr() != cfg_batch.untyped_storage().data_ptr()
+    cfg_batch.zero_()
+    assert torch.count_nonzero(cloned) > 0
 
 
 def test_derangement_validation_is_scoped_per_cell():
@@ -68,12 +90,23 @@ def test_rho_tolerance_executes_pass_and_fail():
     assert not tolerance_check(bad, 1e-4, 1e-6)[0]
 
 
+def test_valid_rho_requires_both_finite_values():
+    assert validate_valid_rho_finite([])
+    assert validate_valid_rho_finite([{"rho_clean": 1.0, "rho_code": "", "valid": True}])
+    assert validate_valid_rho_finite([{"rho_clean": 1.0, "rho_code": 1.0, "valid": True}]) == []
+
+
 def test_invalid_boundaries_are_explicit_and_excluded():
     rows = []
     for index in range(5):
         rows.append({"seed": 0, "condition_id": "a", "module_family": "dit", "module_name": "msa", "layer_idx": 0, "score_step_idx": index, "rho_clean": 1.0, "rho_code": 1.0, "valid": 1 <= index <= 3})
     assert validate_boundary(rows, 5) == []
     assert rho_consistency(rows)["valid_cells"] == 3
+
+
+def test_empty_boundary_and_derangement_inputs_do_not_pass():
+    assert validate_boundary([], 5)
+    assert validate_derangements([], 100)
 
 
 def test_unique_subsets_enumerate_small_spaces_without_duplicates():
@@ -126,11 +159,61 @@ def test_hierarchical_bootstrap_uses_seed_then_cluster():
     assert result["estimate"] == pytest.approx(1.5)
 
 
+def test_subset_uncertainty_resamples_seed_then_subset():
+    rows = []
+    for seed in (0, 1, 2):
+        for trial in range(10):
+            rows.append({"seed": seed, "spearman": seed * 0.1 + trial * 0.001})
+    result = _subset_hierarchical_summary(rows, "spearman", trials=100, seed=9)
+    assert len(result["seed_points"]) == 3
+    assert result["p025"] <= result["mean"] <= result["p975"]
+
+
+@pytest.mark.parametrize("text", ["1 failed", "1 error", "no tests ran", "collected 3 items"])
+def test_test_log_rejects_missing_or_failed_result(tmp_path, text):
+    path = tmp_path / "tests.log"; path.write_text(text, encoding="utf-8")
+    assert validate_test_log(path)
+
+
+def test_test_log_accepts_explicit_pass_count(tmp_path):
+    path = tmp_path / "tests.log"; path.write_text("34 passed in 1.2s\n", encoding="utf-8")
+    assert validate_test_log(path) == []
+
+
+def test_flux_pair_selection_detects_seed_hash_duplicates_and_illegal_pairs():
+    config = {"pair_selection_seed": 7, "num_condition_pairs": 2}
+    conditions = [{"id": value} for value in ("a", "b", "c")]
+    bad = {"seed": 8, "pairs": [["a", "a"], ["a", "a"]], "pair_selection_hash": "bad"}
+    failures = validate_flux_pair_selection(config, conditions, bad)
+    assert len(failures) >= 3
+
+
 def test_formal_composer_fails_without_complete_coverage(tmp_path):
     script = CODE / "compose_main_figure.py"
     result = subprocess.run([sys.executable, str(script), "--combined", str(tmp_path / "combined"), "--tables-dir", str(tmp_path / "tables"), "--output-dir", str(tmp_path / "paper"), "--dit-run", str(tmp_path / "dit"), "--flux-pair-run", str(tmp_path / "pair"), "--flux-rho-run", str(tmp_path / "rho"), "--tests-log", str(tmp_path / "tests.log")], capture_output=True, text=True)
     assert result.returncode != 0
     assert not (tmp_path / "paper" / "fig_ccmr_main.png").exists()
+
+
+def test_formal_validator_marks_missing_inputs_not_run(tmp_path):
+    result = validate(tmp_path / "dit", tmp_path / "pair", tmp_path / "rho", tmp_path / "combined", tmp_path / "tests.log")
+    assert not result["passed"]
+    assert result["checks"]["dit.atomic"]["status"] == "not_run"
+    assert not result["checks"]["dit.boundaries"]["passed"]
+    assert not result["checks"]["flux_pairwise.swap"]["passed"]
+
+
+def test_smoke_validator_fails_all_missing_runs(tmp_path):
+    result = validate_smokes(tmp_path / "dit", tmp_path / "pair", tmp_path / "rho")
+    assert not result["passed"]
+    assert result["checks"]["dit.atomic"]["status"] == "failed"
+
+
+def test_formal_command_file_requires_explicit_approval():
+    script = CODE.parents[2] / "ccmr_formal" / "commands_v2_formal.sh"
+    result = subprocess.run(["bash", str(script)], env={}, capture_output=True, text=True)
+    assert result.returncode == 2
+    assert "locked" in result.stderr
 
 
 def test_plot_and_export_modules_import_without_model_packages():

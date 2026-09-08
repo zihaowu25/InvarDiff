@@ -35,6 +35,31 @@ def _qa_images(png: Path, output: Path) -> list[Path]:
     return [gray, deut]
 
 
+def _subset_hierarchical_summary(rows, metric: str, trials: int = 2000, seed: int = 2027):
+    """Resample seeds first and correlated subset trials within each seed."""
+    by_seed = {}
+    for row in rows:
+        if row.get(metric) not in (None, ""):
+            by_seed.setdefault(str(row["seed"]), []).append(float(row[metric]))
+    if not by_seed:
+        return None
+    seed_ids = sorted(by_seed)
+    seed_points = [float(np.mean(by_seed[item])) for item in seed_ids]
+    rng = np.random.default_rng(seed)
+    boot = []
+    for _ in range(trials):
+        sampled_seeds = rng.choice(seed_ids, size=len(seed_ids), replace=True)
+        values = []
+        for sampled_seed in sampled_seeds:
+            subsets = np.asarray(by_seed[str(sampled_seed)], dtype=np.float64)
+            values.append(float(np.mean(rng.choice(subsets, size=len(subsets), replace=True))))
+        boot.append(float(np.mean(values)))
+    return {
+        "mean": float(np.mean(seed_points)), "seed_points": seed_points,
+        "p025": float(np.percentile(boot, 2.5)), "p975": float(np.percentile(boot, 97.5)),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Compose gated CCMR main figure")
     parser.add_argument("--combined", required=True)
@@ -96,10 +121,12 @@ def main() -> None:
     ax_c = fig.add_subplot(grid[1, 0])
     grouped = {}
     for row in alignment:
-        key = (row["model"], row["seed"], row["module_family"])
+        # Module families are macro-aggregated inside each model/seed before
+        # drawing independent seed-level paired points.
+        key = (row["model"], row["seed"])
         grouped.setdefault(key, [[], []]); grouped[key][0].append(float(row["g_aligned_db"])); grouped[key][1].append(float(row["g_shuffled_db"]))
     positions = {"dit": 0, "flux": 1}
-    for (model, seed, family), (aligned_values, shuffled_values) in grouped.items():
+    for (model, seed), (aligned_values, shuffled_values) in grouped.items():
         x = positions[model] + (int(float(seed)) - 2) * .025
         aligned_value, shuffled_value = np.mean(aligned_values), np.mean(shuffled_values)
         ax_c.plot([x, x], [shuffled_value, aligned_value], color=colors[model], alpha=.25, lw=.6)
@@ -110,6 +137,8 @@ def main() -> None:
 
     # D: condition-mean primary estimator only; no pair-difference rho.
     ax_d = fig.add_subplot(grid[1, 1])
+    panel_d_values = []
+    full_sizes = {"dit": 16, "flux": 12}
     for model, color in colors.items():
         for metric, marker, linestyle in (("spearman", "o", "-"), ("jaccard", "s", "--")):
             points = {}
@@ -122,17 +151,23 @@ def main() -> None:
                     continue
                 value = row.get(metric)
                 if value not in (None, ""):
-                    points.setdefault(int(float(row["subset_size"])), []).append(float(value))
-            xs = sorted(points); ys = [np.mean(points[x]) for x in xs]
-            ax_d.plot(xs, ys, marker=marker, ls=linestyle, color=color, label=f"{model.upper()} {metric}")
+                    points.setdefault(int(float(row["subset_size"])), []).append(row)
+            xs = sorted(points)
+            summaries = {x: _subset_hierarchical_summary(points[x], metric, seed=2027 + x) for x in xs}
+            ys = [summaries[x]["mean"] for x in xs]
+            lows = [ys[index] - summaries[x]["p025"] for index, x in enumerate(xs)]
+            highs = [summaries[x]["p975"] - ys[index] for index, x in enumerate(xs)]
+            ax_d.plot(xs, ys, ls=linestyle, color=color, label=f"{model.upper()} {metric}")
+            for index, x in enumerate(xs):
+                hollow = x == full_sizes[model]
+                ax_d.errorbar([x], [ys[index]], yerr=[[lows[index]], [highs[index]]], fmt=marker,
+                              color=color, markerfacecolor="white" if hollow else color,
+                              markeredgecolor=color, markersize=4, capsize=1.5, lw=.7)
+                panel_d_values.extend([summaries[x]["p025"], summaries[x]["p975"]])
             for x in xs:
-                seed_values = {}
-                for row in subsets:
-                    if row.get("model") == model and int(float(row["subset_size"])) == x and row.get(metric) not in (None, ""):
-                        if (metric == "spearman" and row.get("metric_scope") == "rank") or (metric == "jaccard" and row.get("metric_scope") == "overlap" and abs(float(row.get("cache_fraction", 0)) - .3) < 1e-9):
-                            seed_values.setdefault(row["seed"], []).append(float(row[metric]))
-                ax_d.scatter([x] * len(seed_values), [np.mean(v) for v in seed_values.values()], s=5, alpha=.25, color=color)
-    ax_d.set(xlabel="number of calibration conditions", ylabel="stability", ylim=(0, 1.03), title="D  Few-sample $\\rho$ stability")
+                ax_d.scatter([x] * len(summaries[x]["seed_points"]), summaries[x]["seed_points"], s=5, alpha=.25, color=color)
+    lower = max(-1.03, min(panel_d_values + [0.0]) - 0.05)
+    ax_d.set(xlabel="number of calibration conditions", ylabel="stability", ylim=(lower, 1.03), title="D  Few-sample $\\rho$ stability")
     ax_d.legend(frameon=False, ncol=2); ax_d.text(.02, .02, "condition mean; Jaccard@30%", transform=ax_d.transAxes)
 
     output = Path(args.output_dir).resolve(); output.mkdir(parents=True, exist_ok=True)
@@ -141,7 +176,7 @@ def main() -> None:
     plt.close(fig)
     qa_paths = _qa_images(paths["png"], output)
     caption = output / "fig_ccmr_main_caption.md"
-    caption.write_text("**CCMR mechanism evidence.** A, adjacent differencing suppresses condition variance. B, suppression across module families and normalized denoising progress. C, deterministic within-cluster shuffling removes aligned suppression. D, stability of the condition-mean online cache score for few calibration conditions; the open endpoint denotes the full-condition reference. Error summaries use seed-first hierarchical resampling.\n", encoding="utf-8")
+    caption.write_text("**CCMR mechanism evidence.** A, adjacent differencing suppresses condition variance. B, suppression across module families and normalized denoising progress. C, aligned and shuffled gains are macro-aggregated across module families and paired at the seed level. D, stability of the condition-mean online cache score; lines show hierarchical means, error bars are 95% intervals from seed-then-subset resampling, faint dots are seed means, and hollow endpoints are full-condition references. Jaccard uses the lowest 30% of scores.\n", encoding="utf-8")
     artifacts = list(paths.values()) + qa_paths + [caption]
     manifest = {"created_at": utc_now(), "formal_gate": gate, "source_combined": str(combined), "pilot_fallback": False, "empty_panels": False, "width_inches": 6.75, "minimum_font_pt": 7.0, "qa": {"grayscale": True, "deuteranopia": True, "png_dpi": 300, "pdf_fonttype": 42}, "artifacts": [{"path": str(path.relative_to(output)), "sha256": sha256_file(path), "size_bytes": path.stat().st_size} for path in artifacts]}
     save_json_atomic(output / "fig_ccmr_main_manifest.json", manifest)

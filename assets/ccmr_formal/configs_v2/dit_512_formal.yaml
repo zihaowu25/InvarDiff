@@ -1,6 +1,7 @@
 experiment: dit_512_formal_v2
 experiment_level: formal
-paper_eligible: true
+paper_candidate: true
+paper_eligible: false
 hardware_target: RTX_4090_48GB
 model: DiT-XL/2
 checkpoint: DiT/pretrained_models/DiT-XL-2-512x512.pt

@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from common import load_yaml, read_rows, save_json_atomic, sha256_file, utc_now
+from common import read_rows, save_json_atomic, sha256_file, utc_now
 from formal_protocol import (
     DIT_MODULES,
     FLUX_MODULES,
@@ -20,7 +20,10 @@ from formal_protocol import (
     validate_atomic_manifest,
     validate_boundary,
     validate_derangements,
+    validate_flux_pair_selection,
     validate_modules,
+    validate_test_log,
+    validate_valid_rho_finite,
 )
 
 
@@ -30,6 +33,8 @@ def _config(run: Path) -> dict[str, Any]:
 
 
 def _finite_valid(rows: list[dict[str, Any]], fields: tuple[str, ...]) -> list[str]:
+    if not rows:
+        return ["finite-value validation has no rows"]
     failures = []
     for index, row in enumerate(rows):
         if not is_true(row.get("valid", True)):
@@ -39,6 +44,39 @@ def _finite_valid(rows: list[dict[str, Any]], fields: tuple[str, ...]) -> list[s
                 failures.append(f"valid row {index} has non-finite {field}")
                 if len(failures) >= 20:
                     return failures
+    return failures
+
+
+def _validate_combined(combined: Path, expected_runs: list[Path]) -> list[str]:
+    required = ["ccmr_metrics.csv.gz", "alignment_control.csv.gz", "alignment_cluster_summary.csv.gz", "rho_per_condition.csv.gz", "rho_stability.csv.gz", "subset_stability.csv.gz", "rho_consistency.json", "hierarchical_bootstrap.json", "summary.json", "aggregate_manifest.json"]
+    failures = [f"missing {name}" for name in required if not (combined / name).is_file()]
+    if failures:
+        return failures
+    manifest = json.loads((combined / "aggregate_manifest.json").read_text(encoding="utf-8"))
+    actual_runs = {str(Path(item["path"]).resolve()) for item in manifest.get("source_runs", [])}
+    wanted_runs = {str(path.resolve()) for path in expected_runs}
+    if actual_runs != wanted_runs:
+        failures.append(f"aggregate source runs mismatch: {sorted(actual_runs)}")
+    expected_counts = {"ccmr_metrics": 26_768, "alignment_control": 1_667_488, "rho_per_condition": 377_216}
+    for table, count in expected_counts.items():
+        if int(manifest.get("tables", {}).get(table, -1)) != count:
+            failures.append(f"aggregate {table} row count mismatch")
+        rows = read_rows(combined / f"{table}.csv.gz")
+        if len(rows) != count:
+            failures.append(f"combined {table} actual row count mismatch")
+    if manifest.get("rho_scope_counts") != {"condition": 377_216}:
+        failures.append(f"aggregate rho scope mismatch: {manifest.get('rho_scope_counts')}")
+    artifacts = {item.get("path"): item for item in manifest.get("artifacts", [])}
+    for name in required[:-1]:
+        artifact = artifacts.get(name)
+        path = combined / name
+        if not artifact:
+            failures.append(f"aggregate manifest lacks artifact {name}")
+        elif sha256_file(path) != artifact.get("sha256"):
+            failures.append(f"aggregate checksum mismatch: {name}")
+    for name in ("rho_stability.csv.gz", "subset_stability.csv.gz", "alignment_cluster_summary.csv.gz"):
+        if not read_rows(combined / name):
+            failures.append(f"aggregate table is empty: {name}")
     return failures
 
 
@@ -82,11 +120,12 @@ def validate(
 ) -> dict[str, Any]:
     checks: dict[str, dict[str, Any]] = {}
 
-    def record(name: str, failures: list[str]) -> None:
-        checks[name] = {"passed": not failures, "failures": failures}
+    def record(name: str, failures: list[str], not_run: bool = False) -> None:
+        status = "not_run" if not_run else ("failed" if failures else "passed")
+        checks[name] = {"passed": not failures and not not_run, "status": status, "failures": failures}
 
     for label, run in (("dit", dit_run), ("flux_pairwise", flux_pair_run), ("flux_rho", flux_rho_run)):
-        record(f"{label}.atomic", validate_atomic_manifest(run) if run.exists() else [f"missing run: {run}"])
+        record(f"{label}.atomic", validate_atomic_manifest(run) if run.exists() else [f"missing run: {run}"], not_run=not run.exists())
 
     dit_cfg = _config(dit_run)
     dit_ccmr = table_rows(dit_run, "ccmr_metrics")
@@ -98,17 +137,20 @@ def validate(
         and len(dit_cfg.get("class_ids", [])) == 16
         and int(dit_cfg.get("num_inference_steps", 0)) == 50
         and dit_cfg.get("experiment_level") == "formal"
+        and dit_cfg.get("paper_candidate") is True and dit_cfg.get("paper_eligible") is False
     ) else ["DiT requires formal 512, 5 seeds, 16 classes, 50 steps"])
     record("dit.modules", validate_modules(dit_ccmr, DIT_MODULES))
     record("dit.coverage", [] if (len(dit_ccmr) == 14_000 and len(dit_rho) == 224_000 and len(dit_align) == 1_372_000) else [f"DiT row coverage ccmr={len(dit_ccmr)}/14000 rho={len(dit_rho)}/224000 alignment={len(dit_align)}/1372000"])
     record("dit.boundaries", validate_boundary(dit_rho, 50))
     record("dit.derangements", validate_derangements(dit_align, 100))
     record("dit.finite", _finite_valid(dit_ccmr, ("v_base", "v_diff", "r_ccmr", "g_ccmr_db")))
+    record("dit.rho_finite", validate_valid_rho_finite(dit_rho))
     record("dit.latents", _latent_checks(dit_run, "dit", 5, 16))
 
     pair_cfg = _config(flux_pair_run)
     pair_selection_path = flux_pair_run / "pair_selection.json"
     pair_selection = json.loads(pair_selection_path.read_text(encoding="utf-8")) if pair_selection_path.is_file() else {}
+    pair_conditions = json.loads((flux_pair_run / "conditions.json").read_text(encoding="utf-8")) if (flux_pair_run / "conditions.json").is_file() else []
     pair_ccmr = table_rows(flux_pair_run, "ccmr_metrics")
     pair_align = table_rows(flux_pair_run, "alignment_control")
     pair_shards = json.loads((flux_pair_run / "run_manifest.json").read_text()).get("shards", {}) if (flux_pair_run / "run_manifest.json").is_file() else {}
@@ -117,6 +159,7 @@ def validate(
         and len(pair_cfg.get("seeds", [])) == 3 and len(pair_selection.get("pairs", [])) == 24
         and len(pair_shards) == 72 and int(pair_cfg.get("num_inference_steps", 0)) == 28
         and pair_cfg.get("experiment_level") == "formal"
+        and pair_cfg.get("paper_candidate") is True and pair_cfg.get("paper_eligible") is False
     ) else ["FLUX pairwise requires formal 1024, 3 seeds x 24 pairs, 28 steps"])
     record("flux_pairwise.modules", validate_modules(pair_ccmr, FLUX_MODULES))
     record("flux_pairwise.coverage", [] if (len(pair_ccmr) == 306_432 and len(pair_align) == 295_488) else [f"FLUX pair row coverage ccmr={len(pair_ccmr)}/306432 alignment={len(pair_align)}/295488"])
@@ -125,9 +168,12 @@ def validate(
     for row in pair_align:
         key = (row.get("seed"), row.get("pair_id"), row.get("module_family"), row.get("module_name"), row.get("layer_idx"), row.get("step_idx"))
         grouped_swap[key] = grouped_swap.get(key, 0) + 1
-    if any(count != 1 for count in grouped_swap.values()):
+    if not grouped_swap:
+        duplicate_swap.append("FLUX swap validation has no rows")
+    elif any(count != 1 for count in grouped_swap.values()):
         duplicate_swap.append("FLUX pair swap must occur exactly once per valid cell")
     record("flux_pairwise.swap", duplicate_swap)
+    record("flux_pairwise.selection", validate_flux_pair_selection(pair_cfg, pair_conditions, pair_selection) if pair_cfg and pair_conditions else ["pair-selection inputs are empty"])
     record("flux_pairwise.finite", _finite_valid(pair_ccmr, ("v_base", "v_diff", "r_ccmr", "g_ccmr_db")))
     record("flux_pairwise.latents", _latent_checks(flux_pair_run, "flux_pairwise", 3, 2))
 
@@ -139,31 +185,36 @@ def validate(
         and len(rho_cfg.get("seeds", [])) == 3 and len(rho_cfg.get("prompt_ids", [])) == 12
         and len(rho_manifest) == 36 and int(rho_cfg.get("num_inference_steps", 0)) == 28
         and rho_cfg.get("experiment_level") == "formal"
+        and rho_cfg.get("paper_candidate") is True and rho_cfg.get("paper_eligible") is False
     ) else ["FLUX rho requires formal 1024, 3 seeds x 12 prompts, 28 steps"])
     record("flux_rho.scope", [] if flux_rho and all(row.get("rho_scope") == "condition" for row in flux_rho) else ["FLUX Panel D requires condition-scope rho only"])
     record("flux_rho.modules", validate_modules(flux_rho, FLUX_MODULES))
     record("flux_rho.coverage", [] if len(flux_rho) == 153_216 else [f"FLUX rho row coverage {len(flux_rho)}/153216"])
     record("flux_rho.boundaries", validate_boundary(flux_rho, 28))
+    record("flux_rho.rho_finite", validate_valid_rho_finite(flux_rho))
     record("flux_rho.latents", _latent_checks(flux_rho_run, "flux_rho", 3, 12))
 
     all_rho = dit_rho + flux_rho
     tolerance_failures = []
     audit = {}
     if all_rho:
-        passed, audit = tolerance_check(
-            all_rho,
-            max(float(dit_cfg.get("rho_repeat_rtol", 1e-4)), float(rho_cfg.get("rho_repeat_rtol", 1e-4))),
-            max(float(dit_cfg.get("rho_repeat_atol", 1e-6)), float(rho_cfg.get("rho_repeat_atol", 1e-6))),
-        )
-        if not passed:
-            tolerance_failures.append(f"rho equivalence failed for {audit['failure_count']} cells")
+        try:
+            passed, audit = tolerance_check(
+                all_rho,
+                max(float(dit_cfg.get("rho_repeat_rtol", 1e-4)), float(rho_cfg.get("rho_repeat_rtol", 1e-4))),
+                max(float(dit_cfg.get("rho_repeat_atol", 1e-6)), float(rho_cfg.get("rho_repeat_atol", 1e-6))),
+            )
+            if not passed:
+                tolerance_failures.append(f"rho equivalence failed for {audit['failure_count']} cells")
+        except Exception as exc:
+            audit = {"passed": False, "error": f"{type(exc).__name__}: {exc}"}
+            tolerance_failures.append(audit["error"])
     else:
         tolerance_failures.append("no condition-level rho rows")
     record("rho.live_code_equivalence", tolerance_failures)
 
-    combined_required = ["ccmr_metrics.csv.gz", "alignment_control.csv.gz", "alignment_cluster_summary.csv.gz", "rho_stability.csv.gz", "subset_stability.csv.gz", "rho_consistency.json", "hierarchical_bootstrap.json", "summary.json"]
-    record("combined", [f"missing {name}" for name in combined_required if not (combined / name).is_file()])
-    record("tests", [] if tests_log.is_file() and "failed" not in tests_log.read_text(encoding="utf-8", errors="replace").lower() else [f"passing test log missing: {tests_log}"])
+    record("combined", _validate_combined(combined, [dit_run, flux_pair_run, flux_rho_run]), not_run=not combined.exists())
+    record("tests", validate_test_log(tests_log), not_run=not tests_log.exists())
     if tables_dir is not None:
         names = ("table_ccmr_summary.csv", "table_ccmr_summary.tex", "table_ccmr_summary.md", "table_rho_stability.csv", "table_rho_stability.tex", "table_rho_stability.md", "ccmr_paper_numbers.tex", "table_manifest.json")
         record("paper_tables", [f"missing {name}" for name in names if not (tables_dir / name).is_file()])
