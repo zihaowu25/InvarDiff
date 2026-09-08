@@ -18,6 +18,20 @@ a resolved-config hash, row counts, SHA-256 checksums, latent hashes, and an
 explicit status. `--resume` reuses a shard only after these checks pass. Full
 activation trajectories are never persisted.
 
+The active FLUX formal protocol is the cost-reduced T02 revision. It uses a
+preregistered balanced cycle of 12 unordered prompt pairs for each of three
+seeds (36 pairwise shards total), at 1024x1024 and 28 steps. The deterministic
+pair list is generated with seed 2027; every prompt has degree two and the
+graph is one connected cycle. The interrupted 24-pair run is archived under
+`data/runs_v2/flux_pairwise_formal24_aborted_20260908/`, is explicitly marked
+ineligible, and is rejected by the formal aggregator.
+
+The first T02 shard is collected with `--max-new-shards 1` and audited as an
+integration gate. Only after its pair ID, commit, checksums, exact row counts,
+memory, and attempt history pass is the same run resumed for the remaining
+35 shards. Long collectors are launched under `screen`; the full formal
+command file must not be used as an unattended integration-smoke command.
+
 The mechanism experiment shares an initial latent within each seed and varies
 only the class or prompt. This isolates the CCMR mechanism; it is distinct
 from deployment evidence based on independently generated calibration items.

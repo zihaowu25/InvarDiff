@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from aggregate_ccmr import _recompute_pairwise_ccmr, _recompute_pairwise_time_gap, _rho_stability  # noqa: E402
+from aggregate_ccmr import _recompute_pairwise_ccmr, _recompute_pairwise_time_gap, _rho_stability, validate_aggregate_inputs  # noqa: E402
 from common import all_unordered_pairs, centered_variance, compact_gap_delta, pair_energy  # noqa: E402
 
 
@@ -96,3 +96,16 @@ def test_pairwise_time_gap_aggregates_energy_before_gain():
     assert abs(result[0]["v_raw_base"] - v_base) < 1e-12
     assert abs(result[0]["v_diff_gap"] - v_difference) < 1e-12
     assert abs(result[0]["g_ccmr_gap_db"] - 10.0 * math.log10(v_base / v_difference)) < 1e-9
+
+
+def test_formal_aggregate_rejects_aborted_or_unregistered_runs(tmp_path):
+    aborted = tmp_path / "flux_pairwise_formal24_aborted_20260908"
+    aborted.mkdir()
+    (aborted / "aborted_protocol_manifest.json").write_text("{}", encoding="utf-8")
+    config = {"allowed_run_ids": ["dit", "pair", "rho"]}
+    try:
+        validate_aggregate_inputs([aborted], config)
+    except ValueError as exc:
+        assert "preregistration" in str(exc) or "Aborted" in str(exc)
+    else:
+        raise AssertionError("aborted aggregate input was accepted")

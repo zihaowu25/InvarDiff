@@ -10,7 +10,7 @@ from typing import Any, Iterable
 
 import numpy as np
 
-from common import jaccard_at_fraction, json_hash, rank_corr, read_rows, select_pairs, sha256_file
+from common import balanced_cycle_selection, jaccard_at_fraction, json_hash, rank_corr, read_rows, select_pairs, sha256_file
 
 DIT_MODULES = {"dit.msa": 28, "dit.mlp": 28}
 FLUX_MODULES = {
@@ -271,6 +271,75 @@ def subset_hierarchical_summary(
     }
 
 
+def alignment_hierarchical_summary(
+    rows: Iterable[dict[str, Any]],
+    trials: int = 2000,
+    random_seed: int = 2027,
+) -> dict[str, Any] | None:
+    """Macro families within seed/cluster before hierarchical resampling."""
+    grouped: dict[tuple[str, str], dict[str, dict[str, list[tuple[float, float]]]]] = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(list))
+    )
+    for row in rows:
+        if not all(finite(row.get(field)) for field in ("g_aligned_db", "g_shuffled_db")):
+            continue
+        seed_key = (str(row.get("source_run", "")), str(row.get("seed")))
+        cluster = str(row.get("cluster_id"))
+        family = str(row.get("module_family", "ALL"))
+        grouped[seed_key][cluster][family].append(
+            (float(row["g_aligned_db"]), float(row["g_shuffled_db"]))
+        )
+    if not grouped:
+        return None
+    cluster_values: dict[tuple[str, str], list[tuple[float, float]]] = {}
+    for seed_key, clusters in grouped.items():
+        values = []
+        for families in clusters.values():
+            family_means = []
+            for observations in families.values():
+                family_means.append((
+                    float(np.mean([value[0] for value in observations])),
+                    float(np.mean([value[1] for value in observations])),
+                ))
+            if family_means:
+                values.append((
+                    float(np.mean([value[0] for value in family_means])),
+                    float(np.mean([value[1] for value in family_means])),
+                ))
+        if values:
+            cluster_values[seed_key] = values
+    seed_ids = sorted(cluster_values)
+    seed_points = [{
+        "seed": seed[1],
+        "aligned": float(np.mean([value[0] for value in cluster_values[seed]])),
+        "shuffled": float(np.mean([value[1] for value in cluster_values[seed]])),
+    } for seed in seed_ids]
+    rng = np.random.default_rng(random_seed)
+    aligned_boot, shuffled_boot = [], []
+    for _ in range(int(trials)):
+        sampled = rng.choice(len(seed_ids), size=len(seed_ids), replace=True)
+        aligned_values, shuffled_values = [], []
+        for seed_index in sampled:
+            clusters = cluster_values[seed_ids[int(seed_index)]]
+            picks = rng.choice(len(clusters), size=len(clusters), replace=True)
+            aligned_values.append(float(np.mean([clusters[int(i)][0] for i in picks])))
+            shuffled_values.append(float(np.mean([clusters[int(i)][1] for i in picks])))
+        aligned_boot.append(float(np.mean(aligned_values)))
+        shuffled_boot.append(float(np.mean(shuffled_values)))
+    return {
+        "center": "hierarchical_mean",
+        "aligned": float(np.mean([item["aligned"] for item in seed_points])),
+        "shuffled": float(np.mean([item["shuffled"] for item in seed_points])),
+        "aligned_p025": float(np.percentile(aligned_boot, 2.5)),
+        "aligned_p975": float(np.percentile(aligned_boot, 97.5)),
+        "shuffled_p025": float(np.percentile(shuffled_boot, 2.5)),
+        "shuffled_p975": float(np.percentile(shuffled_boot, 97.5)),
+        "seed_points": seed_points,
+        "num_seeds": len(seed_ids),
+        "num_clusters": sum(len(values) for values in cluster_values.values()),
+    }
+
+
 def validate_valid_rho_finite(rows: list[dict[str, Any]]) -> list[str]:
     if not rows:
         return ["rho validation has no rows"]
@@ -308,8 +377,21 @@ def validate_flux_pair_selection(config: dict[str, Any], conditions: list[dict[s
     ids = [str(item["id"]) for item in conditions]
     requested_seed = int(config.get("pair_selection_seed", -1))
     requested_count = int(config.get("num_condition_pairs", -1))
-    expected_indices = select_pairs(len(ids), requested_count, requested_seed)
-    expected = [[ids[i], ids[j]] for i, j in expected_indices]
+    mode = str(config.get("pair_selection_mode", "uniform_without_replacement"))
+    if mode == "balanced_cycle":
+        expected_selection = balanced_cycle_selection(ids, requested_seed)
+        expected = expected_selection["pairs"]
+        if selection.get("mode") != "balanced_cycle":
+            failures.append("pair-selection mode mismatch")
+        if selection.get("prompt_order") != expected_selection["prompt_order"]:
+            failures.append("balanced-cycle prompt order mismatch")
+        if selection.get("prompt_degrees") != expected_selection["prompt_degrees"]:
+            failures.append("balanced-cycle prompt degree manifest mismatch")
+        if selection.get("connected") is not True:
+            failures.append("balanced-cycle manifest is not connected")
+    else:
+        expected_indices = select_pairs(len(ids), requested_count, requested_seed)
+        expected = [[ids[i], ids[j]] for i, j in expected_indices]
     actual = [[str(pair[0]), str(pair[1])] for pair in selection.get("pairs", [])]
     if int(selection.get("seed", -2)) != requested_seed:
         failures.append("pair-selection seed mismatch")
@@ -320,6 +402,27 @@ def validate_flux_pair_selection(config: dict[str, Any], conditions: list[dict[s
         failures.append("pair-selection contains duplicate unordered pairs")
     if any(a == b or a not in ids or b not in ids for a, b in actual):
         failures.append("pair-selection contains illegal pairs")
+    if mode == "balanced_cycle":
+        degrees = Counter(item for pair in actual for item in pair)
+        if set(degrees) != set(ids):
+            failures.append("balanced-cycle omits one or more prompts")
+        if any(degrees.get(item, 0) != 2 for item in ids):
+            failures.append("balanced-cycle prompt degrees are not all two")
+        adjacency: dict[str, set[str]] = {item: set() for item in ids}
+        for left, right in actual:
+            if left in adjacency and right in adjacency and left != right:
+                adjacency[left].add(right); adjacency[right].add(left)
+        visited = set()
+        pending = [ids[0]] if ids else []
+        while pending:
+            current = pending.pop()
+            if current in visited:
+                continue
+            visited.add(current); pending.extend(adjacency[current] - visited)
+        if visited != set(ids):
+            failures.append("balanced-cycle graph is disconnected")
+        if len(actual) != len(ids) or requested_count != len(ids):
+            failures.append("balanced-cycle must contain exactly one edge per prompt")
     expected_hash = json_hash(expected)
     if selection.get("pair_selection_hash") != expected_hash:
         failures.append("pair-selection hash mismatch")

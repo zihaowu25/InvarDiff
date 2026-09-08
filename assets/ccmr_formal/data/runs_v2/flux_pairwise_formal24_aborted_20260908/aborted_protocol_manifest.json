@@ -1,0 +1,19 @@
+{
+  "status": "aborted_by_protocol_revision",
+  "paper_eligible": false,
+  "usable_for_formal_aggregate": false,
+  "collection_commit": "e38c5d1a9cc0490977f03016c50fadc81074bd9b",
+  "resolved_config_hash": "daae0d2fa4065394bf1bd2d56aee385762d57c60a298fc3164d9cf787663cd62",
+  "pair_selection_hash": "a57a840d3478953a076afa13b6cc68cc30b1858e4346b7a4f80b41aa68b00c78",
+  "planned_shards": 72,
+  "complete_shards": 2,
+  "complete_shard_ids": [
+    "seed_0_pair_0",
+    "seed_0_pair_1"
+  ],
+  "interrupted_shard": "seed_0_pair_2",
+  "interrupted_step": "9/28",
+  "interruption_reason": "server_restart_without_atomic_failure_manifest",
+  "collector_retry_recorded": false,
+  "protocol_revision": "24 random pairs replaced by 12 preregistered balanced-cycle pairs before formal FLUX analysis"
+}

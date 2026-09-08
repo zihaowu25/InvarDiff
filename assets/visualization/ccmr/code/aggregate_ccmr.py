@@ -43,6 +43,15 @@ NUMERIC = {
 }
 
 
+def validate_aggregate_inputs(input_paths: list[Path], config: dict[str, Any]) -> None:
+    allowed = set(config.get("allowed_run_ids", []))
+    if allowed and {path.name for path in input_paths} != allowed:
+        raise ValueError(f"Formal aggregate input run IDs do not match preregistration: {[path.name for path in input_paths]}")
+    for path in input_paths:
+        if "aborted" in path.name.lower() or (path / "aborted_protocol_manifest.json").exists():
+            raise ValueError(f"Aborted protocol input is forbidden: {path}")
+
+
 def _read_runs(inputs: list[Path]):
     tables: dict[str, list[dict[str, Any]]] = {key: [] for key in TABLES}
     runs = []
@@ -53,7 +62,9 @@ def _read_runs(inputs: list[Path]):
                 summary = json.loads((run / "summary.json").read_text())
             except (OSError, json.JSONDecodeError):
                 continue
-            runs.append({"path": run, "summary": summary})
+            manifest_path = run / "run_manifest.json"
+            manifest = json.loads(manifest_path.read_text()) if manifest_path.is_file() else {}
+            runs.append({"path": run, "summary": summary, "manifest": manifest})
             for table in TABLES:
                 for candidate in (run / "tables" / f"{table}.csv.gz", run / "tables" / f"{table}.csv"):
                     if candidate.exists():
@@ -379,9 +390,11 @@ def main() -> None:
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--config", default=None)
     args = parser.parse_args()
-    output = Path(args.output_dir).resolve(); output.mkdir(parents=True, exist_ok=True)
+    input_paths = [Path(x).resolve() for x in args.input]
     config = load_yaml(args.config) if args.config else {}
-    runs, tables = _read_runs([Path(x).resolve() for x in args.input])
+    validate_aggregate_inputs(input_paths, config)
+    output = Path(args.output_dir).resolve(); output.mkdir(parents=True, exist_ok=True)
+    runs, tables = _read_runs(input_paths)
     tables["ccmr_metrics"] = _recompute_pairwise_ccmr(tables["ccmr_metrics"], tables["condition_distance"])
     tables["time_gap_metrics"] = _recompute_pairwise_time_gap(tables["time_gap_metrics"])
     stability, subset_rows = _rho_stability(tables["rho_per_condition"], tables["ccmr_metrics"], config)
@@ -402,9 +415,24 @@ def main() -> None:
     save_json_atomic(output / "hierarchical_bootstrap.json", _hierarchical_summary(alignment_clusters, int(config.get("bootstrap_trials", 2000))))
     save_json_atomic(output / "summary.json", _summary(tables["ccmr_metrics"], stability, subset_rows, runs))
     artifact_paths = sorted(path for path in output.iterdir() if path.is_file() and path.name != "aggregate_manifest.json")
+    collection_commits = {}
+    for run in runs:
+        commits = sorted({str(shard.get("commit")) for shard in run["manifest"].get("shards", {}).values() if shard.get("commit")})
+        if len(commits) != 1:
+            raise ValueError(f"Run {run['path']} does not contain one unique collection commit")
+        run_id = str(run["summary"].get("run_id"))
+        if run_id == "dit_512_formal_v2":
+            key = "dit_512"
+        elif run_id == "flux_pairwise_formal12_v2":
+            key = "flux_pairwise_formal12"
+        elif run_id == "flux_rho_formal_v2":
+            key = "flux_condition_rho"
+        else:
+            raise ValueError(f"Unexpected formal run ID: {run_id}")
+        collection_commits[key] = commits[0]
     save_json_atomic(output / "aggregate_manifest.json", {
         "schema_version": 2, "created_at": utc_now(),
-        "inputs": [str(Path(x).resolve()) for x in args.input],
+        "inputs": [str(path) for path in input_paths],
         "source_runs": [{
             "path": str(r["path"]), "run_id": r["summary"].get("run_id"),
             "model": r["summary"].get("model"),
@@ -412,6 +440,8 @@ def main() -> None:
         "tables": {key: len(value) for key, value in tables.items()},
         "rho_stability": len(stability), "subset_stability": len(subset_rows),
         "rho_scope_counts": dict(Counter(str(row.get("rho_scope")) for row in tables["rho_per_condition"])),
+        "collection_commits": collection_commits,
+        "protocol_revision": config.get("protocol_revision"),
         "artifacts": [{"path": path.name, "size_bytes": path.stat().st_size, "sha256": sha256_file(path)} for path in artifact_paths],
     })
     print(json.dumps({"output": str(output), "runs": len(runs), "tables": {key: len(value) for key, value in tables.items()}}, indent=2))

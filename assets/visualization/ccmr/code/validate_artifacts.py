@@ -27,6 +27,15 @@ from formal_protocol import (
     validate_valid_rho_finite,
 )
 
+FORMAL_COMBINED_COUNTS = {
+    "ccmr_metrics": 26_768,
+    "alignment_control": 1_519_744,
+    "rho_per_condition": 377_216,
+}
+FORMAL_COLLECTION_COMMIT_KEYS = {
+    "dit_512", "flux_pairwise_formal12", "flux_condition_rho",
+}
+
 
 def _config(run: Path) -> dict[str, Any]:
     path = run / "config.json"
@@ -83,6 +92,72 @@ def _validate_shard_metadata(run: Path) -> list[str]:
     return failures
 
 
+def _validate_formal12_shards(run: Path, pair_selection: dict[str, Any]) -> list[str]:
+    manifest = _load_manifest(run)
+    shards = manifest.get("shards", {})
+    expected_pairs = [f"{left}__{right}" for left, right in pair_selection.get("pairs", [])]
+    expected_counts = {
+        "ccmr_metrics": 4_256, "alignment_control": 4_104,
+        "condition_distance": 4_104, "condition_similarity": 4_104,
+        "pair_metrics": 4_104, "temporal_metrics": 8_208,
+        "time_gap_metrics": 11_704, "rho_per_condition": 0,
+    }
+    failures = []
+    if len(shards) != 36:
+        failures.append(f"formal12 shard coverage {len(shards)}/36")
+    for seed in range(3):
+        observed = []
+        for pair_idx, pair_id in enumerate(expected_pairs):
+            key = f"{seed}:{pair_idx}"
+            shard = shards.get(key)
+            if not shard:
+                failures.append(f"missing formal12 shard {key}")
+                continue
+            observed.append(str(shard.get("pair_id")))
+            if shard.get("pair_id") != pair_id:
+                failures.append(f"shard {key}: pair ID mismatch")
+            if shard.get("pair_selection_hash") != pair_selection.get("pair_selection_hash"):
+                failures.append(f"shard {key}: pair-selection hash mismatch")
+            for table, count in expected_counts.items():
+                if int(shard.get("row_counts", {}).get(table, -1)) != count:
+                    failures.append(f"shard {key}: {table} row count mismatch")
+        if observed and observed != expected_pairs:
+            failures.append(f"seed {seed}: pair order differs from preregistration")
+    return failures
+
+
+def validate_collection_commit_map(
+    aggregate_manifest: dict[str, Any], expected_runs: list[Path],
+) -> list[str]:
+    """Match every aggregate commit entry to its source run exactly."""
+    failures: list[str] = []
+    commit_map = aggregate_manifest.get("collection_commits", {})
+    if set(commit_map) != FORMAL_COLLECTION_COMMIT_KEYS or any(
+        not str(value).strip() for value in commit_map.values()
+    ):
+        failures.append(f"aggregate collection commit map mismatch: {commit_map}")
+        return failures
+    expected_run_keys = {
+        "dit_512_formal_v2": "dit_512",
+        "flux_pairwise_formal12_v2": "flux_pairwise_formal12",
+        "flux_rho_formal_v2": "flux_condition_rho",
+    }
+    for run in expected_runs:
+        key = expected_run_keys.get(run.name)
+        if key is None:
+            failures.append(f"unexpected aggregate source run: {run.name}")
+            continue
+        run_manifest = _load_manifest(run)
+        commits = {
+            str(item.get("commit"))
+            for item in run_manifest.get("shards", {}).values()
+            if item.get("commit")
+        }
+        if len(commits) != 1 or commit_map.get(key) not in commits:
+            failures.append(f"aggregate collection commit mismatch for {run.name}")
+    return failures
+
+
 def _validate_combined(combined: Path, expected_runs: list[Path]) -> list[str]:
     required = ["ccmr_metrics.csv.gz", "alignment_control.csv.gz", "alignment_cluster_summary.csv.gz", "rho_per_condition.csv.gz", "rho_stability.csv.gz", "subset_stability.csv.gz", "rho_consistency.json", "hierarchical_bootstrap.json", "summary.json", "aggregate_manifest.json"]
     failures = [f"missing {name}" for name in required if not (combined / name).is_file()]
@@ -93,8 +168,7 @@ def _validate_combined(combined: Path, expected_runs: list[Path]) -> list[str]:
     wanted_runs = {str(path.resolve()) for path in expected_runs}
     if actual_runs != wanted_runs:
         failures.append(f"aggregate source runs mismatch: {sorted(actual_runs)}")
-    expected_counts = {"ccmr_metrics": 26_768, "alignment_control": 1_667_488, "rho_per_condition": 377_216}
-    for table, count in expected_counts.items():
+    for table, count in FORMAL_COMBINED_COUNTS.items():
         if int(manifest.get("tables", {}).get(table, -1)) != count:
             failures.append(f"aggregate {table} row count mismatch")
         rows = read_rows(combined / f"{table}.csv.gz")
@@ -102,6 +176,10 @@ def _validate_combined(combined: Path, expected_runs: list[Path]) -> list[str]:
             failures.append(f"combined {table} actual row count mismatch")
     if manifest.get("rho_scope_counts") != {"condition": 377_216}:
         failures.append(f"aggregate rho scope mismatch: {manifest.get('rho_scope_counts')}")
+    expected_revision = "24 random pairs replaced by 12 preregistered balanced-cycle pairs before formal FLUX analysis"
+    if manifest.get("protocol_revision") != expected_revision:
+        failures.append("aggregate protocol revision mismatch")
+    failures.extend(validate_collection_commit_map(manifest, expected_runs))
     artifacts = {item.get("path"): item for item in manifest.get("artifacts", [])}
     for name in required[:-1]:
         artifact = artifacts.get(name)
@@ -116,7 +194,12 @@ def _validate_combined(combined: Path, expected_runs: list[Path]) -> list[str]:
     return failures
 
 
-def _latent_checks(run: Path, kind: str, expected_seeds: int, expected_conditions: int) -> list[str]:
+def _load_manifest(run: Path) -> dict[str, Any]:
+    path = run / "run_manifest.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+
+
+def _latent_checks(run: Path, kind: str, expected_seeds: int, expected_conditions: int, pairs_per_seed: int = 12) -> list[str]:
     path = run / "latent_hashes.json"
     if not path.is_file():
         return [f"{kind}: missing latent_hashes.json"]
@@ -129,8 +212,8 @@ def _latent_checks(run: Path, kind: str, expected_seeds: int, expected_condition
             if len(hashes) != expected_conditions or len(set(hashes)) != 1:
                 failures.append(f"dit seed {seed}: shared-latent hash mismatch")
     elif kind == "flux_pairwise":
-        if len(values) != expected_seeds * 24:
-            failures.append(f"flux pair latent coverage {len(values)}/{expected_seeds * 24}")
+        if len(values) != expected_seeds * pairs_per_seed:
+            failures.append(f"flux pair latent coverage {len(values)}/{expected_seeds * pairs_per_seed}")
         by_seed = {}
         for shard, hashes in values.items():
             if len(hashes) != 2 or len(set(hashes)) != 1:
@@ -209,8 +292,9 @@ def validate(
     pair_shards = json.loads((flux_pair_run / "run_manifest.json").read_text()).get("shards", {}) if (flux_pair_run / "run_manifest.json").is_file() else {}
     record("flux_pairwise.protocol", [] if (
         int(pair_cfg.get("height", 0)) == 1024 and int(pair_cfg.get("width", 0)) == 1024
-        and len(pair_cfg.get("seeds", [])) == 3 and len(pair_selection.get("pairs", [])) == 24
-        and len(pair_shards) == 72 and int(pair_cfg.get("num_inference_steps", 0)) == 28
+        and len(pair_cfg.get("seeds", [])) == 3 and len(pair_selection.get("pairs", [])) == 12
+        and len(pair_shards) == 36 and int(pair_cfg.get("num_inference_steps", 0)) == 28
+        and pair_cfg.get("pair_selection_mode") == "balanced_cycle"
         and pair_cfg.get("condition_backend") == "pairwise" and int(pair_cfg.get("condition_batch_size", 0)) == 2
         and int(pair_cfg.get("pair_selection_seed", -1)) == 2027
         and pair_cfg.get("compact_pair_stats") is True and pair_cfg.get("feature_device") == "cpu"
@@ -219,13 +303,14 @@ def validate(
         and pair_cfg.get("cache_enabled") is False and pair_cfg.get("decode_output") is False
         and pair_cfg.get("experiment_level") == "formal"
         and pair_cfg.get("paper_candidate") is True and pair_cfg.get("paper_eligible") is False
-    ) else ["FLUX pairwise requires formal 1024, 3 seeds x 24 pairs, 28 steps"])
+    ) else ["FLUX pairwise requires formal 1024, 3 seeds x 12 balanced-cycle pairs, 28 steps"])
     record("flux_pairwise.modules", validate_modules(pair_ccmr, FLUX_MODULES))
-    record("flux_pairwise.coverage", [] if (len(pair_ccmr) == 306_432 and len(pair_align) == 295_488) else [f"FLUX pair row coverage ccmr={len(pair_ccmr)}/306432 alignment={len(pair_align)}/295488"])
+    record("flux_pairwise.coverage", [] if (len(pair_ccmr) == 153_216 and len(pair_align) == 147_744) else [f"FLUX pair row coverage ccmr={len(pair_ccmr)}/153216 alignment={len(pair_align)}/147744"])
     record("flux_pairwise.swap", validate_flux_swaps(pair_align))
     record("flux_pairwise.selection", validate_flux_pair_selection(pair_cfg, pair_conditions, pair_selection) if pair_cfg and pair_conditions else ["pair-selection inputs are empty"])
+    record("flux_pairwise.shard_protocol", _validate_formal12_shards(flux_pair_run, pair_selection))
     record("flux_pairwise.finite", _finite_valid(pair_ccmr, ("v_base", "v_diff", "r_ccmr", "g_ccmr_db")))
-    record("flux_pairwise.latents", _latent_checks(flux_pair_run, "flux_pairwise", 3, 2))
+    record("flux_pairwise.latents", _latent_checks(flux_pair_run, "flux_pairwise", 3, 2, pairs_per_seed=12))
 
     rho_cfg = _config(flux_rho_run)
     flux_rho = table_rows(flux_rho_run, "rho_per_condition")
@@ -284,7 +369,7 @@ def validate(
         "missing_or_failed": [failure for item in checks.values() for failure in item["failures"]],
         "recovery_commands": [
             "python assets/visualization/ccmr/code/collect_dit_ccmr.py --config assets/ccmr_formal/configs_v2/dit_512_formal.yaml --output-dir assets/ccmr_formal/data/runs_v2/dit_512_formal_v2 --resume",
-            "python assets/visualization/ccmr/code/collect_flux_ccmr.py --config assets/ccmr_formal/configs_v2/flux_pairwise_formal.yaml --output-dir assets/ccmr_formal/data/runs_v2/flux_pairwise_formal_v2 --resume",
+            "python assets/visualization/ccmr/code/collect_flux_ccmr.py --config assets/ccmr_formal/configs_v2/flux_pairwise_formal12.yaml --output-dir assets/ccmr_formal/data/runs_v2/flux_pairwise_formal12_v2 --resume",
             "python assets/visualization/ccmr/code/collect_flux_rho.py --config assets/ccmr_formal/configs_v2/flux_rho_formal.yaml --output-dir assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2 --resume",
         ],
     }
@@ -293,7 +378,7 @@ def validate(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Validate all CCMR formal gates")
     parser.add_argument("--dit-run", default="assets/ccmr_formal/data/runs_v2/dit_512_formal_v2")
-    parser.add_argument("--flux-pair-run", default="assets/ccmr_formal/data/runs_v2/flux_pairwise_formal_v2")
+    parser.add_argument("--flux-pair-run", default="assets/ccmr_formal/data/runs_v2/flux_pairwise_formal12_v2")
     parser.add_argument("--flux-rho-run", default="assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2")
     parser.add_argument("--combined", default="assets/ccmr_formal/data/combined/formal_v2")
     parser.add_argument("--tests-log", default="assets/ccmr_formal/logs_v2/tests.log")

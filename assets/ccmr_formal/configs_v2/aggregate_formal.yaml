@@ -9,3 +9,5 @@ bootstrap_trials: 2000
 epsilon: 1.0e-12
 rho_repeat_rtol: 1.0e-4
 rho_repeat_atol: 1.0e-6
+allowed_run_ids: [dit_512_formal_v2, flux_pairwise_formal12_v2, flux_rho_formal_v2]
+protocol_revision: 24 random pairs replaced by 12 preregistered balanced-cycle pairs before formal FLUX analysis

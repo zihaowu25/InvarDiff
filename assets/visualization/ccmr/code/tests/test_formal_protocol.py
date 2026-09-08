@@ -15,6 +15,7 @@ sys.path.insert(0, str(CODE))
 
 from aggregate_ccmr import _rho_stability  # noqa: E402
 from common import (  # noqa: E402
+    balanced_cycle_selection,
     ccmr_ratio,
     deterministic_derangements,
     deterministic_unique_subsets,
@@ -27,6 +28,7 @@ from collect_dit_ccmr import _detach_conditional_clone  # noqa: E402
 from compose_main_figure import _subset_hierarchical_summary  # noqa: E402
 from formal_protocol import (  # noqa: E402
     rho_consistency,
+    alignment_hierarchical_summary,
     tolerance_check,
     validate_boundary,
     validate_derangements,
@@ -37,6 +39,12 @@ from formal_protocol import (  # noqa: E402
     validate_valid_rho_finite,
 )
 from validate_artifacts import validate  # noqa: E402
+from validate_artifacts import (  # noqa: E402
+    FORMAL_COLLECTION_COMMIT_KEYS,
+    FORMAL_COMBINED_COUNTS,
+    _validate_formal12_shards,
+    validate_collection_commit_map,
+)
 from validate_smoke_artifacts import validate_smokes  # noqa: E402
 from validate_smoke_artifacts import _config_hashes, _protocol, _runtime_metadata  # noqa: E402
 from export_paper_tables import _rho_rows  # noqa: E402
@@ -117,6 +125,20 @@ def test_empty_boundary_and_derangement_inputs_do_not_pass():
 def test_unique_subsets_enumerate_small_spaces_without_duplicates():
     values = deterministic_unique_subsets(["a", "b", "c"], 2, 100, 1)
     assert values == [("a", "b"), ("a", "c"), ("b", "c")]
+
+
+def test_balanced_cycle_is_deterministic_unique_connected_and_degree_two():
+    ids = [f"p{i:02d}" for i in range(12)]
+    first = balanced_cycle_selection(ids, 2027)
+    second = balanced_cycle_selection(ids, 2027)
+    other = balanced_cycle_selection(ids, 2028)
+    assert first == second
+    assert first["prompt_order"] != other["prompt_order"]
+    assert len(first["pairs"]) == len({tuple(pair) for pair in first["pairs"]}) == 12
+    assert all(left != right for left, right in first["pairs"])
+    assert set(item for pair in first["pairs"] for item in pair) == set(ids)
+    assert first["prompt_degrees"] == {item: 2 for item in ids}
+    assert first["connected"] is True
 
 
 def _rho_fixture(scope="condition"):
@@ -230,6 +252,37 @@ def test_flux_pair_selection_detects_seed_hash_duplicates_and_illegal_pairs():
     assert len(failures) >= 3
 
 
+def test_balanced_cycle_validator_rejects_degree_disconnect_missing_and_hash():
+    ids = [f"p{i:02d}" for i in range(12)]
+    config = {"pair_selection_mode": "balanced_cycle", "pair_selection_seed": 2027, "num_condition_pairs": 12}
+    conditions = [{"id": item} for item in ids]
+    good = balanced_cycle_selection(ids, 2027)
+    assert validate_flux_pair_selection(config, conditions, good) == []
+    bad = dict(good)
+    bad["pairs"] = good["pairs"][:-1] + [good["pairs"][0]]
+    bad["pair_selection_hash"] = "wrong"
+    failures = validate_flux_pair_selection(config, conditions, bad)
+    assert any("duplicate" in item for item in failures)
+    assert any("degree" in item for item in failures)
+    assert any("hash" in item for item in failures)
+
+
+def test_formal12_validator_requires_36_complete_shards(tmp_path):
+    selection = balanced_cycle_selection([f"p{i:02d}" for i in range(12)], 2027)
+    (tmp_path / "run_manifest.json").write_text(json.dumps({"shards": {}}), encoding="utf-8")
+    failures = _validate_formal12_shards(tmp_path, selection)
+    assert any("0/36" in item for item in failures)
+    assert any("missing formal12 shard" in item for item in failures)
+
+
+def test_t02_combined_counts_and_collection_commit_map_are_preregistered():
+    assert FORMAL_COMBINED_COUNTS["alignment_control"] == 1_519_744
+    assert FORMAL_COMBINED_COUNTS["ccmr_metrics"] == 26_768
+    assert FORMAL_COLLECTION_COMMIT_KEYS == {
+        "dit_512", "flux_pairwise_formal12", "flux_condition_rho",
+    }
+
+
 def test_flux_swap_requires_one_exact_swap_per_valid_cell():
     base = {"model": "flux", "valid": True, "seed": 0, "pair_id": "a__b",
             "module_family": "double", "module_name": "attn", "layer_idx": 0, "step_idx": 1}
@@ -297,6 +350,41 @@ def test_formal_command_file_requires_explicit_approval():
     result = subprocess.run(["bash", str(script)], env={}, capture_output=True, text=True)
     assert result.returncode == 2
     assert "locked" in result.stderr
+
+
+def test_alignment_hierarchy_macro_averages_families_before_resampling():
+    rows = [
+        {"source_run": "r", "seed": 0, "cluster_id": "c", "module_family": "a",
+         "g_aligned_db": 2.0, "g_shuffled_db": 1.0},
+        {"source_run": "r", "seed": 0, "cluster_id": "c", "module_family": "b",
+         "g_aligned_db": 8.0, "g_shuffled_db": 4.0},
+    ]
+    baseline = alignment_hierarchical_summary(rows, trials=10)
+    duplicated = alignment_hierarchical_summary(rows + [rows[0]] * 20, trials=10)
+    assert baseline is not None and duplicated is not None
+    assert baseline["aligned"] == duplicated["aligned"] == 5.0
+    assert baseline["shuffled"] == duplicated["shuffled"] == 2.5
+
+
+def test_collection_commit_map_rejects_missing_and_mismatched_entries(tmp_path):
+    names = ("dit_512_formal_v2", "flux_pairwise_formal12_v2", "flux_rho_formal_v2")
+    runs = []
+    for name in names:
+        run = tmp_path / name
+        run.mkdir()
+        (run / "run_manifest.json").write_text(
+            json.dumps({"shards": {"0": {"commit": "good"}}}), encoding="utf-8",
+        )
+        runs.append(run)
+    valid = {"collection_commits": {
+        "dit_512": "good", "flux_pairwise_formal12": "good", "flux_condition_rho": "good",
+    }}
+    assert validate_collection_commit_map(valid, runs) == []
+    missing = {"collection_commits": {"dit_512": "good"}}
+    assert validate_collection_commit_map(missing, runs)
+    mismatch = json.loads(json.dumps(valid))
+    mismatch["collection_commits"]["flux_pairwise_formal12"] = "bad"
+    assert validate_collection_commit_map(mismatch, runs)
 
 
 def test_plot_and_export_modules_import_without_model_packages():

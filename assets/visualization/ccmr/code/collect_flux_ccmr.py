@@ -25,6 +25,7 @@ sys.path.insert(0, str(FLUX_ROOT))
 from common import (  # noqa: E402
     EPS,
     DEGENERATE_THRESHOLD,
+    balanced_cycle_selection,
     centered_variance,
     ccmr_ratio,
     compact_gap_delta,
@@ -53,6 +54,31 @@ MODULES = {
     "double": ("attn", "context_attn", "ff", "context_ff"),
     "single": ("attn", "mlp"),
 }
+
+
+def _pair_selection(config: dict[str, Any], prompts: list[dict[str, Any]]) -> tuple[list[tuple[int, int]], dict[str, Any]]:
+    ids = [str(prompt["id"]) for prompt in prompts]
+    mode = str(config.get("pair_selection_mode", "uniform_without_replacement"))
+    seed = int(config.get("pair_selection_seed", 2027))
+    if mode == "balanced_cycle":
+        selection = balanced_cycle_selection(ids, seed)
+        index = {prompt_id: idx for idx, prompt_id in enumerate(ids)}
+        pairs = [(index[left], index[right]) for left, right in selection["pairs"]]
+    elif mode == "uniform_without_replacement":
+        pairs = select_pairs(len(prompts), int(config.get("num_condition_pairs", 1)), seed)
+        pair_ids = [[ids[i], ids[j]] for i, j in pairs]
+        selection = {
+            "mode": mode, "seed": seed, "prompt_order": [], "pairs": pair_ids,
+            "prompt_degrees": {}, "connected": None,
+            "pair_selection_hash": json_hash(pair_ids),
+        }
+    else:
+        raise ValueError(f"Unsupported pair_selection_mode: {mode}")
+    if len(pairs) != int(config.get("num_condition_pairs", len(pairs))):
+        raise ValueError(
+            f"Pair selector produced {len(pairs)} pairs, expected {config.get('num_condition_pairs')}"
+        )
+    return pairs, selection
 
 
 def _load_prompts(config: dict[str, Any]) -> list[dict[str, Any]]:
@@ -389,7 +415,16 @@ def _write_rows_atomic(path: Path, rows: list[dict[str, Any]]) -> None:
     os.replace(temporary, path)
 
 
-def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str, Any]], pipe, dynamic_model, checkpoint: Path, resume: bool = False) -> None:
+def _write_run(
+    config: dict[str, Any],
+    output_dir: Path,
+    prompts: list[dict[str, Any]],
+    pipe,
+    dynamic_model,
+    checkpoint: Path,
+    resume: bool = False,
+    max_new_shards: int | None = None,
+) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     save_json_atomic(output_dir / "config.json", config)
     environment = environment_snapshot(REPO_ROOT, [checkpoint])
@@ -397,12 +432,9 @@ def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str,
         raise RuntimeError("Formal collection requires a clean tracked Git worktree")
     save_json_atomic(output_dir / "conditions.json", prompts)
     save_json_atomic(output_dir / "environment.json", environment)
-    pairs = select_pairs(len(prompts), int(config.get("num_condition_pairs", 1)), int(config.get("pair_selection_seed", 2027))) if config.get("condition_backend") == "pairwise" else [(0, 1)]
-    selected_pair_ids = [[prompts[i]["id"], prompts[j]["id"]] for i, j in pairs]
-    save_json_atomic(output_dir / "pair_selection.json", {
-        "seed": config.get("pair_selection_seed"), "pairs": selected_pair_ids,
-        "pair_selection_hash": json_hash(selected_pair_ids),
-    })
+    pairs, pair_selection = _pair_selection(config, prompts) if config.get("condition_backend") == "pairwise" else ([(0, 1)], {})
+    selected_pair_ids = pair_selection.get("pairs", [[prompts[0]["id"], prompts[1]["id"]]])
+    save_json_atomic(output_dir / "pair_selection.json", pair_selection)
     resolved_hash = json_hash(config)
     manifest = {
         "run_id": output_dir.name, "model": "flux", "estimator": config.get("condition_backend"),
@@ -414,9 +446,14 @@ def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str,
     all_rows: dict[str, list[dict[str, Any]]] = {}
     all_hashes: dict[str, Any] = {}
     started = time.perf_counter()
+    new_shards = 0
+    stop_after_limit = False
     for seed in config.get("seeds", [0]):
         seed = int(seed); configure_determinism(seed)
         for pair_idx, (i, j) in enumerate(pairs):
+            if max_new_shards is not None and new_shards >= max_new_shards:
+                stop_after_limit = True
+                break
             shard_dir = output_dir / "shards" / f"seed_{seed}_pair_{pair_idx}"
             marker = shard_dir / "manifest.json"
             retry_count, attempt_history = load_attempt_history(marker, resolved_hash)
@@ -534,6 +571,9 @@ def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str,
             }
             save_json_atomic(marker, marker_value)
             manifest["shards"][f"{seed}:{pair_idx}"] = marker_value
+            new_shards += 1
+        if stop_after_limit:
+            break
     for key, values in all_rows.items():
         _write_rows_atomic(output_dir / "tables" / f"{key}.csv.gz", values)
     save_json_atomic(output_dir / "latent_hashes.json", all_hashes)
@@ -547,11 +587,25 @@ def main() -> None:
     parser.add_argument("--config", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--pair-selection-dry-run", action="store_true")
+    parser.add_argument(
+        "--max-new-shards", type=int, default=None,
+        help="Stop cleanly after this many newly collected shards; use 1 for the formal integration gate.",
+    )
     args = parser.parse_args()
     config = load_yaml(Path(args.config).resolve())
     output_dir = Path(args.output_dir).resolve()
+    if args.max_new_shards is not None and args.max_new_shards < 1:
+        raise ValueError("--max-new-shards must be positive")
     if config.get("cache_enabled", False):
         raise ValueError("CCMR collector requires cache_enabled=false")
+    prompts = _load_prompts(config)
+    if args.pair_selection_dry_run:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        _pairs, selection = _pair_selection(config, prompts)
+        save_json_atomic(output_dir / "pair_selection.json", selection)
+        print(json.dumps(selection, indent=2))
+        return
     from diffusers import FluxPipeline
     from dynamic_flux import DynamicFluxTransformer2DModel
 
@@ -569,10 +623,12 @@ def main() -> None:
     dynamic_model.block_cache_enable = False
     dynamic_model.reset()
     pipe.transformer = dynamic_model
-    prompts = _load_prompts(config)
     if device.type == "cuda":
         torch.cuda.reset_peak_memory_stats(device)
-    _write_run(config, output_dir, prompts, pipe, dynamic_model, checkpoint, resume=args.resume)
+    _write_run(
+        config, output_dir, prompts, pipe, dynamic_model, checkpoint,
+        resume=args.resume, max_new_shards=args.max_new_shards,
+    )
     if device.type == "cuda":
         peak = torch.cuda.max_memory_allocated(device) / 1024 ** 3
         save_json_atomic(output_dir / "memory.json", {"peak_allocated_gib": peak, "peak_reserved_gib": torch.cuda.max_memory_reserved(device) / 1024 ** 3})

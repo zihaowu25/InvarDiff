@@ -188,6 +188,43 @@ def make_generator(seed: int, device: str | torch.device = "cpu") -> torch.Gener
     return generator
 
 
+def balanced_cycle_selection(prompt_ids: Sequence[str], seed: int) -> dict[str, Any]:
+    """Build a preregistered randomized Hamiltonian cycle over prompt IDs."""
+    ids = [str(value) for value in prompt_ids]
+    if len(ids) < 3 or len(ids) != len(set(ids)):
+        raise ValueError("balanced_cycle requires at least three unique prompt IDs")
+    rng = np.random.default_rng(int(seed))
+    order = [ids[int(index)] for index in rng.permutation(len(ids))]
+    pairs = [
+        sorted((order[index], order[(index + 1) % len(order)]))
+        for index in range(len(order))
+    ]
+    degrees = {item: 0 for item in ids}
+    adjacency = {item: set() for item in ids}
+    for left, right in pairs:
+        degrees[left] += 1
+        degrees[right] += 1
+        adjacency[left].add(right)
+        adjacency[right].add(left)
+    visited = set()
+    pending = [ids[0]]
+    while pending:
+        current = pending.pop()
+        if current in visited:
+            continue
+        visited.add(current)
+        pending.extend(adjacency[current] - visited)
+    return {
+        "mode": "balanced_cycle",
+        "seed": int(seed),
+        "prompt_order": order,
+        "pairs": pairs,
+        "prompt_degrees": degrees,
+        "connected": len(visited) == len(ids),
+        "pair_selection_hash": json_hash(pairs),
+    }
+
+
 def l1_distance(a: torch.Tensor, b: torch.Tensor, chunk_size: int = 1_048_576) -> torch.Tensor:
     """FP32 chunked L1 distance; inputs retain their native dtype/device."""
     if a.numel() != b.numel():

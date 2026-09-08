@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image
 
 from common import read_rows, save_json_atomic, sha256_file, utc_now
-from formal_protocol import is_true, subset_hierarchical_summary
+from formal_protocol import alignment_hierarchical_summary, is_true, subset_hierarchical_summary
 from validate_artifacts import validate
 
 
@@ -65,19 +65,25 @@ def main() -> None:
     fig = plt.figure(figsize=(6.75, 4.15), constrained_layout=True)
     grid = fig.add_gridspec(2, 2)
 
-    # A: two inset facets share axes and reference semantics.
-    ax_a = fig.add_subplot(grid[0, 0])
+    # A: separate model facets share axes and reference semantics.
+    a_grid = grid[0, 0].subgridspec(1, 2, wspace=0.08)
+    ax_a_dit = fig.add_subplot(a_grid[0, 0])
+    ax_a_flux = fig.add_subplot(a_grid[0, 1], sharex=ax_a_dit, sharey=ax_a_dit)
     colors = {"dit": "#0072B2", "flux": "#D55E00"}
-    for model in ("dit", "flux"):
-        rows = [row for row in ccmr if row.get("model") == model]
-        x = np.asarray([float(row["v_base"]) for row in rows]); y = np.asarray([float(row["v_diff"]) for row in rows])
-        ax_a.scatter(x, y, s=1.2, alpha=0.08, rasterized=True, color=colors[model], label=model.upper())
     positives = [float(row[key]) for row in ccmr for key in ("v_base", "v_diff") if float(row[key]) > 0]
     low, high = np.percentile(positives, [0.1, 99.9]); reference = np.geomspace(low, high, 100)
-    for gain, style in ((0, "-"), (10, "--"), (20, ":")):
-        ax_a.plot(reference, reference / (10 ** (gain / 10)), color="0.25", lw=.65, ls=style, label=f"{gain} dB" if gain else "0 dB")
-    ax_a.set(xscale="log", yscale="log", xlabel=r"$V^{base}$", ylabel=r"$V^{diff}$", title="A  Condition variance")
-    ax_a.legend(ncol=2, frameon=False, loc="lower right")
+    for model, ax_a in (("dit", ax_a_dit), ("flux", ax_a_flux)):
+        rows = [row for row in ccmr if row.get("model") == model]
+        x = np.asarray([float(row["v_base"]) for row in rows]); y = np.asarray([float(row["v_diff"]) for row in rows])
+        ax_a.scatter(x, y, s=1.2, alpha=0.08, rasterized=True, color=colors[model])
+        for gain, style in ((0, "-"), (10, "--"), (20, ":")):
+            ax_a.plot(reference, reference / (10 ** (gain / 10)), color="0.25", lw=.65, ls=style,
+                      label=f"{gain} dB" if model == "dit" else None)
+        ax_a.set(xscale="log", yscale="log", xlabel=r"$V^{base}$", title=model.upper())
+    ax_a_dit.set_ylabel(r"$V^{diff}$")
+    ax_a_dit.text(-0.34, 1.08, "A  Condition variance", transform=ax_a_dit.transAxes, fontweight="bold")
+    ax_a_dit.legend(frameon=False, loc="lower right", fontsize=6)
+    ax_a_flux.tick_params(labelleft=False)
 
     # B: common 0-centered scale, normalized progress.
     ax_b = fig.add_subplot(grid[0, 1])
@@ -98,19 +104,24 @@ def main() -> None:
 
     # C: cluster-first seed points and paired ranges.
     ax_c = fig.add_subplot(grid[1, 0])
-    grouped = {}
-    for row in alignment:
-        # Module families are macro-aggregated inside each model/seed before
-        # drawing independent seed-level paired points.
-        key = (row["model"], row["seed"])
-        grouped.setdefault(key, [[], []]); grouped[key][0].append(float(row["g_aligned_db"])); grouped[key][1].append(float(row["g_shuffled_db"]))
     positions = {"dit": 0, "flux": 1}
-    for (model, seed), (aligned_values, shuffled_values) in grouped.items():
-        x = positions[model] + (int(float(seed)) - 2) * .025
-        aligned_value, shuffled_value = np.mean(aligned_values), np.mean(shuffled_values)
-        ax_c.plot([x, x], [shuffled_value, aligned_value], color=colors[model], alpha=.25, lw=.6)
-        ax_c.scatter([x], [aligned_value], color=colors[model], s=8, marker="o")
-        ax_c.scatter([x], [shuffled_value], facecolors="none", edgecolors=colors[model], s=8, marker="o")
+    for model in ("dit", "flux"):
+        result = alignment_hierarchical_summary(
+            [row for row in alignment if row.get("model") == model],
+            trials=2000, random_seed=2027 + positions[model],
+        )
+        x = positions[model]
+        for point_index, point in enumerate(result["seed_points"]):
+            jitter = (point_index - (len(result["seed_points"]) - 1) / 2) * .025
+            ax_c.plot([x + jitter, x + jitter], [point["shuffled"], point["aligned"]], color=colors[model], alpha=.25, lw=.6)
+            ax_c.scatter([x + jitter], [point["aligned"]], color=colors[model], s=8, marker="o")
+            ax_c.scatter([x + jitter], [point["shuffled"]], facecolors="none", edgecolors=colors[model], s=8, marker="o")
+        ax_c.errorbar([x - .11], [result["aligned"]],
+                      yerr=[[result["aligned"] - result["aligned_p025"]], [result["aligned_p975"] - result["aligned"]]],
+                      fmt="o", color=colors[model], capsize=2, markersize=4, lw=.8)
+        ax_c.errorbar([x + .11], [result["shuffled"]],
+                      yerr=[[result["shuffled"] - result["shuffled_p025"]], [result["shuffled_p975"] - result["shuffled"]]],
+                      fmt="o", markerfacecolor="white", markeredgecolor=colors[model], color=colors[model], capsize=2, markersize=4, lw=.8)
     ax_c.axhline(0, color="0.4", lw=.6); ax_c.set(xticks=[0, 1], xticklabels=["DiT", "FLUX"], ylabel="cluster mean gain (dB)", title="C  Aligned vs. shuffled")
     ax_c.text(.02, .02, "filled: aligned   open: shuffled", transform=ax_c.transAxes, va="bottom")
 
@@ -155,7 +166,7 @@ def main() -> None:
     plt.close(fig)
     qa_paths = _qa_images(paths["png"], output)
     caption = output / "fig_ccmr_main_caption.md"
-    caption.write_text("**CCMR mechanism evidence.** A, adjacent differencing suppresses condition variance. B, suppression across module families and normalized denoising progress. C, aligned and shuffled gains are macro-aggregated across module families and paired at the seed level. D, stability of the condition-mean online cache score; lines show hierarchical means, error bars are 95% intervals from seed-then-subset resampling, faint dots are seed means, and hollow endpoints are full-condition references. Jaccard uses the lowest 30% of scores.\n", encoding="utf-8")
+    caption.write_text("**CCMR mechanism evidence.** A, adjacent differencing suppresses condition variance; DiT and FLUX are shown in separate facets with shared axes. B, suppression across module families and normalized denoising progress. C, aligned and shuffled hierarchical means; families are macro-averaged within each seed and pair/derangement cluster, error bars are seed-then-cluster bootstrap 95% intervals, and small paired markers are seed means. FLUX uses 12 preregistered balanced-cycle pairs. D, stability of the condition-mean online cache score; lines show hierarchical means, error bars are 95% intervals from seed-then-subset resampling, faint dots are seed means, and hollow endpoints are full-condition references. Jaccard uses the lowest 30% of scores.\n", encoding="utf-8")
     artifacts = list(paths.values()) + qa_paths + [caption]
     manifest = {"created_at": utc_now(), "formal_gate": gate, "source_combined": str(combined), "pilot_fallback": False, "empty_panels": False, "width_inches": 6.75, "height_inches": 4.15, "minimum_font_pt": 7.0, "qa": {"grayscale": True, "deuteranopia": True, "png_dpi": 300, "pdf_fonttype": 42}, "artifacts": [{"path": str(path.relative_to(output)), "sha256": sha256_file(path), "size_bytes": path.stat().st_size} for path in artifacts]}
     save_json_atomic(output / "fig_ccmr_main_manifest.json", manifest)

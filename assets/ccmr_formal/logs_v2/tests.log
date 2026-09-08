@@ -1,3 +1,2 @@
-COMMAND: python -m pytest assets/visualization/ccmr/code/tests -q
-....................................................                     [100%]
-52 passed in 6.97s
+...........................................................              [100%]
+59 passed in 6.77s
