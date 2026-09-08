@@ -20,6 +20,7 @@ from common import (  # noqa: E402
     deterministic_unique_subsets,
     hierarchical_bootstrap,
     load_yaml,
+    load_attempt_history,
     online_rho,
 )
 from collect_dit_ccmr import _detach_conditional_clone  # noqa: E402
@@ -30,11 +31,15 @@ from formal_protocol import (  # noqa: E402
     validate_boundary,
     validate_derangements,
     validate_flux_pair_selection,
+    validate_flux_swaps,
+    subset_hierarchical_summary,
     validate_test_log,
     validate_valid_rho_finite,
 )
 from validate_artifacts import validate  # noqa: E402
 from validate_smoke_artifacts import validate_smokes  # noqa: E402
+from validate_smoke_artifacts import _config_hashes, _protocol, _runtime_metadata  # noqa: E402
+from export_paper_tables import _rho_rows  # noqa: E402
 
 
 def test_yaml_duplicate_key_is_rejected(tmp_path):
@@ -169,6 +174,43 @@ def test_subset_uncertainty_resamples_seed_then_subset():
     assert result["p025"] <= result["mean"] <= result["p975"]
 
 
+def test_subset_macro_does_not_treat_repeated_family_rows_as_iid():
+    rows = []
+    for seed in range(3):
+        for trial, selected in enumerate(('[' + str(trial) + ']') for trial in range(4)):
+            for family, offset in (("msa", 0.0), ("mlp", 0.2)):
+                rows.append({
+                    "source_run": "run", "seed": seed, "trial": trial,
+                    "selected_condition_ids": selected, "module_family": family,
+                    "spearman": 0.4 + seed * 0.1 + trial * 0.01 + offset,
+                })
+    base = subset_hierarchical_summary(rows, "spearman", trials=200, random_seed=11)
+    duplicated = subset_hierarchical_summary(rows + [dict(row) for row in rows], "spearman", trials=200, random_seed=11)
+    assert base == duplicated
+    assert base["num_seeds"] == 3
+    assert base["num_unique_subsets"] == 12
+
+
+def test_paper_rho_table_uses_hierarchical_counts_and_model_macro():
+    rows = []
+    for seed in range(3):
+        for trial in range(2):
+            for family in ("dit.msa", "dit.mlp"):
+                rows.append({
+                    "model": "dit", "source_run": "run", "seed": seed,
+                    "module_family": family, "subset_size": 1, "trial": trial,
+                    "selected_condition_ids": json.dumps([f"c{trial}"]),
+                    "metric_scope": "rank", "cache_fraction": None,
+                    "aggregation_method": "mean", "is_primary": True,
+                    "valid": True, "spearman": 0.5 + seed * 0.1,
+                })
+    result = _rho_rows(rows)
+    assert {row["aggregation"] for row in result} == {"module_family", "model_macro"}
+    assert all(row["num_seeds"] == 3 for row in result)
+    assert all(row["num_unique_subsets"] == 6 for row in result)
+    assert all("n" not in row for row in result)
+
+
 @pytest.mark.parametrize("text", ["1 failed", "1 error", "no tests ran", "collected 3 items"])
 def test_test_log_rejects_missing_or_failed_result(tmp_path, text):
     path = tmp_path / "tests.log"; path.write_text(text, encoding="utf-8")
@@ -186,6 +228,45 @@ def test_flux_pair_selection_detects_seed_hash_duplicates_and_illegal_pairs():
     bad = {"seed": 8, "pairs": [["a", "a"], ["a", "a"]], "pair_selection_hash": "bad"}
     failures = validate_flux_pair_selection(config, conditions, bad)
     assert len(failures) >= 3
+
+
+def test_flux_swap_requires_one_exact_swap_per_valid_cell():
+    base = {"model": "flux", "valid": True, "seed": 0, "pair_id": "a__b",
+            "module_family": "double", "module_name": "attn", "layer_idx": 0, "step_idx": 1}
+    assert validate_flux_swaps([{**base, "permutation": "[1,0]"}]) == []
+    assert validate_flux_swaps([{**base, "permutation": "[0,1]"}])
+    assert validate_flux_swaps([{**base, "permutation": "[1,0]"}, {**base, "permutation": "[1,0]"}])
+
+
+def test_retry_history_recovers_legacy_failure(tmp_path):
+    marker = tmp_path / "manifest.json"
+    marker.write_text(json.dumps({
+        "status": "failed", "resolved_config_hash": "cfg", "started_at": "a",
+        "failed_at": "b", "wall_time_s": 1.0, "oom": True,
+        "peak_allocated_gib": 2.0, "peak_reserved_gib": 3.0,
+        "commit": "abc", "error_type": "OutOfMemoryError", "error": "oom",
+    }), encoding="utf-8")
+    retries, history = load_attempt_history(marker, "cfg")
+    assert retries == 1 and len(history) == 1 and history[0]["status"] == "failed"
+    assert load_attempt_history(marker, "different") == (0, [])
+
+
+def test_smoke_runtime_protocol_and_hash_failures(tmp_path):
+    run = tmp_path / "run"; run.mkdir()
+    (run / "config.json").write_text("{}", encoding="utf-8")
+    (run / "run_manifest.json").write_text(json.dumps({
+        "resolved_config_hash": "bad", "shards": {"x": {
+            "status": "failed", "dirty_status": " M code.py", "paper_eligible": True,
+            "retry_count": 1, "cache_enabled": True, "decode_output": True,
+            "oom": True, "wall_time_s": -1, "peak_allocated_gib": -1,
+            "peak_reserved_gib": -1,
+        }}
+    }), encoding="utf-8")
+    (run / "memory.json").write_text("{}", encoding="utf-8")
+    (run / "summary.json").write_text("{}", encoding="utf-8")
+    assert _runtime_metadata(run)
+    assert _config_hashes(run)
+    assert _protocol({}, "dit")
 
 
 def test_formal_composer_fails_without_complete_coverage(tmp_path):

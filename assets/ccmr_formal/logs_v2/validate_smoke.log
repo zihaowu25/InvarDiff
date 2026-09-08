@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "validation_scope": "smoke",
-  "validated_at": "2026-09-08T07:43:01.797037+00:00",
+  "validated_at": "2026-09-08T12:51:52.040268+00:00",
   "passed": true,
   "paper_eligible": false,
   "checks": {
@@ -21,6 +21,16 @@
       "failures": []
     },
     "dit.latents": {
+      "passed": true,
+      "status": "passed",
+      "failures": []
+    },
+    "dit.config_hash": {
+      "passed": true,
+      "status": "passed",
+      "failures": []
+    },
+    "dit.protocol": {
       "passed": true,
       "status": "passed",
       "failures": []
@@ -45,6 +55,16 @@
       "status": "passed",
       "failures": []
     },
+    "flux_pair.config_hash": {
+      "passed": true,
+      "status": "passed",
+      "failures": []
+    },
+    "flux_pair.protocol": {
+      "passed": true,
+      "status": "passed",
+      "failures": []
+    },
     "flux_rho.atomic": {
       "passed": true,
       "status": "passed",
@@ -61,6 +81,16 @@
       "failures": []
     },
     "flux_rho.latents": {
+      "passed": true,
+      "status": "passed",
+      "failures": []
+    },
+    "flux_rho.config_hash": {
+      "passed": true,
+      "status": "passed",
+      "failures": []
+    },
+    "flux_rho.protocol": {
       "passed": true,
       "status": "passed",
       "failures": []
@@ -95,6 +125,16 @@
       "status": "passed",
       "failures": []
     },
+    "dit.derangements": {
+      "passed": true,
+      "status": "passed",
+      "failures": []
+    },
+    "flux_pair.swaps": {
+      "passed": true,
+      "status": "passed",
+      "failures": []
+    },
     "dit.rho_live_code": {
       "passed": true,
       "status": "passed",
@@ -106,6 +146,11 @@
       "failures": []
     },
     "flux_pair.selection": {
+      "passed": true,
+      "status": "passed",
+      "failures": []
+    },
+    "tests": {
       "passed": true,
       "status": "passed",
       "failures": []

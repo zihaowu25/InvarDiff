@@ -10,7 +10,17 @@
       "passed": true,
       "status": "passed"
     },
+    "dit.config_hash": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
     "dit.coverage": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "dit.derangements": {
       "failures": [],
       "passed": true,
       "status": "passed"
@@ -21,6 +31,11 @@
       "status": "passed"
     },
     "dit.latents": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "dit.protocol": {
       "failures": [],
       "passed": true,
       "status": "passed"
@@ -45,6 +60,11 @@
       "passed": true,
       "status": "passed"
     },
+    "flux_pair.config_hash": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
     "flux_pair.coverage": {
       "failures": [],
       "passed": true,
@@ -60,12 +80,22 @@
       "passed": true,
       "status": "passed"
     },
+    "flux_pair.protocol": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
     "flux_pair.runtime": {
       "failures": [],
       "passed": true,
       "status": "passed"
     },
     "flux_pair.selection": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_pair.swaps": {
       "failures": [],
       "passed": true,
       "status": "passed"
@@ -80,12 +110,22 @@
       "passed": true,
       "status": "passed"
     },
+    "flux_rho.config_hash": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
     "flux_rho.coverage": {
       "failures": [],
       "passed": true,
       "status": "passed"
     },
     "flux_rho.latents": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_rho.protocol": {
       "failures": [],
       "passed": true,
       "status": "passed"
@@ -101,6 +141,11 @@
       "status": "passed"
     },
     "flux_rho.runtime": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "tests": {
       "failures": [],
       "passed": true,
       "status": "passed"
@@ -141,6 +186,6 @@
     "flux_rho": "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/flux_rho_smoke_v2"
   },
   "schema_version": 2,
-  "validated_at": "2026-09-08T07:43:01.797037+00:00",
+  "validated_at": "2026-09-08T12:51:52.040268+00:00",
   "validation_scope": "smoke"
 }

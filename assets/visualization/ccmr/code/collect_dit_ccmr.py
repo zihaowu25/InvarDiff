@@ -32,6 +32,8 @@ from common import (  # noqa: E402
     gain_db,
     json_hash,
     deterministic_derangements,
+    attempt_record,
+    load_attempt_history,
     load_yaml,
     make_generator,
     read_rows,
@@ -341,6 +343,8 @@ def _write_run(config: dict[str, Any], output_dir: Path, model, diffusion, check
     save_json_atomic(output_dir / "config.json", config)
     conditions = _condition_rows(config)
     environment = environment_snapshot(REPO_ROOT, [checkpoint])
+    if config.get("experiment_level") == "formal" and str(environment.get("git_status", "")).strip():
+        raise RuntimeError("Formal collection requires a clean tracked Git worktree")
     save_json_atomic(output_dir / "conditions.json", conditions)
     save_json_atomic(output_dir / "environment.json", environment)
     resolved_hash = json_hash(config)
@@ -359,11 +363,15 @@ def _write_run(config: dict[str, Any], output_dir: Path, model, diffusion, check
         configure_determinism(seed)
         seed_dir = output_dir / "shards" / f"seed_{seed}"
         seed_manifest_path = seed_dir / "manifest.json"
+        retry_count, attempt_history = load_attempt_history(seed_manifest_path, resolved_hash)
         if resume and seed_manifest_path.exists():
             candidate = json.loads(seed_manifest_path.read_text(encoding="utf-8"))
             complete = candidate.get("status") == "complete" and candidate.get("resolved_config_hash") == resolved_hash
             shard_rows = {}
             if complete:
+                if (config.get("experiment_level") == "formal"
+                        and candidate.get("commit") != environment.get("git_commit")):
+                    raise RuntimeError(f"Formal shard seed {seed} was collected at a different commit")
                 for table, artifact in candidate.get("tables", {}).items():
                     path = seed_dir / Path(artifact["path"]).name
                     if not path.exists():
@@ -387,15 +395,28 @@ def _write_run(config: dict[str, Any], output_dir: Path, model, diffusion, check
         try:
             rows, hashes, permutation_manifest = _run_trajectory(model, diffusion, [int(x) for x in config["class_ids"]], seed, config, output_dir)
         except Exception as exc:
+            failed_at = utc_now()
+            wall_time_s = time.perf_counter() - seed_started
+            peak_allocated = torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0
+            peak_reserved = torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0
+            attempt_history.append(attempt_record(
+                status="failed", started_at=seed_started_at, finished_at=failed_at,
+                wall_time_s=wall_time_s, oom=isinstance(exc, torch.cuda.OutOfMemoryError),
+                peak_allocated_gib=peak_allocated, peak_reserved_gib=peak_reserved,
+                commit=environment.get("git_commit"), resolved_config_hash=resolved_hash,
+                error_type=type(exc).__name__, error=str(exc),
+            ))
             save_json_atomic(seed_manifest_path, {
                 "status": "failed", "seed": seed, "resolved_config_hash": resolved_hash,
                 "experiment_level": config.get("experiment_level", "smoke"),
-                "started_at": seed_started_at, "failed_at": utc_now(),
-                "wall_time_s": time.perf_counter() - seed_started,
+                "started_at": seed_started_at, "failed_at": failed_at,
+                "wall_time_s": wall_time_s,
                 "oom": isinstance(exc, torch.cuda.OutOfMemoryError),
                 "error_type": type(exc).__name__, "error": str(exc),
-                "peak_allocated_gib": torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
-                "peak_reserved_gib": torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
+                "peak_allocated_gib": peak_allocated, "peak_reserved_gib": peak_reserved,
+                "branch": environment.get("git_branch"), "commit": environment.get("git_commit"),
+                "dirty_status": environment.get("git_status"),
+                "retry_count": retry_count, "attempt_history": attempt_history,
             })
             raise
         all_hashes.update(hashes)
@@ -406,6 +427,16 @@ def _write_run(config: dict[str, Any], output_dir: Path, model, diffusion, check
             path = seed_dir / f"{key}.csv.gz"
             write_rows_atomic(path, values)
             artifacts[key] = table_artifact(path, len(values))
+        completed_at = utc_now()
+        wall_time_s = time.perf_counter() - seed_started
+        peak_allocated = torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0
+        peak_reserved = torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0
+        attempt_history.append(attempt_record(
+            status="complete", started_at=seed_started_at, finished_at=completed_at,
+            wall_time_s=wall_time_s, oom=False,
+            peak_allocated_gib=peak_allocated, peak_reserved_gib=peak_reserved,
+            commit=environment.get("git_commit"), resolved_config_hash=resolved_hash,
+        ))
         shard_manifest = {
             "status": "complete", "seed": seed, "resolved_config_hash": resolved_hash,
             "latent_hashes": hashes, "derangements": permutation_manifest,
@@ -417,10 +448,10 @@ def _write_run(config: dict[str, Any], output_dir: Path, model, diffusion, check
             "hook_locations": ["DiTBlock.forward:block_output.msa", "DiTBlock.forward:block_output.mlp"],
             "hook_count": len(model.blocks), "experiment_level": config.get("experiment_level", "smoke"),
             "paper_eligible": bool(config.get("paper_eligible", False)), "offload": False,
-            "resume_requested": bool(resume), "retry_count": 0, "oom": False,
-            "started_at": seed_started_at, "completed_at": utc_now(), "wall_time_s": time.perf_counter() - seed_started,
-            "peak_allocated_gib": torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
-            "peak_reserved_gib": torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
+            "resume_requested": bool(resume), "retry_count": retry_count,
+            "attempt_history": attempt_history, "oom": False,
+            "started_at": seed_started_at, "completed_at": completed_at, "wall_time_s": wall_time_s,
+            "peak_allocated_gib": peak_allocated, "peak_reserved_gib": peak_reserved,
             "tables": artifacts,
         }
         save_json_atomic(seed_manifest_path, shard_manifest)

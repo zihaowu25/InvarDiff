@@ -12,7 +12,7 @@ from typing import Any
 import numpy as np
 
 from common import read_rows, save_json_atomic, sha256_file, utc_now, write_rows_atomic
-from formal_protocol import is_true
+from formal_protocol import is_true, subset_hierarchical_summary
 from validate_artifacts import validate
 
 
@@ -87,7 +87,8 @@ def _summary_rows(ccmr: list[dict[str, Any]], alignment: list[dict[str, Any]]) -
 
 
 def _rho_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    grouped: dict[tuple[Any, ...], list[float]] = defaultdict(list)
+    grouped: dict[tuple[Any, ...], list[dict[str, Any]]] = defaultdict(list)
+    macro_grouped: dict[tuple[Any, ...], list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         if str(row.get("is_primary", "true")).lower() != "true" or not is_true(row.get("valid", True)):
             continue
@@ -98,12 +99,26 @@ def _rho_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             if row.get(name) in (None, ""):
                 continue
             key = (row.get("model"), row.get("module_family"), int(float(row.get("subset_size"))), name)
-            grouped[key].append(float(row[name]))
-    return [{
-        "model": key[0], "module_family": key[1], "subset_size": key[2], "metric": key[3],
-        "mean": float(np.mean(values)), "median": float(np.median(values)),
-        "p025": float(np.percentile(values, 2.5)), "p975": float(np.percentile(values, 97.5)), "n": len(values),
-    } for key, values in sorted(grouped.items())]
+            grouped[key].append(row)
+            macro_grouped[(key[0], key[2], key[3])].append(row)
+    result = []
+    for key, values in sorted(grouped.items()):
+        summary = subset_hierarchical_summary(values, key[3], random_seed=2027 + key[2])
+        if summary is not None:
+            result.append({
+                "aggregation": "module_family", "model": key[0],
+                "module_family": key[1], "subset_size": key[2], "metric": key[3],
+                **{name: summary[name] for name in ("estimate", "p025", "p975", "num_seeds", "num_unique_subsets")},
+            })
+    for key, values in sorted(macro_grouped.items()):
+        summary = subset_hierarchical_summary(values, key[2], random_seed=4027 + key[1])
+        if summary is not None:
+            result.append({
+                "aggregation": "model_macro", "model": key[0],
+                "module_family": "ALL", "subset_size": key[1], "metric": key[2],
+                **{name: summary[name] for name in ("estimate", "p025", "p975", "num_seeds", "num_unique_subsets")},
+            })
+    return result
 
 
 def _markdown(rows: list[dict[str, Any]]) -> str:

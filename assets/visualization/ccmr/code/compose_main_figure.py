@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image
 
 from common import read_rows, save_json_atomic, sha256_file, utc_now
-from formal_protocol import is_true
+from formal_protocol import is_true, subset_hierarchical_summary
 from validate_artifacts import validate
 
 
@@ -36,28 +36,7 @@ def _qa_images(png: Path, output: Path) -> list[Path]:
 
 
 def _subset_hierarchical_summary(rows, metric: str, trials: int = 2000, seed: int = 2027):
-    """Resample seeds first and correlated subset trials within each seed."""
-    by_seed = {}
-    for row in rows:
-        if row.get(metric) not in (None, ""):
-            by_seed.setdefault(str(row["seed"]), []).append(float(row[metric]))
-    if not by_seed:
-        return None
-    seed_ids = sorted(by_seed)
-    seed_points = [float(np.mean(by_seed[item])) for item in seed_ids]
-    rng = np.random.default_rng(seed)
-    boot = []
-    for _ in range(trials):
-        sampled_seeds = rng.choice(seed_ids, size=len(seed_ids), replace=True)
-        values = []
-        for sampled_seed in sampled_seeds:
-            subsets = np.asarray(by_seed[str(sampled_seed)], dtype=np.float64)
-            values.append(float(np.mean(rng.choice(subsets, size=len(subsets), replace=True))))
-        boot.append(float(np.mean(values)))
-    return {
-        "mean": float(np.mean(seed_points)), "seed_points": seed_points,
-        "p025": float(np.percentile(boot, 2.5)), "p975": float(np.percentile(boot, 97.5)),
-    }
+    return subset_hierarchical_summary(rows, metric, trials=trials, random_seed=seed)
 
 
 def main() -> None:
@@ -83,7 +62,7 @@ def main() -> None:
         raise SystemExit("Formal scalar tables are incomplete; no pilot fallback is permitted")
 
     plt.rcParams.update({"font.size": 7, "axes.labelsize": 7, "xtick.labelsize": 7, "ytick.labelsize": 7, "legend.fontsize": 7, "pdf.fonttype": 42, "ps.fonttype": 42, "svg.fonttype": "none"})
-    fig = plt.figure(figsize=(6.75, 6.2), constrained_layout=True)
+    fig = plt.figure(figsize=(6.75, 4.15), constrained_layout=True)
     grid = fig.add_gridspec(2, 2)
 
     # A: two inset facets share axes and reference semantics.
@@ -178,7 +157,7 @@ def main() -> None:
     caption = output / "fig_ccmr_main_caption.md"
     caption.write_text("**CCMR mechanism evidence.** A, adjacent differencing suppresses condition variance. B, suppression across module families and normalized denoising progress. C, aligned and shuffled gains are macro-aggregated across module families and paired at the seed level. D, stability of the condition-mean online cache score; lines show hierarchical means, error bars are 95% intervals from seed-then-subset resampling, faint dots are seed means, and hollow endpoints are full-condition references. Jaccard uses the lowest 30% of scores.\n", encoding="utf-8")
     artifacts = list(paths.values()) + qa_paths + [caption]
-    manifest = {"created_at": utc_now(), "formal_gate": gate, "source_combined": str(combined), "pilot_fallback": False, "empty_panels": False, "width_inches": 6.75, "minimum_font_pt": 7.0, "qa": {"grayscale": True, "deuteranopia": True, "png_dpi": 300, "pdf_fonttype": 42}, "artifacts": [{"path": str(path.relative_to(output)), "sha256": sha256_file(path), "size_bytes": path.stat().st_size} for path in artifacts]}
+    manifest = {"created_at": utc_now(), "formal_gate": gate, "source_combined": str(combined), "pilot_fallback": False, "empty_panels": False, "width_inches": 6.75, "height_inches": 4.15, "minimum_font_pt": 7.0, "qa": {"grayscale": True, "deuteranopia": True, "png_dpi": 300, "pdf_fonttype": 42}, "artifacts": [{"path": str(path.relative_to(output)), "sha256": sha256_file(path), "size_bytes": path.stat().st_size} for path in artifacts]}
     save_json_atomic(output / "fig_ccmr_main_manifest.json", manifest)
     print(json.dumps(manifest, indent=2))
 

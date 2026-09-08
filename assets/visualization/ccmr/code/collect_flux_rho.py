@@ -25,11 +25,13 @@ sys.path.insert(0, str(FLUX_ROOT))
 
 from common import (  # noqa: E402
     EPS,
+    attempt_record,
     configure_determinism,
     environment_snapshot,
     json_hash,
     l1_distance,
     load_yaml,
+    load_attempt_history,
     make_generator,
     read_rows,
     save_json_atomic,
@@ -216,6 +218,8 @@ def main() -> None:
     save_json_atomic(output_dir / "config.json", config)
     save_json_atomic(output_dir / "conditions.json", prompts)
     environment = environment_snapshot(REPO_ROOT, [checkpoint])
+    if config.get("experiment_level") == "formal" and str(environment.get("git_status", "")).strip():
+        raise RuntimeError("Formal collection requires a clean tracked Git worktree")
     save_json_atomic(output_dir / "environment.json", environment)
     resolved_hash = json_hash(config)
     manifest = {
@@ -248,6 +252,7 @@ def main() -> None:
             shard_path = shard_dir / "rho_per_condition.csv.gz"
             marker = shard_dir / "manifest.json"
             shard_key = f"{seed}:{prompt['id']}"
+            retry_count, attempt_history = load_attempt_history(marker, resolved_hash)
             if args.resume and marker.exists() and shard_path.exists():
                 marker_value = json.loads(marker.read_text(encoding="utf-8"))
                 artifact = marker_value.get("table", {})
@@ -256,6 +261,11 @@ def main() -> None:
                         and sha256_file(shard_path) == artifact.get("sha256")):
                     rows = read_rows(shard_path)
                     if len(rows) == int(artifact.get("row_count", -1)):
+                        if (config.get("experiment_level") == "formal"
+                                and marker_value.get("commit") != environment.get("git_commit")):
+                            raise RuntimeError(
+                                f"Formal FLUX rho shard {shard_key} was collected at a different commit"
+                            )
                         all_rows.extend(rows)
                         manifest["shards"][shard_key] = marker_value
                         continue
@@ -266,20 +276,43 @@ def main() -> None:
             try:
                 rows = _run_prompt(pipe, dynamic_model, prompt, seed, config, one, one_ids, output_dir)
             except Exception as exc:
+                failed_at = utc_now()
+                wall_time_s = time.perf_counter() - shard_started
+                peak_allocated = torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0
+                peak_reserved = torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0
+                attempt_history.append(attempt_record(
+                    status="failed", started_at=shard_started_at, finished_at=failed_at,
+                    wall_time_s=wall_time_s, oom=isinstance(exc, torch.cuda.OutOfMemoryError),
+                    peak_allocated_gib=peak_allocated, peak_reserved_gib=peak_reserved,
+                    commit=environment.get("git_commit"), resolved_config_hash=resolved_hash,
+                    error_type=type(exc).__name__, error=str(exc),
+                ))
                 save_json_atomic(marker, {
                     "status": "failed", "seed": seed, "condition_id": prompt["id"],
                     "resolved_config_hash": resolved_hash,
                     "experiment_level": config.get("experiment_level", "smoke"),
-                    "started_at": shard_started_at, "failed_at": utc_now(),
-                    "wall_time_s": time.perf_counter() - shard_started,
+                    "started_at": shard_started_at, "failed_at": failed_at,
+                    "wall_time_s": wall_time_s,
                     "oom": isinstance(exc, torch.cuda.OutOfMemoryError),
                     "error_type": type(exc).__name__, "error": str(exc),
-                    "peak_allocated_gib": torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
-                    "peak_reserved_gib": torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
+                    "peak_allocated_gib": peak_allocated, "peak_reserved_gib": peak_reserved,
+                    "branch": environment.get("git_branch"), "commit": environment.get("git_commit"),
+                    "dirty_status": environment.get("git_status"),
+                    "retry_count": retry_count, "attempt_history": attempt_history,
                 })
                 raise
             shard_dir.mkdir(parents=True, exist_ok=True)
             _write_gzip_rows_atomic(shard_path, rows)
+            completed_at = utc_now()
+            wall_time_s = time.perf_counter() - shard_started
+            peak_allocated = torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0
+            peak_reserved = torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0
+            attempt_history.append(attempt_record(
+                status="complete", started_at=shard_started_at, finished_at=completed_at,
+                wall_time_s=wall_time_s, oom=False,
+                peak_allocated_gib=peak_allocated, peak_reserved_gib=peak_reserved,
+                commit=environment.get("git_commit"), resolved_config_hash=resolved_hash,
+            ))
             marker_value = {
                 "status": "complete", "seed": seed, "condition_id": prompt["id"],
                 "resolved_config_hash": resolved_hash, "latent_hash": latent_hashes[str(seed)],
@@ -291,10 +324,10 @@ def main() -> None:
                 "hook_locations": ["FluxTransformerBlock.forward:block_outputs", "FluxSingleTransformerBlock.forward:block_outputs"],
                 "hook_count": len(dynamic_model.transformer_blocks) + len(dynamic_model.single_transformer_blocks),
                 "experiment_level": config.get("experiment_level", "smoke"), "paper_eligible": bool(config.get("paper_eligible", False)),
-                "offload": False, "resume_requested": bool(args.resume), "retry_count": 0, "oom": False,
-                "started_at": shard_started_at, "completed_at": utc_now(), "wall_time_s": time.perf_counter() - shard_started,
-                "peak_allocated_gib": torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
-                "peak_reserved_gib": torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
+                "offload": False, "resume_requested": bool(args.resume), "retry_count": retry_count,
+                "attempt_history": attempt_history, "oom": False,
+                "started_at": shard_started_at, "completed_at": completed_at, "wall_time_s": wall_time_s,
+                "peak_allocated_gib": peak_allocated, "peak_reserved_gib": peak_reserved,
                 "table": table_artifact(shard_path, len(rows)),
             }
             save_json_atomic(marker, marker_value)

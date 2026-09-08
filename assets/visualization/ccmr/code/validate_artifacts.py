@@ -21,6 +21,7 @@ from formal_protocol import (
     validate_boundary,
     validate_derangements,
     validate_flux_pair_selection,
+    validate_flux_swaps,
     validate_modules,
     validate_test_log,
     validate_valid_rho_finite,
@@ -44,6 +45,41 @@ def _finite_valid(rows: list[dict[str, Any]], fields: tuple[str, ...]) -> list[s
                 failures.append(f"valid row {index} has non-finite {field}")
                 if len(failures) >= 20:
                     return failures
+    return failures
+
+
+def _validate_shard_metadata(run: Path) -> list[str]:
+    path = run / "run_manifest.json"
+    if not path.is_file():
+        return ["missing run manifest for shard metadata validation"]
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    failures = []
+    for key, shard in manifest.get("shards", {}).items():
+        if shard.get("status") != "complete":
+            failures.append(f"shard {key}: status is not complete")
+        if str(shard.get("dirty_status", "")).strip():
+            failures.append(f"shard {key}: tracked tree was dirty")
+        if shard.get("paper_eligible") is not False:
+            failures.append(f"shard {key}: paper_eligible must remain false")
+        history = shard.get("attempt_history")
+        if not isinstance(history, list) or not history:
+            failures.append(f"shard {key}: missing attempt_history")
+            continue
+        failed_attempts = sum(item.get("status") == "failed" for item in history if isinstance(item, dict))
+        if int(shard.get("retry_count", -1)) != failed_attempts:
+            failures.append(
+                f"shard {key}: retry_count {shard.get('retry_count')} != failed attempts {failed_attempts}"
+            )
+        if history[-1].get("status") != "complete":
+            failures.append(f"shard {key}: final attempt is not complete")
+        for attempt_idx, attempt in enumerate(history):
+            for field in ("wall_time_s", "peak_allocated_gib", "peak_reserved_gib"):
+                if not finite(attempt.get(field)) or float(attempt[field]) < 0:
+                    failures.append(f"shard {key} attempt {attempt_idx}: invalid {field}")
+            if attempt.get("resolved_config_hash") != shard.get("resolved_config_hash"):
+                failures.append(f"shard {key} attempt {attempt_idx}: config hash mismatch")
+            if attempt.get("commit") != shard.get("commit"):
+                failures.append(f"shard {key} attempt {attempt_idx}: commit mismatch")
     return failures
 
 
@@ -107,6 +143,17 @@ def _latent_checks(run: Path, kind: str, expected_seeds: int, expected_condition
     else:
         if len(values) != expected_seeds:
             failures.append(f"flux rho latent seed coverage {len(values)}/{expected_seeds}")
+        manifest_path = run / "run_manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.is_file() else {}
+        by_seed: dict[str, set[str]] = {}
+        for key, shard in manifest.get("shards", {}).items():
+            seed = str(key).split(":", 1)[0]
+            latent = str(shard.get("latent_hash", ""))
+            if latent:
+                by_seed.setdefault(seed, set()).add(latent)
+        for seed, hashes in by_seed.items():
+            if len(hashes) != 1 or values.get(seed) not in hashes:
+                failures.append(f"flux rho seed {seed}: latent differs across prompt shards")
     return failures
 
 
@@ -126,6 +173,7 @@ def validate(
 
     for label, run in (("dit", dit_run), ("flux_pairwise", flux_pair_run), ("flux_rho", flux_rho_run)):
         record(f"{label}.atomic", validate_atomic_manifest(run) if run.exists() else [f"missing run: {run}"], not_run=not run.exists())
+        record(f"{label}.shards", _validate_shard_metadata(run) if run.exists() else [f"missing run: {run}"], not_run=not run.exists())
 
     dit_cfg = _config(dit_run)
     dit_ccmr = table_rows(dit_run, "ccmr_metrics")
@@ -136,6 +184,11 @@ def validate(
         and len(dit_cfg.get("seeds", [])) == 5
         and len(dit_cfg.get("class_ids", [])) == 16
         and int(dit_cfg.get("num_inference_steps", 0)) == 50
+        and float(dit_cfg.get("cfg_scale", 0)) == 4.0
+        and dit_cfg.get("sampler") == "ddim" and dit_cfg.get("time_gaps") == [1, 2, 4]
+        and dit_cfg.get("condition_backend") == "exact_batch" and int(dit_cfg.get("condition_batch_size", 0)) == 16
+        and int(dit_cfg.get("alignment_shuffle_trials", 0)) == 100
+        and dit_cfg.get("cache_enabled") is False and dit_cfg.get("decode_output") is False
         and dit_cfg.get("experiment_level") == "formal"
         and dit_cfg.get("paper_candidate") is True and dit_cfg.get("paper_eligible") is False
     ) else ["DiT requires formal 512, 5 seeds, 16 classes, 50 steps"])
@@ -158,21 +211,18 @@ def validate(
         int(pair_cfg.get("height", 0)) == 1024 and int(pair_cfg.get("width", 0)) == 1024
         and len(pair_cfg.get("seeds", [])) == 3 and len(pair_selection.get("pairs", [])) == 24
         and len(pair_shards) == 72 and int(pair_cfg.get("num_inference_steps", 0)) == 28
+        and pair_cfg.get("condition_backend") == "pairwise" and int(pair_cfg.get("condition_batch_size", 0)) == 2
+        and int(pair_cfg.get("pair_selection_seed", -1)) == 2027
+        and pair_cfg.get("compact_pair_stats") is True and pair_cfg.get("feature_device") == "cpu"
+        and pair_cfg.get("model_dtype") == "bfloat16" and pair_cfg.get("statistics_dtype") == "float32"
+        and pair_cfg.get("time_gaps") == [1, 2, 4]
+        and pair_cfg.get("cache_enabled") is False and pair_cfg.get("decode_output") is False
         and pair_cfg.get("experiment_level") == "formal"
         and pair_cfg.get("paper_candidate") is True and pair_cfg.get("paper_eligible") is False
     ) else ["FLUX pairwise requires formal 1024, 3 seeds x 24 pairs, 28 steps"])
     record("flux_pairwise.modules", validate_modules(pair_ccmr, FLUX_MODULES))
     record("flux_pairwise.coverage", [] if (len(pair_ccmr) == 306_432 and len(pair_align) == 295_488) else [f"FLUX pair row coverage ccmr={len(pair_ccmr)}/306432 alignment={len(pair_align)}/295488"])
-    duplicate_swap = []
-    grouped_swap = {}
-    for row in pair_align:
-        key = (row.get("seed"), row.get("pair_id"), row.get("module_family"), row.get("module_name"), row.get("layer_idx"), row.get("step_idx"))
-        grouped_swap[key] = grouped_swap.get(key, 0) + 1
-    if not grouped_swap:
-        duplicate_swap.append("FLUX swap validation has no rows")
-    elif any(count != 1 for count in grouped_swap.values()):
-        duplicate_swap.append("FLUX pair swap must occur exactly once per valid cell")
-    record("flux_pairwise.swap", duplicate_swap)
+    record("flux_pairwise.swap", validate_flux_swaps(pair_align))
     record("flux_pairwise.selection", validate_flux_pair_selection(pair_cfg, pair_conditions, pair_selection) if pair_cfg and pair_conditions else ["pair-selection inputs are empty"])
     record("flux_pairwise.finite", _finite_valid(pair_ccmr, ("v_base", "v_diff", "r_ccmr", "g_ccmr_db")))
     record("flux_pairwise.latents", _latent_checks(flux_pair_run, "flux_pairwise", 3, 2))
@@ -184,6 +234,9 @@ def validate(
         int(rho_cfg.get("height", 0)) == 1024 and int(rho_cfg.get("width", 0)) == 1024
         and len(rho_cfg.get("seeds", [])) == 3 and len(rho_cfg.get("prompt_ids", [])) == 12
         and len(rho_manifest) == 36 and int(rho_cfg.get("num_inference_steps", 0)) == 28
+        and rho_cfg.get("feature_device") == "cpu"
+        and rho_cfg.get("model_dtype") == "bfloat16" and rho_cfg.get("statistics_dtype") == "float32"
+        and rho_cfg.get("cache_enabled") is False and rho_cfg.get("decode_output") is False
         and rho_cfg.get("experiment_level") == "formal"
         and rho_cfg.get("paper_candidate") is True and rho_cfg.get("paper_eligible") is False
     ) else ["FLUX rho requires formal 1024, 3 seeds x 12 prompts, 28 steps"])
@@ -194,24 +247,25 @@ def validate(
     record("flux_rho.rho_finite", validate_valid_rho_finite(flux_rho))
     record("flux_rho.latents", _latent_checks(flux_rho_run, "flux_rho", 3, 12))
 
-    all_rho = dit_rho + flux_rho
-    tolerance_failures = []
-    audit = {}
-    if all_rho:
-        try:
-            passed, audit = tolerance_check(
-                all_rho,
-                max(float(dit_cfg.get("rho_repeat_rtol", 1e-4)), float(rho_cfg.get("rho_repeat_rtol", 1e-4))),
-                max(float(dit_cfg.get("rho_repeat_atol", 1e-6)), float(rho_cfg.get("rho_repeat_atol", 1e-6))),
-            )
-            if not passed:
-                tolerance_failures.append(f"rho equivalence failed for {audit['failure_count']} cells")
-        except Exception as exc:
-            audit = {"passed": False, "error": f"{type(exc).__name__}: {exc}"}
-            tolerance_failures.append(audit["error"])
-    else:
-        tolerance_failures.append("no condition-level rho rows")
-    record("rho.live_code_equivalence", tolerance_failures)
+    audits = {}
+    for label, rows, cfg in (("dit", dit_rho, dit_cfg), ("flux_rho", flux_rho, rho_cfg)):
+        tolerance_failures = []
+        if rows:
+            try:
+                tolerance_passed, audit = tolerance_check(
+                    rows, float(cfg.get("rho_repeat_rtol", 1e-4)),
+                    float(cfg.get("rho_repeat_atol", 1e-6)),
+                )
+                if not tolerance_passed:
+                    tolerance_failures.append(f"rho equivalence failed for {audit['failure_count']} cells")
+            except Exception as exc:
+                audit = {"passed": False, "error": f"{type(exc).__name__}: {exc}"}
+                tolerance_failures.append(audit["error"])
+        else:
+            audit = {"passed": False, "status": "not_run", "failure_count": 0}
+            tolerance_failures.append("no condition-level rho rows")
+        audits[label] = audit
+        record(f"{label}.rho_live_code_equivalence", tolerance_failures)
 
     record("combined", _validate_combined(combined, [dit_run, flux_pair_run, flux_rho_run]), not_run=not combined.exists())
     record("tests", validate_test_log(tests_log), not_run=not tests_log.exists())
@@ -226,7 +280,7 @@ def validate(
         "passed": passed,
         "paper_eligible": passed,
         "checks": checks,
-        "rho_consistency": audit,
+        "rho_consistency": audits,
         "missing_or_failed": [failure for item in checks.values() for failure in item["failures"]],
         "recovery_commands": [
             "python assets/visualization/ccmr/code/collect_dit_ccmr.py --config assets/ccmr_formal/configs_v2/dit_512_formal.yaml --output-dir assets/ccmr_formal/data/runs_v2/dit_512_formal_v2 --resume",

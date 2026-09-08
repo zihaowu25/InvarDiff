@@ -30,10 +30,12 @@ from common import (  # noqa: E402
     compact_gap_delta,
     compact_pair_difference,
     configure_determinism,
+    attempt_record,
     environment_snapshot,
     gain_db,
     json_hash,
     load_yaml,
+    load_attempt_history,
     make_generator,
     save_json_atomic,
     select_pairs,
@@ -391,6 +393,8 @@ def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str,
     output_dir.mkdir(parents=True, exist_ok=True)
     save_json_atomic(output_dir / "config.json", config)
     environment = environment_snapshot(REPO_ROOT, [checkpoint])
+    if config.get("experiment_level") == "formal" and str(environment.get("git_status", "")).strip():
+        raise RuntimeError("Formal collection requires a clean tracked Git worktree")
     save_json_atomic(output_dir / "conditions.json", prompts)
     save_json_atomic(output_dir / "environment.json", environment)
     pairs = select_pairs(len(prompts), int(config.get("num_condition_pairs", 1)), int(config.get("pair_selection_seed", 2027))) if config.get("condition_backend") == "pairwise" else [(0, 1)]
@@ -415,6 +419,7 @@ def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str,
         for pair_idx, (i, j) in enumerate(pairs):
             shard_dir = output_dir / "shards" / f"seed_{seed}_pair_{pair_idx}"
             marker = shard_dir / "manifest.json"
+            retry_count, attempt_history = load_attempt_history(marker, resolved_hash)
             if resume and marker.exists():
                 try:
                     marker_value = json.loads(marker.read_text(encoding="utf-8"))
@@ -432,6 +437,11 @@ def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str,
                             break
                         shard_rows[table] = read_rows(table_path)
                     if complete:
+                        if (config.get("experiment_level") == "formal"
+                                and marker_value.get("commit") != environment.get("git_commit")):
+                            raise RuntimeError(
+                                f"Formal FLUX pair shard {seed}:{pair_idx} was collected at a different commit"
+                            )
                         for key, values in shard_rows.items():
                             all_rows.setdefault(key, []).extend(values)
                         # New shards persist the duplicated-latent hashes so a
@@ -454,17 +464,30 @@ def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str,
                     config, output_dir, len(prompts),
                 )
             except Exception as exc:
+                failed_at = utc_now()
+                wall_time_s = time.perf_counter() - shard_started
+                peak_allocated = torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0
+                peak_reserved = torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0
+                attempt_history.append(attempt_record(
+                    status="failed", started_at=shard_started_at, finished_at=failed_at,
+                    wall_time_s=wall_time_s, oom=isinstance(exc, torch.cuda.OutOfMemoryError),
+                    peak_allocated_gib=peak_allocated, peak_reserved_gib=peak_reserved,
+                    commit=environment.get("git_commit"), resolved_config_hash=resolved_hash,
+                    error_type=type(exc).__name__, error=str(exc),
+                ))
                 save_json_atomic(marker, {
                     "status": "failed", "seed": seed, "pair_idx": pair_idx,
                     "pair_id": f"{prompts[i]['id']}__{prompts[j]['id']}",
                     "resolved_config_hash": resolved_hash,
                     "experiment_level": config.get("experiment_level", "smoke"),
-                    "started_at": shard_started_at, "failed_at": utc_now(),
-                    "wall_time_s": time.perf_counter() - shard_started,
+                    "started_at": shard_started_at, "failed_at": failed_at,
+                    "wall_time_s": wall_time_s,
                     "oom": isinstance(exc, torch.cuda.OutOfMemoryError),
                     "error_type": type(exc).__name__, "error": str(exc),
-                    "peak_allocated_gib": torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
-                    "peak_reserved_gib": torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
+                    "peak_allocated_gib": peak_allocated, "peak_reserved_gib": peak_reserved,
+                    "branch": environment.get("git_branch"), "commit": environment.get("git_commit"),
+                    "dirty_status": environment.get("git_status"),
+                    "retry_count": retry_count, "attempt_history": attempt_history,
                 })
                 raise
             all_hashes[f"{seed}:{pair_idx}"] = hashes
@@ -476,6 +499,16 @@ def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str,
                 table: table_artifact(shard_dir / f"{table}.csv.gz", len(values))
                 for table, values in rows.items()
             }
+            completed_at = utc_now()
+            wall_time_s = time.perf_counter() - shard_started
+            peak_allocated = torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0
+            peak_reserved = torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0
+            attempt_history.append(attempt_record(
+                status="complete", started_at=shard_started_at, finished_at=completed_at,
+                wall_time_s=wall_time_s, oom=False,
+                peak_allocated_gib=peak_allocated, peak_reserved_gib=peak_reserved,
+                commit=environment.get("git_commit"), resolved_config_hash=resolved_hash,
+            ))
             marker_value = {
                 "status": "complete",
                 "seed": seed,
@@ -492,10 +525,10 @@ def _write_run(config: dict[str, Any], output_dir: Path, prompts: list[dict[str,
                 "hook_locations": ["FluxTransformerBlock.forward:block_outputs", "FluxSingleTransformerBlock.forward:block_outputs"],
                 "hook_count": len(dynamic_model.transformer_blocks) + len(dynamic_model.single_transformer_blocks),
                 "experiment_level": config.get("experiment_level", "smoke"), "paper_eligible": bool(config.get("paper_eligible", False)),
-                "offload": False, "resume_requested": bool(resume), "retry_count": 0, "oom": False,
-                "started_at": shard_started_at, "completed_at": utc_now(), "wall_time_s": time.perf_counter() - shard_started,
-                "peak_allocated_gib": torch.cuda.max_memory_allocated(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
-                "peak_reserved_gib": torch.cuda.max_memory_reserved(device) / 1024 ** 3 if device.type == "cuda" else 0.0,
+                "offload": False, "resume_requested": bool(resume), "retry_count": retry_count,
+                "attempt_history": attempt_history, "oom": False,
+                "started_at": shard_started_at, "completed_at": completed_at, "wall_time_s": wall_time_s,
+                "peak_allocated_gib": peak_allocated, "peak_reserved_gib": peak_reserved,
                 "row_counts": {key: len(value) for key, value in rows.items()},
                 "tables": artifacts,
             }

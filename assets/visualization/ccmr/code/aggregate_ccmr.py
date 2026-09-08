@@ -29,7 +29,7 @@ from common import (  # noqa: E402
     utc_now,
     write_rows_atomic,
 )
-from formal_protocol import rho_consistency, tolerance_check  # noqa: E402
+from formal_protocol import rho_consistency, subset_hierarchical_summary, tolerance_check  # noqa: E402
 
 
 TABLES = ("ccmr_metrics", "condition_similarity", "condition_distance", "temporal_metrics", "time_gap_metrics", "rho_per_condition", "alignment_control")
@@ -326,13 +326,14 @@ def _summary(ccmr: list[dict[str, Any]], rho_stability: list[dict[str, Any]], su
         fraction_key = "rank" if fraction in (None, "") else str(float(fraction))
         group = (str(row.get("model")), str(row.get("source_run")), str(row.get("module_family")), int(row.get("subset_size", 0)), fraction_key)
         key = "|".join(str(x) for x in group)
-        summary["subset_stability"].setdefault(key, {})
+        summary["subset_stability"].setdefault(key, []).append(row)
+    for key, rows in list(summary["subset_stability"].items()):
+        summaries = {}
         for metric in ("spearman", "kendall", "jaccard"):
-            value = _finite_float(row.get(metric))
-            if value is not None:
-                summary["subset_stability"][key].setdefault(metric, []).append(value)
-    for key, metrics in list(summary["subset_stability"].items()):
-        summary["subset_stability"][key] = {metric: percentile_ci(values, 1000) for metric, values in metrics.items()}
+            result = subset_hierarchical_summary(rows, metric, trials=1000, random_seed=2027)
+            if result is not None:
+                summaries[metric] = result
+        summary["subset_stability"][key] = summaries
     summary["rho_stability_points"] = len(rho_stability)
     summary["ccmr_points"] = len(ccmr)
     summary["subset_stability_rows"] = len(subset_rows)

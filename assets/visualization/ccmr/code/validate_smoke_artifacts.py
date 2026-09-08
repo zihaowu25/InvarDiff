@@ -8,7 +8,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from common import read_rows, save_json_atomic, utc_now
+from common import json_hash, read_rows, save_json_atomic, utc_now
 from formal_protocol import (
     finite,
     is_true,
@@ -16,7 +16,10 @@ from formal_protocol import (
     tolerance_check,
     validate_atomic_manifest,
     validate_boundary,
+    validate_derangements,
     validate_flux_pair_selection,
+    validate_flux_swaps,
+    validate_test_log,
     validate_valid_rho_finite,
 )
 
@@ -26,6 +29,10 @@ EXPECTED = {
     "flux_pair": {"ccmr_metrics": 4256, "alignment_control": 4104},
     "flux_rho": {"rho_per_condition": 4256},
 }
+EXPECTED_FLUX_MODULES = [
+    "double.attn", "double.context_attn", "double.ff", "double.context_ff",
+    "single.attn", "single.mlp",
+]
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -72,8 +79,14 @@ def _runtime_metadata(run: Path) -> list[str]:
     if not shards:
         return ["run manifest contains no shards"]
     for key, shard in shards.items():
+        if shard.get("status") != "complete":
+            failures.append(f"shard {key}: status is not complete")
         if str(shard.get("dirty_status", "")).strip():
             failures.append(f"shard {key}: tracked source tree was dirty")
+        if shard.get("paper_eligible") is not False:
+            failures.append(f"shard {key}: paper_eligible must be false")
+        if int(shard.get("retry_count", -1)) != 0:
+            failures.append(f"shard {key}: retry_count must be zero")
         if shard.get("cache_enabled") is not False or shard.get("decode_output") is not False:
             failures.append(f"shard {key}: cache/decode flags are not false")
         if shard.get("oom") is not False:
@@ -91,6 +104,76 @@ def _runtime_metadata(run: Path) -> list[str]:
     return failures
 
 
+def _config_hashes(run: Path) -> list[str]:
+    config = _load(run / "config.json")
+    manifest = _load(run / "run_manifest.json")
+    if not config or not manifest:
+        return ["missing config or run manifest for hash validation"]
+    expected = json_hash(config)
+    failures = []
+    if manifest.get("resolved_config_hash") != expected:
+        failures.append("run manifest config hash does not match config.json")
+    for key, shard in manifest.get("shards", {}).items():
+        if shard.get("resolved_config_hash") != expected:
+            failures.append(f"shard {key}: config hash does not match config.json")
+    return failures
+
+
+def _protocol(config: dict[str, Any], kind: str) -> list[str]:
+    failures = []
+    common = (
+        config.get("experiment_level") == "smoke"
+        and config.get("paper_eligible") is False
+        and config.get("cache_enabled") is False
+        and config.get("decode_output") is False
+    )
+    if not common:
+        failures.append(f"{kind}: smoke/cache/decode/paper protocol mismatch")
+    if kind == "dit":
+        valid = (
+            config.get("model") == "DiT-XL/2"
+            and int(config.get("image_size", 0)) == 512
+            and int(config.get("num_inference_steps", 0)) == 50
+            and float(config.get("cfg_scale", 0)) == 4.0
+            and config.get("seeds") == [0]
+            and len(config.get("class_ids", [])) == 16
+            and config.get("modules") == ["msa", "mlp"]
+            and config.get("condition_backend") == "exact_batch"
+            and int(config.get("condition_batch_size", 0)) == 16
+            and int(config.get("alignment_shuffle_trials", 0)) == 100
+            and config.get("time_gaps") == [1, 2, 4]
+        )
+    elif kind == "flux_pair":
+        valid = (
+            int(config.get("height", 0)) == 1024 and int(config.get("width", 0)) == 1024
+            and int(config.get("num_inference_steps", 0)) == 28
+            and config.get("prompt_ids") == ["p04", "p08"] and config.get("seeds") == [0]
+            and config.get("condition_backend") == "pairwise"
+            and int(config.get("condition_batch_size", 0)) == 2
+            and int(config.get("num_condition_pairs", 0)) == 1
+            and int(config.get("pair_selection_seed", -1)) == 2027
+            and config.get("model_dtype") == "bfloat16"
+            and config.get("statistics_dtype") == "float32"
+            and config.get("feature_device") == "cpu"
+            and config.get("compact_pair_stats") is True
+            and config.get("modules") == EXPECTED_FLUX_MODULES
+            and config.get("time_gaps") == [1, 2, 4]
+        )
+    else:
+        valid = (
+            int(config.get("height", 0)) == 1024 and int(config.get("width", 0)) == 1024
+            and int(config.get("num_inference_steps", 0)) == 28
+            and config.get("prompt_ids") == ["p00"] and config.get("seeds") == [0]
+            and config.get("model_dtype") == "bfloat16"
+            and config.get("statistics_dtype") == "float32"
+            and config.get("feature_device") == "cpu"
+            and config.get("modules") == EXPECTED_FLUX_MODULES
+        )
+    if not valid:
+        failures.append(f"{kind}: exact smoke protocol mismatch")
+    return failures
+
+
 def _coverage(run: Path, expected: dict[str, int]) -> list[str]:
     summary = _load(run / "summary.json")
     failures = []
@@ -103,7 +186,12 @@ def _coverage(run: Path, expected: dict[str, int]) -> list[str]:
     return failures
 
 
-def validate_smokes(dit: Path, flux_pair: Path, flux_rho: Path) -> dict[str, Any]:
+def validate_smokes(
+    dit: Path,
+    flux_pair: Path,
+    flux_rho: Path,
+    tests_log: Path | None = None,
+) -> dict[str, Any]:
     checks: dict[str, dict[str, Any]] = {}
     def record(name: str, failures: list[str]):
         checks[name] = {"passed": not failures, "status": "passed" if not failures else "failed", "failures": failures}
@@ -113,6 +201,8 @@ def validate_smokes(dit: Path, flux_pair: Path, flux_rho: Path) -> dict[str, Any
         record(f"{label}.runtime", _runtime_metadata(run) if run.exists() else ["not run"])
         record(f"{label}.coverage", _coverage(run, EXPECTED[label]))
         record(f"{label}.latents", _shared_latents(run, label) if run.exists() else ["not run"])
+        record(f"{label}.config_hash", _config_hashes(run) if run.exists() else ["not run"])
+        record(f"{label}.protocol", _protocol(_load(run / "config.json"), label) if run.exists() else ["not run"])
 
     dit_ccmr = table_rows(dit, "ccmr_metrics")
     pair_ccmr = table_rows(flux_pair, "ccmr_metrics")
@@ -124,6 +214,8 @@ def validate_smokes(dit: Path, flux_pair: Path, flux_rho: Path) -> dict[str, Any
     record("flux_rho.rho_finite", validate_valid_rho_finite(flux_rho_rows))
     record("dit.boundary", validate_boundary(dit_rho, 50))
     record("flux_rho.boundary", validate_boundary(flux_rho_rows, 28))
+    record("dit.derangements", validate_derangements(table_rows(dit, "alignment_control"), 100))
+    record("flux_pair.swaps", validate_flux_swaps(table_rows(flux_pair, "alignment_control")))
 
     audits = {}
     for label, rows, config_path in (("dit", dit_rho, dit / "config.json"), ("flux_rho", flux_rho_rows, flux_rho / "config.json")):
@@ -142,6 +234,8 @@ def validate_smokes(dit: Path, flux_pair: Path, flux_rho: Path) -> dict[str, Any
     conditions = _load(flux_pair / "conditions.json")
     selection = _load(flux_pair / "pair_selection.json")
     record("flux_pair.selection", validate_flux_pair_selection(pair_config, conditions if isinstance(conditions, list) else [], selection) if pair_config else ["not run"])
+    if tests_log is not None:
+        record("tests", validate_test_log(tests_log))
 
     passed = all(check["passed"] for check in checks.values())
     return {
@@ -158,9 +252,13 @@ def main() -> None:
     parser.add_argument("--dit-run", default="assets/ccmr_formal/data/runs_v2/dit_512_smoke_v2")
     parser.add_argument("--flux-pair-run", default="assets/ccmr_formal/data/runs_v2/flux_pairwise_smoke_v2")
     parser.add_argument("--flux-rho-run", default="assets/ccmr_formal/data/runs_v2/flux_rho_smoke_v2")
+    parser.add_argument("--tests-log", default="assets/ccmr_formal/logs_v2/tests.log")
     parser.add_argument("--output", default="assets/ccmr_formal/smoke_manifest_v2.json")
     args = parser.parse_args()
-    result = validate_smokes(Path(args.dit_run).resolve(), Path(args.flux_pair_run).resolve(), Path(args.flux_rho_run).resolve())
+    result = validate_smokes(
+        Path(args.dit_run).resolve(), Path(args.flux_pair_run).resolve(),
+        Path(args.flux_rho_run).resolve(), Path(args.tests_log).resolve(),
+    )
     save_json_atomic(args.output, result)
     print(json.dumps(result, indent=2))
     raise SystemExit(0 if result["passed"] else 1)

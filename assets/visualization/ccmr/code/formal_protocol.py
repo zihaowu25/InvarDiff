@@ -81,13 +81,29 @@ def validate_atomic_manifest(run: Path) -> list[str]:
     if not manifest_path.is_file():
         return [f"missing {manifest_path}"]
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    config_path = run / "config.json"
+    if not config_path.is_file():
+        failures.append("run is missing config.json")
+        actual_config_hash = None
+    else:
+        actual_config_hash = json_hash(json.loads(config_path.read_text(encoding="utf-8")))
+        if manifest.get("resolved_config_hash") != actual_config_hash:
+            failures.append("run manifest does not match the actual config hash")
     if not manifest.get("shards"):
         failures.append("run manifest contains no shards")
+    shard_commits: set[str] = set()
     for key, shard in manifest.get("shards", {}).items():
         if shard.get("status") != "complete":
             failures.append(f"shard {key}: status is not complete")
         if shard.get("resolved_config_hash") != manifest.get("resolved_config_hash"):
             failures.append(f"shard {key}: resolved config hash mismatch")
+        if actual_config_hash is not None and shard.get("resolved_config_hash") != actual_config_hash:
+            failures.append(f"shard {key}: does not match actual config hash")
+        commit = str(shard.get("commit", "")).strip()
+        if not commit:
+            failures.append(f"shard {key}: missing collection commit")
+        else:
+            shard_commits.add(commit)
         artifacts = shard.get("tables") or ({"rho_per_condition": shard.get("table")} if shard.get("table") else {})
         for name, artifact in artifacts.items():
             path = Path(str(artifact.get("path", "")))
@@ -100,6 +116,8 @@ def validate_atomic_manifest(run: Path) -> list[str]:
                 failures.append(f"shard {key}/{name}: checksum mismatch")
             if len(read_rows(path)) != int(artifact.get("row_count", -1)):
                 failures.append(f"shard {key}/{name}: row-count mismatch")
+    if len(shard_commits) > 1:
+        failures.append(f"run mixes shard commits: {sorted(shard_commits)}")
     return failures
 
 
@@ -155,6 +173,102 @@ def validate_derangements(rows: list[dict[str, Any]], trials: int = 100) -> list
         if len(permutations) != trials or len(set(permutations.values())) != trials:
             failures.append(f"derangement coverage {key}: {len(permutations)}/{trials}")
     return failures
+
+
+def validate_flux_swaps(rows: list[dict[str, Any]]) -> list[str]:
+    """Require exactly one [1,0] alignment control for every valid FLUX cell."""
+    if not rows:
+        return ["FLUX swap validation has no rows"]
+    failures: list[str] = []
+    grouped: Counter[tuple[Any, ...]] = Counter()
+    for index, row in enumerate(rows):
+        if str(row.get("model")) != "flux" or not is_true(row.get("valid", True)):
+            continue
+        key = (
+            row.get("seed"), row.get("pair_id"), row.get("module_family"),
+            row.get("module_name"), row.get("layer_idx"), row.get("step_idx"),
+        )
+        grouped[key] += 1
+        try:
+            permutation = json.loads(str(row.get("permutation")))
+        except (TypeError, json.JSONDecodeError):
+            permutation = None
+        if permutation != [1, 0]:
+            failures.append(f"FLUX alignment row {index}: permutation is not [1,0]")
+            if len(failures) >= 20:
+                return failures
+    if not grouped:
+        failures.append("FLUX swap validation has no valid cells")
+    for key, count in grouped.items():
+        if count != 1:
+            failures.append(f"FLUX cell {key}: alignment row count {count}, expected 1")
+            if len(failures) >= 20:
+                break
+    return failures
+
+
+def subset_hierarchical_summary(
+    rows: Iterable[dict[str, Any]],
+    metric: str,
+    trials: int = 2000,
+    random_seed: int = 2027,
+) -> dict[str, Any] | None:
+    """Macro-average families per seed/subset, then bootstrap seed -> subset.
+
+    A selected condition subset is a correlated cluster repeated across module
+    families.  Family rows are reduced inside that cluster before any
+    resampling, so adding or duplicating family rows cannot masquerade as
+    additional IID subset observations.
+    """
+    grouped: dict[tuple[str, str], dict[str, dict[str, list[float]]]] = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(list))
+    )
+    for row in rows:
+        value = row.get(metric)
+        if value in (None, "") or not finite(value):
+            continue
+        seed_key = (str(row.get("source_run", "")), str(row.get("seed")))
+        subset_key = str(row.get("selected_condition_ids") or f"trial:{row.get('trial')}")
+        family = str(row.get("module_family", "ALL"))
+        grouped[seed_key][subset_key][family].append(float(value))
+    if not grouped:
+        return None
+
+    by_seed: dict[tuple[str, str], list[float]] = {}
+    unique_subsets: set[tuple[str, str, str]] = set()
+    for seed_key, subsets in grouped.items():
+        cluster_values = []
+        for subset_key, families in subsets.items():
+            family_means = [float(np.mean(values)) for values in families.values() if values]
+            if family_means:
+                cluster_values.append(float(np.mean(family_means)))
+                unique_subsets.add((*seed_key, subset_key))
+        if cluster_values:
+            by_seed[seed_key] = cluster_values
+    if not by_seed:
+        return None
+
+    seed_ids = sorted(by_seed)
+    seed_points = [float(np.mean(by_seed[item])) for item in seed_ids]
+    rng = np.random.default_rng(random_seed)
+    boot = []
+    for _ in range(int(trials)):
+        sampled_seeds = rng.choice(len(seed_ids), size=len(seed_ids), replace=True)
+        values = []
+        for seed_index in sampled_seeds:
+            clusters = np.asarray(by_seed[seed_ids[int(seed_index)]], dtype=np.float64)
+            values.append(float(np.mean(rng.choice(clusters, size=len(clusters), replace=True))))
+        boot.append(float(np.mean(values)))
+    estimate = float(np.mean(seed_points))
+    return {
+        "estimate": estimate,
+        "mean": estimate,
+        "p025": float(np.percentile(boot, 2.5)),
+        "p975": float(np.percentile(boot, 97.5)),
+        "seed_points": seed_points,
+        "num_seeds": len(seed_ids),
+        "num_unique_subsets": len(unique_subsets),
+    }
 
 
 def validate_valid_rho_finite(rows: list[dict[str, Any]]) -> list[str]:

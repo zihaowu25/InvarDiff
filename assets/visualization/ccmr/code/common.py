@@ -70,6 +70,81 @@ def save_json_atomic(path: str | os.PathLike[str], value: Any) -> None:
             pass
 
 
+def load_attempt_history(
+    manifest_path: str | os.PathLike[str],
+    resolved_config_hash: str,
+) -> tuple[int, list[dict[str, Any]]]:
+    """Recover prior attempts for one atomic shard.
+
+    Histories are scoped to the resolved configuration.  A legacy failed
+    manifest is converted into a one-entry history so a successful ``--resume``
+    cannot silently reset its retry count to zero.
+    """
+    path = Path(manifest_path)
+    if not path.is_file():
+        return 0, []
+    try:
+        previous = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return 0, []
+    if previous.get("resolved_config_hash") != resolved_config_hash:
+        return 0, []
+    history = previous.get("attempt_history")
+    if isinstance(history, list):
+        recovered = [dict(item) for item in history if isinstance(item, dict)]
+    elif previous.get("status") in {"failed", "complete"}:
+        recovered = [{
+            "status": previous.get("status"),
+            "started_at": previous.get("started_at"),
+            "completed_at": previous.get("completed_at"),
+            "failed_at": previous.get("failed_at"),
+            "wall_time_s": previous.get("wall_time_s"),
+            "error_type": previous.get("error_type"),
+            "error": previous.get("error"),
+            "oom": previous.get("oom", False),
+            "peak_allocated_gib": previous.get("peak_allocated_gib", 0.0),
+            "peak_reserved_gib": previous.get("peak_reserved_gib", 0.0),
+            "commit": previous.get("commit"),
+            "resolved_config_hash": previous.get("resolved_config_hash"),
+        }]
+    else:
+        recovered = []
+    return sum(item.get("status") == "failed" for item in recovered), recovered
+
+
+def attempt_record(
+    *,
+    status: str,
+    started_at: str,
+    finished_at: str,
+    wall_time_s: float,
+    oom: bool,
+    peak_allocated_gib: float,
+    peak_reserved_gib: float,
+    commit: str | None,
+    resolved_config_hash: str,
+    error_type: str | None = None,
+    error: str | None = None,
+) -> dict[str, Any]:
+    """Build one strict-JSON audit entry for a shard attempt."""
+    item: dict[str, Any] = {
+        "status": status,
+        "started_at": started_at,
+        "completed_at" if status == "complete" else "failed_at": finished_at,
+        "wall_time_s": float(wall_time_s),
+        "oom": bool(oom),
+        "peak_allocated_gib": float(peak_allocated_gib),
+        "peak_reserved_gib": float(peak_reserved_gib),
+        "commit": commit,
+        "resolved_config_hash": resolved_config_hash,
+    }
+    if error_type is not None:
+        item["error_type"] = error_type
+    if error is not None:
+        item["error"] = error
+    return item
+
+
 def sha256_file(path: str | os.PathLike[str], chunk_size: int = 16 * 1024 * 1024) -> str:
     digest = hashlib.sha256()
     with open(path, "rb") as handle:
