@@ -1,0 +1,13 @@
+{
+  "output": "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/combined/formal_v2",
+  "runs": 3,
+  "tables": {
+    "ccmr_metrics": 26768,
+    "condition_similarity": 161464,
+    "condition_distance": 1794144,
+    "temporal_metrics": 515008,
+    "time_gap_metrics": 75152,
+    "rho_per_condition": 377216,
+    "alignment_control": 1519744
+  }
+}

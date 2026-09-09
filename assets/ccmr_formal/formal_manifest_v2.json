@@ -1,213 +1,169 @@
 {
   "checks": {
     "combined": {
-      "failures": [
-        "missing ccmr_metrics.csv.gz",
-        "missing alignment_control.csv.gz",
-        "missing alignment_cluster_summary.csv.gz",
-        "missing rho_per_condition.csv.gz",
-        "missing rho_stability.csv.gz",
-        "missing subset_stability.csv.gz",
-        "missing rho_consistency.json",
-        "missing hierarchical_bootstrap.json",
-        "missing summary.json",
-        "missing aggregate_manifest.json"
-      ],
-      "passed": false,
-      "status": "not_run"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "dit.atomic": {
-      "failures": [
-        "missing run: /root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/dit_512_formal_v2"
-      ],
-      "passed": false,
-      "status": "not_run"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "dit.boundaries": {
-      "failures": [
-        "rho boundary validation has no rows"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "dit.coverage": {
-      "failures": [
-        "DiT row coverage ccmr=0/14000 rho=0/224000 alignment=0/1372000"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "dit.derangements": {
-      "failures": [
-        "derangement validation has no rows"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "dit.finite": {
-      "failures": [
-        "finite-value validation has no rows"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "dit.latents": {
-      "failures": [
-        "dit: missing latent_hashes.json"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "dit.modules": {
-      "failures": [
-        "module coverage dit.msa: expected layers 0..27",
-        "module coverage dit.mlp: expected layers 0..27"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "dit.protocol": {
-      "failures": [
-        "DiT requires formal 512, 5 seeds, 16 classes, 50 steps"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "dit.rho_finite": {
-      "failures": [
-        "rho validation has no rows"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "dit.rho_live_code_equivalence": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "dit.shards": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_pairwise.atomic": {
-      "failures": [
-        "missing run: /root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/flux_pairwise_formal_v2"
-      ],
-      "passed": false,
-      "status": "not_run"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_pairwise.coverage": {
-      "failures": [
-        "FLUX pair row coverage ccmr=0/306432 alignment=0/295488"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_pairwise.finite": {
-      "failures": [
-        "finite-value validation has no rows"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_pairwise.latents": {
-      "failures": [
-        "flux_pairwise: missing latent_hashes.json"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_pairwise.modules": {
-      "failures": [
-        "module coverage double.attn: expected layers 0..18",
-        "module coverage double.context_attn: expected layers 0..18",
-        "module coverage double.ff: expected layers 0..18",
-        "module coverage double.context_ff: expected layers 0..18",
-        "module coverage single.attn: expected layers 0..37",
-        "module coverage single.mlp: expected layers 0..37"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_pairwise.protocol": {
-      "failures": [
-        "FLUX pairwise requires formal 1024, 3 seeds x 24 pairs, 28 steps"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_pairwise.selection": {
-      "failures": [
-        "pair-selection inputs are empty"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_pairwise.shard_protocol": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_pairwise.shards": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_pairwise.swap": {
-      "failures": [
-        "FLUX swap validation has no rows"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_rho.atomic": {
-      "failures": [
-        "missing run: /root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2"
-      ],
-      "passed": false,
-      "status": "not_run"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_rho.boundaries": {
-      "failures": [
-        "rho boundary validation has no rows"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_rho.coverage": {
-      "failures": [
-        "FLUX rho row coverage 0/153216"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_rho.latents": {
-      "failures": [
-        "flux_rho: missing latent_hashes.json"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_rho.modules": {
-      "failures": [
-        "module coverage double.attn: expected layers 0..18",
-        "module coverage double.context_attn: expected layers 0..18",
-        "module coverage double.ff: expected layers 0..18",
-        "module coverage double.context_ff: expected layers 0..18",
-        "module coverage single.attn: expected layers 0..37",
-        "module coverage single.mlp: expected layers 0..37"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_rho.protocol": {
-      "failures": [
-        "FLUX rho requires formal 1024, 3 seeds x 12 prompts, 28 steps"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_rho.rho_finite": {
-      "failures": [
-        "rho validation has no rows"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "flux_rho.rho_live_code_equivalence": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "flux_rho.scope": {
-      "failures": [
-        "FLUX Panel D requires condition-scope rho only"
-      ],
-      "passed": false,
-      "status": "failed"
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
-    "rho.live_code_equivalence": {
-      "failures": [
-        "no condition-level rho rows"
-      ],
-      "passed": false,
-      "status": "failed"
+    "flux_rho.shards": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
+    },
+    "paper_tables": {
+      "failures": [],
+      "passed": true,
+      "status": "passed"
     },
     "tests": {
       "failures": [],
@@ -215,63 +171,40 @@
       "status": "passed"
     }
   },
-  "missing_or_failed": [
-    "missing run: /root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/dit_512_formal_v2",
-    "missing run: /root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/flux_pairwise_formal_v2",
-    "missing run: /root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
-    "DiT requires formal 512, 5 seeds, 16 classes, 50 steps",
-    "module coverage dit.msa: expected layers 0..27",
-    "module coverage dit.mlp: expected layers 0..27",
-    "DiT row coverage ccmr=0/14000 rho=0/224000 alignment=0/1372000",
-    "rho boundary validation has no rows",
-    "derangement validation has no rows",
-    "finite-value validation has no rows",
-    "rho validation has no rows",
-    "dit: missing latent_hashes.json",
-    "FLUX pairwise requires formal 1024, 3 seeds x 24 pairs, 28 steps",
-    "module coverage double.attn: expected layers 0..18",
-    "module coverage double.context_attn: expected layers 0..18",
-    "module coverage double.ff: expected layers 0..18",
-    "module coverage double.context_ff: expected layers 0..18",
-    "module coverage single.attn: expected layers 0..37",
-    "module coverage single.mlp: expected layers 0..37",
-    "FLUX pair row coverage ccmr=0/306432 alignment=0/295488",
-    "FLUX swap validation has no rows",
-    "pair-selection inputs are empty",
-    "finite-value validation has no rows",
-    "flux_pairwise: missing latent_hashes.json",
-    "FLUX rho requires formal 1024, 3 seeds x 12 prompts, 28 steps",
-    "FLUX Panel D requires condition-scope rho only",
-    "module coverage double.attn: expected layers 0..18",
-    "module coverage double.context_attn: expected layers 0..18",
-    "module coverage double.ff: expected layers 0..18",
-    "module coverage double.context_ff: expected layers 0..18",
-    "module coverage single.attn: expected layers 0..37",
-    "module coverage single.mlp: expected layers 0..37",
-    "FLUX rho row coverage 0/153216",
-    "rho boundary validation has no rows",
-    "rho validation has no rows",
-    "flux_rho: missing latent_hashes.json",
-    "no condition-level rho rows",
-    "missing ccmr_metrics.csv.gz",
-    "missing alignment_control.csv.gz",
-    "missing alignment_cluster_summary.csv.gz",
-    "missing rho_per_condition.csv.gz",
-    "missing rho_stability.csv.gz",
-    "missing subset_stability.csv.gz",
-    "missing rho_consistency.json",
-    "missing hierarchical_bootstrap.json",
-    "missing summary.json",
-    "missing aggregate_manifest.json"
-  ],
-  "paper_eligible": false,
-  "passed": false,
+  "missing_or_failed": [],
+  "paper_eligible": true,
+  "passed": true,
   "recovery_commands": [
     "python assets/visualization/ccmr/code/collect_dit_ccmr.py --config assets/ccmr_formal/configs_v2/dit_512_formal.yaml --output-dir assets/ccmr_formal/data/runs_v2/dit_512_formal_v2 --resume",
-    "python assets/visualization/ccmr/code/collect_flux_ccmr.py --config assets/ccmr_formal/configs_v2/flux_pairwise_formal.yaml --output-dir assets/ccmr_formal/data/runs_v2/flux_pairwise_formal_v2 --resume",
+    "python assets/visualization/ccmr/code/collect_flux_ccmr.py --config assets/ccmr_formal/configs_v2/flux_pairwise_formal12.yaml --output-dir assets/ccmr_formal/data/runs_v2/flux_pairwise_formal12_v2 --resume",
     "python assets/visualization/ccmr/code/collect_flux_rho.py --config assets/ccmr_formal/configs_v2/flux_rho_formal.yaml --output-dir assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2 --resume"
   ],
-  "rho_consistency": {},
+  "rho_consistency": {
+    "dit": {
+      "atol": 1e-06,
+      "failure_count": 0,
+      "jaccard_at_30pct": 1.0,
+      "kendall": 0.999999586263408,
+      "max_absolute_error": 6.196755986564995e-06,
+      "max_relative_error": 4.138012043995697e-07,
+      "passed": true,
+      "rtol": 0.0001,
+      "spearman": 0.9999999999938542,
+      "valid_cells": 215040
+    },
+    "flux_rho": {
+      "atol": 1e-06,
+      "failure_count": 0,
+      "jaccard_at_30pct": 1.0,
+      "kendall": 0.9999967215841268,
+      "max_absolute_error": 7.188458798523811e-05,
+      "max_relative_error": 3.7096578564616516e-05,
+      "passed": true,
+      "rtol": 0.0001,
+      "spearman": 0.999999999909495,
+      "valid_cells": 142272
+    }
+  },
   "schema_version": 2,
-  "validated_at": "2026-09-08T02:26:50.629650+00:00"
+  "validated_at": "2026-09-09T11:33:39.873842+00:00"
 }

@@ -1,0 +1,61 @@
+2026-09-08T15:58:07Z waiting for FLUX formal12 pairwise collector
+{
+  "stage": "flux_pairwise_formal12",
+  "passed": false,
+  "failures": [
+    "formal12 shard coverage 1/36",
+    "missing formal12 shard 0:1",
+    "missing formal12 shard 0:2",
+    "missing formal12 shard 0:3",
+    "missing formal12 shard 0:4",
+    "missing formal12 shard 0:5",
+    "missing formal12 shard 0:6",
+    "missing formal12 shard 0:7",
+    "missing formal12 shard 0:8",
+    "missing formal12 shard 0:9",
+    "missing formal12 shard 0:10",
+    "missing formal12 shard 0:11",
+    "seed 0: pair order differs from preregistration",
+    "missing formal12 shard 1:0",
+    "missing formal12 shard 1:1",
+    "missing formal12 shard 1:2",
+    "missing formal12 shard 1:3",
+    "missing formal12 shard 1:4",
+    "missing formal12 shard 1:5",
+    "missing formal12 shard 1:6",
+    "missing formal12 shard 1:7",
+    "missing formal12 shard 1:8",
+    "missing formal12 shard 1:9",
+    "missing formal12 shard 1:10",
+    "missing formal12 shard 1:11",
+    "missing formal12 shard 2:0",
+    "missing formal12 shard 2:1",
+    "missing formal12 shard 2:2",
+    "missing formal12 shard 2:3",
+    "missing formal12 shard 2:4",
+    "missing formal12 shard 2:5",
+    "missing formal12 shard 2:6",
+    "missing formal12 shard 2:7",
+    "missing formal12 shard 2:8",
+    "missing formal12 shard 2:9",
+    "missing formal12 shard 2:10",
+    "missing formal12 shard 2:11"
+  ]
+}
+2026-09-08T16:01:34Z waiting for clean-commit integration shard
+{
+  "stage": "integration_shard",
+  "passed": true,
+  "failures": [],
+  "wall_time_s": 1098.9899856625125,
+  "peak_allocated_gib": 32.78542995452881,
+  "peak_reserved_gib": 33.970703125
+}
+2026-09-08T16:19:36Z integration gate passed; resuming remaining pairwise shards
+{
+  "stage": "flux_pairwise_formal12",
+  "passed": true,
+  "failures": []
+}
+2026-09-09T04:21:41Z pairwise gate passed; starting FLUX condition-rho
+2026-09-09T05:05:44Z FLUX condition-rho collector completed

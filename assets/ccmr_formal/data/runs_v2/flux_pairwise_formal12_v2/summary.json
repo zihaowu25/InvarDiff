@@ -1,0 +1,17 @@
+{
+  "elapsed_s": 43303.850108561106,
+  "model": "flux",
+  "num_pairs": 12,
+  "num_seeds": 3,
+  "row_counts": {
+    "alignment_control": 147744,
+    "ccmr_metrics": 153216,
+    "condition_distance": 147744,
+    "condition_similarity": 147744,
+    "pair_metrics": 147744,
+    "rho_per_condition": 0,
+    "temporal_metrics": 295488,
+    "time_gap_metrics": 421344
+  },
+  "run_id": "flux_pairwise_formal12_v2"
+}

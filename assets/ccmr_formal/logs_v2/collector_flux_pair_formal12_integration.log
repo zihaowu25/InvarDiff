@@ -1,0 +1,37 @@
+Loading pipeline components...:   0%|          | 0/7 [00:00<?, ?it/s]
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s][ALoading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 62.53it/s]
+Loading pipeline components...:  29%|██▊       | 2/7 [00:00<00:00, 14.11it/s]Loading pipeline components...:  57%|█████▋    | 4/7 [00:00<00:00, 15.21it/s]
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s][ALoading weights: 100%|██████████| 196/196 [00:00<00:00, 11014.42it/s]
+
+Loading weights:   0%|          | 0/219 [00:00<?, ?it/s][ALoading weights: 100%|██████████| 219/219 [00:00<00:00, 10101.09it/s]
+Loading pipeline components...: 100%|██████████| 7/7 [00:00<00:00, 17.13it/s]Loading pipeline components...: 100%|██████████| 7/7 [00:00<00:00, 16.52it/s]
+Denoising steps:   0%|          | 0/28 [00:00<?, ?it/s]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:   4%|▎         | 1/28 [00:09<04:15,  9.47s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:   7%|▋         | 2/28 [00:45<10:58, 25.33s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  11%|█         | 3/28 [01:27<13:36, 32.66s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  14%|█▍        | 4/28 [02:12<15:05, 37.72s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  18%|█▊        | 5/28 [03:10<17:15, 45.01s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  21%|██▏       | 6/28 [04:00<17:04, 46.59s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  25%|██▌       | 7/28 [04:42<15:45, 45.01s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  29%|██▊       | 8/28 [05:29<15:13, 45.65s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  32%|███▏      | 9/28 [06:08<13:50, 43.69s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  36%|███▌      | 10/28 [06:47<12:42, 42.38s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  39%|███▉      | 11/28 [07:29<11:58, 42.24s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  43%|████▎     | 12/28 [08:04<10:39, 40.00s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  46%|████▋     | 13/28 [08:46<10:05, 40.39s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  50%|█████     | 14/28 [09:27<09:31, 40.80s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  54%|█████▎    | 15/28 [10:09<08:53, 41.05s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  57%|█████▋    | 16/28 [10:50<08:13, 41.13s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  61%|██████    | 17/28 [11:25<07:10, 39.12s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  64%|██████▍   | 18/28 [12:05<06:35, 39.57s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  68%|██████▊   | 19/28 [12:48<06:05, 40.61s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  71%|███████▏  | 20/28 [13:27<05:21, 40.15s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  75%|███████▌  | 21/28 [14:08<04:41, 40.21s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  79%|███████▊  | 22/28 [14:44<03:54, 39.11s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  82%|████████▏ | 23/28 [15:20<03:10, 38.09s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  86%|████████▌ | 24/28 [15:55<02:28, 37.13s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  89%|████████▉ | 25/28 [16:31<01:50, 36.90s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  93%|█████████▎| 26/28 [17:07<01:12, 36.44s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps:  96%|█████████▋| 27/28 [17:44<00:36, 36.64s/it]Passing `img_ids` 3d torch.Tensor is deprecated.Please remove the batch dimension and pass it as a 2d torch Tensor
+Denoising steps: 100%|██████████| 28/28 [18:15<00:00, 35.11s/it]                                                                Peak allocated GPU memory: 32.785 GiB
+FLUX CCMR run complete: /root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/flux_pairwise_formal12_v2

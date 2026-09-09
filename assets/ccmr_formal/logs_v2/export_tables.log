@@ -1,0 +1,41 @@
+{
+  "created_at": "2026-09-09T11:31:30.949818+00:00",
+  "source": "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/combined/formal_v2",
+  "artifacts": [
+    {
+      "path": "table_ccmr_summary.csv",
+      "sha256": "f6125cf25b59d9f8d4b38b607e7b6c9d3ccd8fe30609ea6aa32c7254b3c10b29",
+      "size_bytes": 3425
+    },
+    {
+      "path": "table_ccmr_summary.md",
+      "sha256": "9456b980d934cdcc166b3796553d5e2a260954db886abc3e1ba4e994d3171065",
+      "size_bytes": 4100
+    },
+    {
+      "path": "table_ccmr_summary.tex",
+      "sha256": "37327108e76bc697189edc5534d79cd17d0ef05786ecf801756a691c3dd3f826",
+      "size_bytes": 4132
+    },
+    {
+      "path": "table_rho_stability.csv",
+      "sha256": "48e94cbeb14a3369a2ad26102eb1ca7dc4e72d9b1ca8c54ec2eaaf9712130bce",
+      "size_bytes": 17504
+    },
+    {
+      "path": "table_rho_stability.md",
+      "sha256": "aac39029727b1c836085e600cc03db3ef582382a8fe56f4d0580c3cd270f0c12",
+      "size_bytes": 21347
+    },
+    {
+      "path": "table_rho_stability.tex",
+      "sha256": "3f21dff133740d9deff08935fdd56d75609220b5cddce0ab7e2ec567e46be592",
+      "size_bytes": 21420
+    },
+    {
+      "path": "ccmr_paper_numbers.tex",
+      "sha256": "06d3a102894ab158e0773fa3970691c8d854eb659fc82ae63bb5437fc63f328b",
+      "size_bytes": 149
+    }
+  ]
+}

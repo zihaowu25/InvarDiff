@@ -1,0 +1,5738 @@
+{
+  "cache_enabled": false,
+  "completed_at": "2026-09-09T05:05:42.744968+00:00",
+  "decode_output": false,
+  "experiment_level": "formal",
+  "model": "flux",
+  "paper_eligible": false,
+  "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+  "rho_scope": "condition",
+  "run_id": "flux_rho_formal_v2",
+  "shards": {
+    "0:p00": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:23:21.530828+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:21:52.000863+00:00",
+          "status": "complete",
+          "wall_time_s": 89.52997481822968
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:23:21.530828+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p00",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 0,
+      "started_at": "2026-09-09T04:21:52.000863+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_0_prompt_p00/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "ba4028811da0ebfc9f77f3f1aa34ff604a71f2a1ab708d654e69d74279b51a84",
+        "size_bytes": 123993
+      },
+      "wall_time_s": 89.52997481822968
+    },
+    "0:p01": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:24:33.778592+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:23:21.532495+00:00",
+          "status": "complete",
+          "wall_time_s": 72.24610447324812
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:24:33.778592+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p01",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 0,
+      "started_at": "2026-09-09T04:23:21.532495+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_0_prompt_p01/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "943978718eb5f5729985a35d8ed51f95f4c41f3f2359a94a70f6b22d6db3f6d9",
+        "size_bytes": 124002
+      },
+      "wall_time_s": 72.24610447324812
+    },
+    "0:p02": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:25:44.518013+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:24:33.780325+00:00",
+          "status": "complete",
+          "wall_time_s": 70.73770009726286
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:25:44.518013+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p02",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 0,
+      "started_at": "2026-09-09T04:24:33.780325+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_0_prompt_p02/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "be60803740460bc1baf4aa8d0fe76d0ba7517e5191edf064f080b7c81567596d",
+        "size_bytes": 124042
+      },
+      "wall_time_s": 70.73770009726286
+    },
+    "0:p03": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:26:56.276652+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:25:44.519794+00:00",
+          "status": "complete",
+          "wall_time_s": 71.75687264930457
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:26:56.276652+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p03",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 0,
+      "started_at": "2026-09-09T04:25:44.519794+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_0_prompt_p03/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "2844ffc23dd107c36408228d47c62fbf5691f8e0520247ef09e185ff7e32e071",
+        "size_bytes": 124139
+      },
+      "wall_time_s": 71.75687264930457
+    },
+    "0:p04": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:28:10.096476+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:26:56.279301+00:00",
+          "status": "complete",
+          "wall_time_s": 73.81719668209553
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:28:10.096476+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p04",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 0,
+      "started_at": "2026-09-09T04:26:56.279301+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_0_prompt_p04/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "f9052175d3982270dd2df3ddbb36896ec16128bcd739e6316704db427e29f65f",
+        "size_bytes": 124147
+      },
+      "wall_time_s": 73.81719668209553
+    },
+    "0:p05": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:29:23.644627+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:28:10.098525+00:00",
+          "status": "complete",
+          "wall_time_s": 73.54611530341208
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:29:23.644627+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p05",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 0,
+      "started_at": "2026-09-09T04:28:10.098525+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_0_prompt_p05/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "e3112eee3ddf6e9c711d7f487455c35c5ca41646e032d0083f251172b1994ae7",
+        "size_bytes": 123896
+      },
+      "wall_time_s": 73.54611530341208
+    },
+    "0:p06": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:30:44.059963+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:29:23.646445+00:00",
+          "status": "complete",
+          "wall_time_s": 80.41353365685791
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:30:44.059963+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p06",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 0,
+      "started_at": "2026-09-09T04:29:23.646445+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_0_prompt_p06/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "b5f09624bc9618c3b4f10339305d4c288dca92e95966ed89303f54ec63b88b49",
+        "size_bytes": 124061
+      },
+      "wall_time_s": 80.41353365685791
+    },
+    "0:p07": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:31:59.747234+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:30:44.061906+00:00",
+          "status": "complete",
+          "wall_time_s": 75.685341687873
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:31:59.747234+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p07",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 0,
+      "started_at": "2026-09-09T04:30:44.061906+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_0_prompt_p07/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "5e30ae8e983dfa3346d94fc46f205dd379099688614648fe4dfdafa39a4f54cc",
+        "size_bytes": 124244
+      },
+      "wall_time_s": 75.685341687873
+    },
+    "0:p08": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:33:12.804281+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:31:59.749061+00:00",
+          "status": "complete",
+          "wall_time_s": 73.0552311418578
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:33:12.804281+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p08",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 0,
+      "started_at": "2026-09-09T04:31:59.749061+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_0_prompt_p08/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "171520767c1a57e00b7525875ad4cfcd512963c6e5487a165bc95fa020ea4ae1",
+        "size_bytes": 124302
+      },
+      "wall_time_s": 73.0552311418578
+    },
+    "0:p09": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:34:24.727068+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:33:12.806147+00:00",
+          "status": "complete",
+          "wall_time_s": 71.92093715444207
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:34:24.727068+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p09",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 0,
+      "started_at": "2026-09-09T04:33:12.806147+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_0_prompt_p09/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "0379149da1a702d941c2e1d6f1cfb7b8442925f118e50f4132ece53b0354ac2b",
+        "size_bytes": 124209
+      },
+      "wall_time_s": 71.92093715444207
+    },
+    "0:p10": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:35:36.639299+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:34:24.729092+00:00",
+          "status": "complete",
+          "wall_time_s": 71.91021987237036
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:35:36.639299+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p10",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 0,
+      "started_at": "2026-09-09T04:34:24.729092+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_0_prompt_p10/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "1021151195464514096eea087b2d06d045dcf91fb175867df3cb5744847ee609",
+        "size_bytes": 123947
+      },
+      "wall_time_s": 71.91021987237036
+    },
+    "0:p11": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:36:47.537244+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:35:36.641205+00:00",
+          "status": "complete",
+          "wall_time_s": 70.8960535004735
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:36:47.537244+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p11",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "983e874d73b2667a3112faf282c4b91f5f0e2f37843e8a64dcc903f34b8ef960",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 0,
+      "started_at": "2026-09-09T04:35:36.641205+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_0_prompt_p11/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "4e8a03cecbdb73c0da2fe93223e0bb4130b0d67ed904de8a58e4180e6a7356f7",
+        "size_bytes": 124185
+      },
+      "wall_time_s": 70.8960535004735
+    },
+    "1:p00": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:37:57.060843+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:36:47.549238+00:00",
+          "status": "complete",
+          "wall_time_s": 69.51161683630198
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:37:57.060843+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p00",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "e0fc71d8442db546bd4513ea51c73f5fac696ada0085de4f17eb9aed43ecd753",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 1,
+      "started_at": "2026-09-09T04:36:47.549238+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_1_prompt_p00/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "9b517edf80f94c9b42f148b0318210eedec313f89148a5f087fa10b9970219c9",
+        "size_bytes": 124037
+      },
+      "wall_time_s": 69.51161683630198
+    },
+    "1:p01": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:39:07.507598+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:37:57.062733+00:00",
+          "status": "complete",
+          "wall_time_s": 70.44487948995084
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:39:07.507598+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p01",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "e0fc71d8442db546bd4513ea51c73f5fac696ada0085de4f17eb9aed43ecd753",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 1,
+      "started_at": "2026-09-09T04:37:57.062733+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_1_prompt_p01/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "a41fce80cc1b85102f76d71074ecb714efb1f12181c98febbdd13c05b0d206cd",
+        "size_bytes": 124218
+      },
+      "wall_time_s": 70.44487948995084
+    },
+    "1:p02": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:40:18.420362+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:39:07.509815+00:00",
+          "status": "complete",
+          "wall_time_s": 70.91055463813245
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:40:18.420362+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p02",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "e0fc71d8442db546bd4513ea51c73f5fac696ada0085de4f17eb9aed43ecd753",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 1,
+      "started_at": "2026-09-09T04:39:07.509815+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_1_prompt_p02/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "6f836a1788f1f885c5d6a88c6a916aedd62552b59c6474c2ce10deb6014210e3",
+        "size_bytes": 124026
+      },
+      "wall_time_s": 70.91055463813245
+    },
+    "1:p03": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:41:28.712055+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:40:18.422259+00:00",
+          "status": "complete",
+          "wall_time_s": 70.28980911057442
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:41:28.712055+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p03",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "e0fc71d8442db546bd4513ea51c73f5fac696ada0085de4f17eb9aed43ecd753",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 1,
+      "started_at": "2026-09-09T04:40:18.422259+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_1_prompt_p03/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "56df843f1b5d5cd2a8585f8277930494b56a32c2bfddfe264f6829ca62ff21f4",
+        "size_bytes": 123932
+      },
+      "wall_time_s": 70.28980911057442
+    },
+    "1:p04": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:42:38.551978+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:41:28.714645+00:00",
+          "status": "complete",
+          "wall_time_s": 69.83734620269388
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:42:38.551978+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p04",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "e0fc71d8442db546bd4513ea51c73f5fac696ada0085de4f17eb9aed43ecd753",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 1,
+      "started_at": "2026-09-09T04:41:28.714645+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_1_prompt_p04/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "91abf05af6600468826d5908141b171100d5c3408e63e769cd2fd218df24edbd",
+        "size_bytes": 124031
+      },
+      "wall_time_s": 69.83734620269388
+    },
+    "1:p05": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:43:49.514703+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:42:38.554374+00:00",
+          "status": "complete",
+          "wall_time_s": 70.96033625211567
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:43:49.514703+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p05",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "e0fc71d8442db546bd4513ea51c73f5fac696ada0085de4f17eb9aed43ecd753",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 1,
+      "started_at": "2026-09-09T04:42:38.554374+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_1_prompt_p05/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "9409efe32bf1a4128e59a46bab661ae9ac019b479742ed4e6babe10785306c74",
+        "size_bytes": 124117
+      },
+      "wall_time_s": 70.96033625211567
+    },
+    "1:p06": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:44:59.055077+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:43:49.516492+00:00",
+          "status": "complete",
+          "wall_time_s": 69.5385918924585
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:44:59.055077+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p06",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "e0fc71d8442db546bd4513ea51c73f5fac696ada0085de4f17eb9aed43ecd753",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 1,
+      "started_at": "2026-09-09T04:43:49.516492+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_1_prompt_p06/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "c43ad654c286fc09816bffa5cbce1a1bf6b605ecdc637712d5ee8b3246df7a93",
+        "size_bytes": 124131
+      },
+      "wall_time_s": 69.5385918924585
+    },
+    "1:p07": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:46:09.287629+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:44:59.057473+00:00",
+          "status": "complete",
+          "wall_time_s": 70.23016538005322
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:46:09.287629+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p07",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "e0fc71d8442db546bd4513ea51c73f5fac696ada0085de4f17eb9aed43ecd753",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 1,
+      "started_at": "2026-09-09T04:44:59.057473+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_1_prompt_p07/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "533e7665477b8bfd6d1d7b5b1cff5411541e315a8ccbfbcebd060177c3055e46",
+        "size_bytes": 124171
+      },
+      "wall_time_s": 70.23016538005322
+    },
+    "1:p08": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:47:19.671025+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:46:09.289213+00:00",
+          "status": "complete",
+          "wall_time_s": 70.381826675497
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:47:19.671025+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p08",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "e0fc71d8442db546bd4513ea51c73f5fac696ada0085de4f17eb9aed43ecd753",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 1,
+      "started_at": "2026-09-09T04:46:09.289213+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_1_prompt_p08/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "20e299261374ba59bc7f782425f271868665001d70c92d7b7e751eb813984ec7",
+        "size_bytes": 124436
+      },
+      "wall_time_s": 70.381826675497
+    },
+    "1:p09": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:48:30.159652+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:47:19.672927+00:00",
+          "status": "complete",
+          "wall_time_s": 70.4867322538048
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:48:30.159652+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p09",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "e0fc71d8442db546bd4513ea51c73f5fac696ada0085de4f17eb9aed43ecd753",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 1,
+      "started_at": "2026-09-09T04:47:19.672927+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_1_prompt_p09/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "cdd9fea0aed4719e42aa22cff9d36deea51d17d6ca73418de278ce2130f0a9a8",
+        "size_bytes": 124162
+      },
+      "wall_time_s": 70.4867322538048
+    },
+    "1:p10": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:49:40.247886+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:48:30.161773+00:00",
+          "status": "complete",
+          "wall_time_s": 70.08612505998462
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:49:40.247886+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p10",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "e0fc71d8442db546bd4513ea51c73f5fac696ada0085de4f17eb9aed43ecd753",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 1,
+      "started_at": "2026-09-09T04:48:30.161773+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_1_prompt_p10/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "517a4d1692c06390699f5cc618d8cbd67ccefca8b17c65d9fa606369e0d2e1a0",
+        "size_bytes": 124134
+      },
+      "wall_time_s": 70.08612505998462
+    },
+    "1:p11": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:50:50.361578+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:49:40.249775+00:00",
+          "status": "complete",
+          "wall_time_s": 70.11181610450149
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:50:50.361578+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p11",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "e0fc71d8442db546bd4513ea51c73f5fac696ada0085de4f17eb9aed43ecd753",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 1,
+      "started_at": "2026-09-09T04:49:40.249775+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_1_prompt_p11/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "091dc45df467860a333345511244fac72530fe056e9a9f2ddcfca3e8ffecce9f",
+        "size_bytes": 124032
+      },
+      "wall_time_s": 70.11181610450149
+    },
+    "2:p00": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:52:01.437623+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:50:50.370756+00:00",
+          "status": "complete",
+          "wall_time_s": 71.066874303855
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:52:01.437623+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p00",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "220a76582d95a1a8ee731ea31326a3748179ed17bd9dfa1b773f9d93ab455064",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 2,
+      "started_at": "2026-09-09T04:50:50.370756+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_2_prompt_p00/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "a5facce380816e638d2f6e4cc7e7a95727bf1c3a241dc7bde2c174abe837765e",
+        "size_bytes": 124057
+      },
+      "wall_time_s": 71.066874303855
+    },
+    "2:p01": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:53:11.296603+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:52:01.440482+00:00",
+          "status": "complete",
+          "wall_time_s": 69.8561356747523
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:53:11.296603+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p01",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "220a76582d95a1a8ee731ea31326a3748179ed17bd9dfa1b773f9d93ab455064",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 2,
+      "started_at": "2026-09-09T04:52:01.440482+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_2_prompt_p01/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "1e1206ce6a63996b60a97351ece5eec873b49a5eeffee92ae186ecda8664e5c9",
+        "size_bytes": 123934
+      },
+      "wall_time_s": 69.8561356747523
+    },
+    "2:p02": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:54:26.683612+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:53:11.298398+00:00",
+          "status": "complete",
+          "wall_time_s": 75.38522174861282
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:54:26.683612+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p02",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "220a76582d95a1a8ee731ea31326a3748179ed17bd9dfa1b773f9d93ab455064",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 2,
+      "started_at": "2026-09-09T04:53:11.298398+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_2_prompt_p02/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "54501fb3b53b7aa09633cc8886d78cbe5a2b92e46ddaa68dab8296a5c8195a30",
+        "size_bytes": 124047
+      },
+      "wall_time_s": 75.38522174861282
+    },
+    "2:p03": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:55:40.810519+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:54:26.685114+00:00",
+          "status": "complete",
+          "wall_time_s": 74.12541712727398
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:55:40.810519+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p03",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "220a76582d95a1a8ee731ea31326a3748179ed17bd9dfa1b773f9d93ab455064",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 2,
+      "started_at": "2026-09-09T04:54:26.685114+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_2_prompt_p03/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "b06296a887924b3360d217c15707de57e5a8013e09a42fe5b056b7ca1deaef7c",
+        "size_bytes": 124107
+      },
+      "wall_time_s": 74.12541712727398
+    },
+    "2:p04": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:56:54.904441+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:55:40.812672+00:00",
+          "status": "complete",
+          "wall_time_s": 74.09178195428103
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:56:54.904441+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p04",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "220a76582d95a1a8ee731ea31326a3748179ed17bd9dfa1b773f9d93ab455064",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 2,
+      "started_at": "2026-09-09T04:55:40.812672+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_2_prompt_p04/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "3dbfdbb88642927d8b4f987dc6b09ad121b0647d0ce18b8e5556cf0e60a3e29a",
+        "size_bytes": 124059
+      },
+      "wall_time_s": 74.09178195428103
+    },
+    "2:p05": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:58:09.091096+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:56:54.906810+00:00",
+          "status": "complete",
+          "wall_time_s": 74.18430777080357
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:58:09.091096+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p05",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "220a76582d95a1a8ee731ea31326a3748179ed17bd9dfa1b773f9d93ab455064",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 2,
+      "started_at": "2026-09-09T04:56:54.906810+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_2_prompt_p05/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "eea1f93b4ada3d91d1c40f27b511830b9e5f00aeb4eea5ef91f49f0f3815fc38",
+        "size_bytes": 123996
+      },
+      "wall_time_s": 74.18430777080357
+    },
+    "2:p06": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T04:59:22.228371+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:58:09.093093+00:00",
+          "status": "complete",
+          "wall_time_s": 73.13529046997428
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T04:59:22.228371+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p06",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "220a76582d95a1a8ee731ea31326a3748179ed17bd9dfa1b773f9d93ab455064",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 2,
+      "started_at": "2026-09-09T04:58:09.093093+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_2_prompt_p06/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "fcfa4bbaeed7b1c5add58df039945b424651c876020227ee6d2e7357b24c5098",
+        "size_bytes": 124132
+      },
+      "wall_time_s": 73.13529046997428
+    },
+    "2:p07": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T05:00:35.967627+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T04:59:22.230311+00:00",
+          "status": "complete",
+          "wall_time_s": 73.73732393793762
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T05:00:35.967627+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p07",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "220a76582d95a1a8ee731ea31326a3748179ed17bd9dfa1b773f9d93ab455064",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 2,
+      "started_at": "2026-09-09T04:59:22.230311+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_2_prompt_p07/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "b41d82f12a65599694b079068168868a28dc083a261de3335ffe6483af3ab08b",
+        "size_bytes": 124056
+      },
+      "wall_time_s": 73.73732393793762
+    },
+    "2:p08": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T05:01:48.367765+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T05:00:35.969259+00:00",
+          "status": "complete",
+          "wall_time_s": 72.39851937629282
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T05:01:48.367765+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p08",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "220a76582d95a1a8ee731ea31326a3748179ed17bd9dfa1b773f9d93ab455064",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 2,
+      "started_at": "2026-09-09T05:00:35.969259+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_2_prompt_p08/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "a6a35024050cd2e78de94957fa3262ec8598c2bfffc1f8fa0ab5b20c20b6cd8f",
+        "size_bytes": 124157
+      },
+      "wall_time_s": 72.39851937629282
+    },
+    "2:p09": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T05:03:01.273528+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T05:01:48.369702+00:00",
+          "status": "complete",
+          "wall_time_s": 72.90383936278522
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T05:03:01.273528+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p09",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "220a76582d95a1a8ee731ea31326a3748179ed17bd9dfa1b773f9d93ab455064",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 2,
+      "started_at": "2026-09-09T05:01:48.369702+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_2_prompt_p09/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "d6b438c9b69ac8faea73b9905332ce0c3546ecbebffb5d8ebd83e1aac1454a95",
+        "size_bytes": 124379
+      },
+      "wall_time_s": 72.90383936278522
+    },
+    "2:p10": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T05:04:16.951924+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T05:03:01.275049+00:00",
+          "status": "complete",
+          "wall_time_s": 75.67688997834921
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T05:04:16.951924+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p10",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "220a76582d95a1a8ee731ea31326a3748179ed17bd9dfa1b773f9d93ab455064",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 2,
+      "started_at": "2026-09-09T05:03:01.275049+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_2_prompt_p10/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "7228f328ad4e54d481d2d1f5980e06e684240a014e7aef656cafb8f7d054ab27",
+        "size_bytes": 124005
+      },
+      "wall_time_s": 75.67688997834921
+    },
+    "2:p11": {
+      "attempt_history": [
+        {
+          "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+          "completed_at": "2026-09-09T05:05:39.236654+00:00",
+          "oom": false,
+          "peak_allocated_gib": 32.03954458236694,
+          "peak_reserved_gib": 32.64453125,
+          "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+          "started_at": "2026-09-09T05:04:16.953905+00:00",
+          "status": "complete",
+          "wall_time_s": 82.28276231791824
+        }
+      ],
+      "branch": "dev-local",
+      "cache_enabled": false,
+      "checkpoint": {
+        "exists": true,
+        "files": [
+          {
+            "path": "model_index.json",
+            "size_bytes": 536
+          },
+          {
+            "path": "scheduler/scheduler_config.json",
+            "size_bytes": 273
+          },
+          {
+            "path": "text_encoder/config.json",
+            "size_bytes": 613
+          },
+          {
+            "path": "text_encoder/model.safetensors",
+            "size_bytes": 246144352
+          },
+          {
+            "path": "text_encoder_2/config.json",
+            "size_bytes": 782
+          },
+          {
+            "path": "text_encoder_2/model-00001-of-00002.safetensors",
+            "size_bytes": 4994582224
+          },
+          {
+            "path": "text_encoder_2/model-00002-of-00002.safetensors",
+            "size_bytes": 4530066360
+          },
+          {
+            "path": "text_encoder_2/model.safetensors.index.json",
+            "size_bytes": 19885
+          },
+          {
+            "path": "tokenizer/merges.txt",
+            "size_bytes": 524619
+          },
+          {
+            "path": "tokenizer/special_tokens_map.json",
+            "size_bytes": 588
+          },
+          {
+            "path": "tokenizer/tokenizer_config.json",
+            "size_bytes": 705
+          },
+          {
+            "path": "tokenizer/vocab.json",
+            "size_bytes": 1059962
+          },
+          {
+            "path": "tokenizer_2/special_tokens_map.json",
+            "size_bytes": 2543
+          },
+          {
+            "path": "tokenizer_2/spiece.model",
+            "size_bytes": 791656
+          },
+          {
+            "path": "tokenizer_2/tokenizer.json",
+            "size_bytes": 2424235
+          },
+          {
+            "path": "tokenizer_2/tokenizer_config.json",
+            "size_bytes": 20817
+          },
+          {
+            "path": "transformer/config.json",
+            "size_bytes": 378
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00001-of-00003.safetensors",
+            "size_bytes": 9983040304
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00002-of-00003.safetensors",
+            "size_bytes": 9949328904
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model-00003-of-00003.safetensors",
+            "size_bytes": 3870584832
+          },
+          {
+            "path": "transformer/diffusion_pytorch_model.safetensors.index.json",
+            "size_bytes": 121262
+          },
+          {
+            "path": "vae/config.json",
+            "size_bytes": 820
+          },
+          {
+            "path": "vae/diffusion_pytorch_model.safetensors",
+            "size_bytes": 167666902
+          }
+        ],
+        "path": "FLUX/models--black-forest-labs--FLUX.1-dev/snapshots/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21",
+        "size_manifest_sha256": "eaab43e342561a07e3437b613fe317d42acff40ee3d0485b49476a652c4c55ba"
+      },
+      "commit": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+      "completed_at": "2026-09-09T05:05:39.236654+00:00",
+      "condition_bank_hash": "a68ff95505ab951415b79873638320b379072a37d3276271da8fb4fdff070d58",
+      "condition_id": "p11",
+      "decode_output": false,
+      "dirty_status": "",
+      "environment_file": "../../environment.json",
+      "exact_command": [
+        "/root/miniconda3/bin/python",
+        "assets/visualization/ccmr/code/collect_flux_rho.py",
+        "--config",
+        "assets/ccmr_formal/configs_v2/flux_rho_formal.yaml",
+        "--output-dir",
+        "assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+        "--resume"
+      ],
+      "experiment_level": "formal",
+      "hook_count": 57,
+      "hook_locations": [
+        "FluxTransformerBlock.forward:block_outputs",
+        "FluxSingleTransformerBlock.forward:block_outputs"
+      ],
+      "latent_hash": "220a76582d95a1a8ee731ea31326a3748179ed17bd9dfa1b773f9d93ab455064",
+      "model_dtype": "bfloat16",
+      "offload": false,
+      "oom": false,
+      "paper_eligible": false,
+      "peak_allocated_gib": 32.03954458236694,
+      "peak_reserved_gib": 32.64453125,
+      "resolved_config_hash": "1161b8e5ed14866209ba7fe26dcecd91ad0043591463869e5622bea4aa1f687f",
+      "resume_requested": true,
+      "retry_count": 0,
+      "seed": 2,
+      "started_at": "2026-09-09T05:04:16.953905+00:00",
+      "statistics_dtype": "float32",
+      "status": "complete",
+      "table": {
+        "path": "seed_2_prompt_p11/rho_per_condition.csv.gz",
+        "row_count": 4256,
+        "sha256": "9263527f30d0dbfd754455d3eda7ecd6af0ebe3124a6a059360f6be06d016110",
+        "size_bytes": 124196
+      },
+      "wall_time_s": 82.28276231791824
+    }
+  },
+  "started_at": "2026-09-09T04:21:51.978890+00:00"
+}

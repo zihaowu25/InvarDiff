@@ -1,0 +1,17 @@
+{
+  "elapsed_s": 829.3858909420669,
+  "invalid": {},
+  "model": "dit",
+  "num_conditions": 16,
+  "num_seeds": 5,
+  "row_counts": {
+    "alignment_control": 1372000,
+    "ccmr_metrics": 14000,
+    "condition_distance": 1646400,
+    "condition_similarity": 13720,
+    "rho_per_condition": 224000,
+    "temporal_metrics": 219520,
+    "time_gap_metrics": 40040
+  },
+  "run_id": "dit_512_formal_v2"
+}

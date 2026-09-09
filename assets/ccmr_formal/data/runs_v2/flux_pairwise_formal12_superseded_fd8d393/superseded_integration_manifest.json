@@ -1,0 +1,14 @@
+{
+  "status": "superseded_after_resume_regression",
+  "paper_eligible": false,
+  "usable_for_formal_aggregate": false,
+  "collection_commit": "fd8d393385c4d77b284ebcd7058894ae89fcc0b9",
+  "complete_shards": 1,
+  "complete_shard_ids": ["seed_0_pair_0"],
+  "pair_id": "p02__p04",
+  "shard_validation_passed": true,
+  "rerun_reason": "resume validation raised NameError because read_rows was not imported",
+  "oom": false,
+  "collector_retry_recorded": false,
+  "protocol_revision": "24 random pairs replaced by 12 preregistered balanced-cycle pairs before formal FLUX analysis"
+}

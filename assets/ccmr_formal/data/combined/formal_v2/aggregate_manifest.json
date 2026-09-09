@@ -1,0 +1,113 @@
+{
+  "artifacts": [
+    {
+      "path": "alignment_cluster_summary.csv.gz",
+      "sha256": "418792c61a80fa94caf316ed16d2ba959e817d5aba10684cc4046254becdf08e",
+      "size_bytes": 30205
+    },
+    {
+      "path": "alignment_control.csv.gz",
+      "sha256": "8c90d16de1f112115d0930f7133d00a628db99f78eaa63e2a25fbae6723c928d",
+      "size_bytes": 38474196
+    },
+    {
+      "path": "ccmr_metrics.csv.gz",
+      "sha256": "07870fc98ff94f80c8c5b4e9f631eb691babafeca61d4d5fd16fb15cdeb15a1b",
+      "size_bytes": 1595214
+    },
+    {
+      "path": "condition_distance.csv.gz",
+      "sha256": "f09d67b41022aeae9e7a5ba1e3498c8e0a3cb18579195947dd8837322d57acc6",
+      "size_bytes": 43849729
+    },
+    {
+      "path": "condition_similarity.csv.gz",
+      "sha256": "4747ab0b152976f9215f9edf18e801f1743df3e9f6e78de9fab8bdbd07b263f4",
+      "size_bytes": 5276684
+    },
+    {
+      "path": "hierarchical_bootstrap.json",
+      "sha256": "c41273f9f91e7ace6732851a91e76f58d640c07352081e58f2e34454c4b1193f",
+      "size_bytes": 2114
+    },
+    {
+      "path": "rho_consistency.json",
+      "sha256": "a7979b5a223c32f04802008c9f197686dd722a960971ee6f57431dc7e18f7f8d",
+      "size_bytes": 292
+    },
+    {
+      "path": "rho_per_condition.csv.gz",
+      "sha256": "cce7eb661ddae2ff22f26e00493ab619e26172f8aa1005c2052d5f912de089bc",
+      "size_bytes": 11467245
+    },
+    {
+      "path": "rho_stability.csv.gz",
+      "sha256": "3cf473a740778066bafcb63ab76b0b4151bad27d551cf009ad7bc707ce0a148b",
+      "size_bytes": 1038287
+    },
+    {
+      "path": "subset_stability.csv.gz",
+      "sha256": "bdb793c06b783239091853ca9abfbd8cb2c3c3fd419fbfa94fb45fe1192737ad",
+      "size_bytes": 1156517
+    },
+    {
+      "path": "summary.json",
+      "sha256": "33e85ed6bda241415ad37a19a365d1ec3cd6ac110680e7046e7180ccc5138ceb",
+      "size_bytes": 121893
+    },
+    {
+      "path": "temporal_metrics.csv.gz",
+      "sha256": "32e9205ff0b558861bf7032b8aef8b435642e9080ee93de289ab11499dae5ea1",
+      "size_bytes": 13190947
+    },
+    {
+      "path": "time_gap_metrics.csv.gz",
+      "sha256": "e7d10ab2103e8476c5f7a6f7e61ca733f7f4ac543f486ea8606f3844a0d38368",
+      "size_bytes": 4149960
+    }
+  ],
+  "collection_commits": {
+    "dit_512": "e38c5d1a9cc0490977f03016c50fadc81074bd9b",
+    "flux_condition_rho": "14b8509b957595ef60123dd645cfcf0ea3413b00",
+    "flux_pairwise_formal12": "14b8509b957595ef60123dd645cfcf0ea3413b00"
+  },
+  "created_at": "2026-09-09T11:28:32.072883+00:00",
+  "inputs": [
+    "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/dit_512_formal_v2",
+    "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/flux_pairwise_formal12_v2",
+    "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2"
+  ],
+  "protocol_revision": "24 random pairs replaced by 12 preregistered balanced-cycle pairs before formal FLUX analysis",
+  "rho_scope_counts": {
+    "condition": 377216
+  },
+  "rho_stability": 25296,
+  "schema_version": 2,
+  "source_runs": [
+    {
+      "model": "dit",
+      "path": "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/dit_512_formal_v2",
+      "run_id": "dit_512_formal_v2"
+    },
+    {
+      "model": "flux",
+      "path": "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/flux_pairwise_formal12_v2",
+      "run_id": "flux_pairwise_formal12_v2"
+    },
+    {
+      "model": "flux",
+      "path": "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2",
+      "run_id": "flux_rho_formal_v2"
+    }
+  ],
+  "subset_stability": 109920,
+  "tables": {
+    "alignment_control": 1519744,
+    "ccmr_metrics": 26768,
+    "condition_distance": 1794144,
+    "condition_similarity": 161464,
+    "rho_per_condition": 377216,
+    "temporal_metrics": 515008,
+    "time_gap_metrics": 75152
+  }
+}

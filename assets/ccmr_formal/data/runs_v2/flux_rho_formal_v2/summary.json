@@ -1,0 +1,11 @@
+{
+  "elapsed_s": 2630.765712994151,
+  "model": "flux",
+  "num_conditions": 12,
+  "num_seeds": 3,
+  "rho_scope": "condition",
+  "row_counts": {
+    "rho_per_condition": 153216
+  },
+  "run_id": "flux_rho_formal_v2"
+}

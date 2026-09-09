@@ -1,0 +1,257 @@
+{
+  "artifacts": [
+    {
+      "path": "fig_ccmr_main.pdf",
+      "sha256": "63a77bf80b5857c5d82580fc66396e7b4aa2bef4545700d5c9a7283cd84f8c38",
+      "size_bytes": 57704
+    },
+    {
+      "path": "fig_ccmr_main.svg",
+      "sha256": "029f2a3aa3e697ced9ea2e48b4728d941d4cc37eea1be431e9afcfe080be9972",
+      "size_bytes": 125069
+    },
+    {
+      "path": "fig_ccmr_main.png",
+      "sha256": "8377f57092db93cb689e0ee9847d7192c5cfda4c38e42a909c7405266045dd78",
+      "size_bytes": 281460
+    },
+    {
+      "path": "qa/fig_ccmr_main_grayscale.png",
+      "sha256": "ab1aa7d6bf677b63ba83d5b2edcb21afaa782b26e9c2bb8ea117e46d29d87f30",
+      "size_bytes": 113418
+    },
+    {
+      "path": "qa/fig_ccmr_main_deuteranopia.png",
+      "sha256": "e8e35d35ff916ebb9887f99d6b3aed65d02702f6a2fd45a530be627a868f89a0",
+      "size_bytes": 252880
+    },
+    {
+      "path": "fig_ccmr_main_caption.md",
+      "sha256": "7c00f930fbee05217d864c7d26344b4c8ade90aae43bf8572e7df9594c571b4b",
+      "size_bytes": 752
+    }
+  ],
+  "created_at": "2026-09-09T11:32:31.802593+00:00",
+  "empty_panels": false,
+  "formal_gate": {
+    "checks": {
+      "combined": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "dit.atomic": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "dit.boundaries": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "dit.coverage": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "dit.derangements": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "dit.finite": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "dit.latents": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "dit.modules": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "dit.protocol": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "dit.rho_finite": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "dit.rho_live_code_equivalence": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "dit.shards": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_pairwise.atomic": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_pairwise.coverage": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_pairwise.finite": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_pairwise.latents": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_pairwise.modules": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_pairwise.protocol": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_pairwise.selection": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_pairwise.shard_protocol": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_pairwise.shards": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_pairwise.swap": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_rho.atomic": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_rho.boundaries": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_rho.coverage": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_rho.latents": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_rho.modules": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_rho.protocol": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_rho.rho_finite": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_rho.rho_live_code_equivalence": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_rho.scope": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "flux_rho.shards": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "paper_tables": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      },
+      "tests": {
+        "failures": [],
+        "passed": true,
+        "status": "passed"
+      }
+    },
+    "missing_or_failed": [],
+    "paper_eligible": true,
+    "passed": true,
+    "recovery_commands": [
+      "python assets/visualization/ccmr/code/collect_dit_ccmr.py --config assets/ccmr_formal/configs_v2/dit_512_formal.yaml --output-dir assets/ccmr_formal/data/runs_v2/dit_512_formal_v2 --resume",
+      "python assets/visualization/ccmr/code/collect_flux_ccmr.py --config assets/ccmr_formal/configs_v2/flux_pairwise_formal12.yaml --output-dir assets/ccmr_formal/data/runs_v2/flux_pairwise_formal12_v2 --resume",
+      "python assets/visualization/ccmr/code/collect_flux_rho.py --config assets/ccmr_formal/configs_v2/flux_rho_formal.yaml --output-dir assets/ccmr_formal/data/runs_v2/flux_rho_formal_v2 --resume"
+    ],
+    "rho_consistency": {
+      "dit": {
+        "atol": 1e-06,
+        "failure_count": 0,
+        "jaccard_at_30pct": 1.0,
+        "kendall": 0.999999586263408,
+        "max_absolute_error": 6.196755986564995e-06,
+        "max_relative_error": 4.138012043995697e-07,
+        "passed": true,
+        "rtol": 0.0001,
+        "spearman": 0.9999999999938542,
+        "valid_cells": 215040
+      },
+      "flux_rho": {
+        "atol": 1e-06,
+        "failure_count": 0,
+        "jaccard_at_30pct": 1.0,
+        "kendall": 0.9999967215841268,
+        "max_absolute_error": 7.188458798523811e-05,
+        "max_relative_error": 3.7096578564616516e-05,
+        "passed": true,
+        "rtol": 0.0001,
+        "spearman": 0.999999999909495,
+        "valid_cells": 142272
+      }
+    },
+    "schema_version": 2,
+    "validated_at": "2026-09-09T11:32:24.272090+00:00"
+  },
+  "height_inches": 4.15,
+  "minimum_font_pt": 7.0,
+  "pilot_fallback": false,
+  "qa": {
+    "deuteranopia": true,
+    "grayscale": true,
+    "pdf_fonttype": 42,
+    "png_dpi": 300
+  },
+  "source_combined": "/root/autodl-tmp/InvarDiff/assets/ccmr_formal/data/combined/formal_v2",
+  "width_inches": 6.75
+}

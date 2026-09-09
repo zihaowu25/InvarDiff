@@ -1,0 +1,26 @@
+{
+  "checkpoints": [
+    {
+      "exists": true,
+      "path": "/root/autodl-tmp/InvarDiff/DiT/pretrained_models/DiT-XL-2-512x512.pt",
+      "sha256": "21eb44f14a72d7476b0e29a1c1cb78ec0f311c98740351952b0a0ba681513510",
+      "size_bytes": 2704152777
+    }
+  ],
+  "cuda": "12.8",
+  "cuda_available": true,
+  "diffusers": "0.39.0",
+  "git_branch": "dev-local",
+  "git_commit": "e38c5d1a9cc0490977f03016c50fadc81074bd9b",
+  "git_status": "",
+  "gpu": [
+    "NVIDIA GeForce RTX 4090"
+  ],
+  "gpu_count": 1,
+  "gpu_total_memory_bytes": [
+    50866487296
+  ],
+  "platform": "Linux-5.15.0-136-generic-x86_64-with-glibc2.35",
+  "python": "3.12.3",
+  "torch": "2.8.0+cu128"
+}

@@ -1,0 +1,62 @@
+{
+  "alignment_shuffle_trials": 100,
+  "cache_enabled": false,
+  "cfg_scale": 4.0,
+  "checkpoint": "DiT/pretrained_models/DiT-XL-2-512x512.pt",
+  "checkpoint_sha256": "21eb44f14a72d7476b0e29a1c1cb78ec0f311c98740351952b0a0ba681513510",
+  "class_ids": [
+    0,
+    7,
+    37,
+    142,
+    207,
+    279,
+    340,
+    387,
+    417,
+    569,
+    656,
+    751,
+    817,
+    933,
+    980,
+    992
+  ],
+  "condition_backend": "exact_batch",
+  "condition_batch_size": 16,
+  "decode_output": false,
+  "degenerate_relative_threshold": 1e-08,
+  "epsilon": 1e-12,
+  "eta": 0.0,
+  "experiment": "dit_512_formal_v2",
+  "experiment_level": "formal",
+  "hardware_target": "RTX_4090_48GB",
+  "image_size": 512,
+  "model": "DiT-XL/2",
+  "model_dtype": "float32",
+  "modules": [
+    "msa",
+    "mlp"
+  ],
+  "num_classes": 1000,
+  "num_inference_steps": 50,
+  "paper_candidate": true,
+  "paper_eligible": false,
+  "rho_repeat_atol": 1e-06,
+  "rho_repeat_rtol": 0.0001,
+  "sampler": "ddim",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "shuffle_seed": 2027,
+  "statistics_dtype": "float32",
+  "time_gaps": [
+    1,
+    2,
+    4
+  ]
+}
