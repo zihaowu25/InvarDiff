@@ -23,6 +23,10 @@ images/
 raw_cache_books/
 agent_skills
 
+# Local HunyuanVideo calibration and generation debug artifacts.
+/HunyuanVideo/debug_cache_books/
+/HunyuanVideo/debug_outputs/
+
 # Local CCMR v1 exploratory duplicates. The audited v2 paths are explicitly
 # selected for synchronization; keep these regenerated copies on disk only.
 /assets/ccmr_formal/data/combined/dit_only/
