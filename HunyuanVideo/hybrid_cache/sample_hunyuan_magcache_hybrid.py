@@ -1165,13 +1165,15 @@ def _patch_model(model):
         )
     model.forward = types.MethodType(finegrained_transformer_forward, model)
     for idx, block in enumerate(model.double_blocks):
-        block.finegrained_owner = model
+        # This is a parent back-reference, not a child module.  Bypass
+        # nn.Module.__setattr__ so model.to(...) does not recurse in a cycle.
+        object.__setattr__(block, "finegrained_owner", model)
         block.finegrained_layer_idx = idx
         block.forward = types.MethodType(
             finegrained_double_block_forward, block
         )
     for idx, block in enumerate(model.single_blocks):
-        block.finegrained_owner = model
+        object.__setattr__(block, "finegrained_owner", model)
         block.finegrained_layer_idx = idx
         block.forward = types.MethodType(
             finegrained_single_block_forward, block

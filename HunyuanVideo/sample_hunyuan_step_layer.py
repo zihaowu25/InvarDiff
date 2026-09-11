@@ -980,13 +980,15 @@ def _patch_model(model):
         )
     model.forward = types.MethodType(invardiff_transformer_forward, model)
     for idx, block in enumerate(model.double_blocks):
-        block.invardiff_owner = model
+        # This is a parent back-reference, not a child module.  Bypass
+        # nn.Module.__setattr__ so model.to(...) does not recurse in a cycle.
+        object.__setattr__(block, "invardiff_owner", model)
         block.invardiff_layer_idx = idx
         block.forward = types.MethodType(
             invardiff_double_block_forward, block
         )
     for idx, block in enumerate(model.single_blocks):
-        block.invardiff_owner = model
+        object.__setattr__(block, "invardiff_owner", model)
         block.invardiff_layer_idx = idx
         block.forward = types.MethodType(
             invardiff_single_block_forward, block
