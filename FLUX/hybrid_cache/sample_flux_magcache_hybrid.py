@@ -11,9 +11,13 @@ import argparse
 import gc
 import json
 import os
+import sys
 import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from cache_presets import add_preset_argument, apply_preset
 
 import numpy as np
 import torch
@@ -1047,18 +1051,16 @@ def parse_args():
     )
     parser.add_argument("--cache-book-file")
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
-    # fast (default): attn=0.30, context_attn=0.30, single_attn=0.40,
-    # ff=0.00, context_ff=0.00, single_mlp=0.00;
-    # balanced: attn=0.30, context_attn=0.30, single_attn=0.12,
-    # ff=0.22, context_ff=0.40, single_mlp=0.30;
-    # slow: attn=0.30, context_attn=0.30, single_attn=0.10,
-    # ff=0.00, context_ff=0.00, single_mlp=0.00.
+    # hybrid (fixed module tier): attn=0.20, context_attn=0.10,
+    # ff=0.05, context_ff=0.03, single_attn=0.08, single_mlp=0.01;
+    # MagCache external defaults remain thresh=0.24, K=4, retention=0.2.
     parser.add_argument("--attn-thres", type=float, default=0.30)
-    parser.add_argument("--context-attn-thres", type=float, default=0.30)
-    parser.add_argument("--ff-thres", type=float, default=0.00)
-    parser.add_argument("--context-ff-thres", type=float, default=0.00)
-    parser.add_argument("--single-attn-thres", type=float, default=0.40)
-    parser.add_argument("--single-mlp-thres", type=float, default=0.00)
+    parser.add_argument("--context-attn-thres", type=float, default=0.20)
+    parser.add_argument("--ff-thres", type=float, default=0.10)
+    parser.add_argument("--context-ff-thres", type=float, default=0.05)
+    parser.add_argument("--single-attn-thres", type=float, default=0.12)
+    parser.add_argument("--single-mlp-thres", type=float, default=0.02)
+    add_preset_argument(parser, "flux_hybrid", tiers=("hybrid",))
     parser.add_argument("--disable-step-cache", action="store_true")
     parser.add_argument("--disable-progress-bar", action="store_true")
     parser.add_argument("--magcache-k", type=int, default=4)
@@ -1075,6 +1077,14 @@ def parse_args():
         default=False,
     )
     args = parser.parse_args()
+    args = apply_preset(args, "flux_hybrid", {
+        "--attn-thres": "attn_thres",
+        "--context-attn-thres": "context_attn_thres",
+        "--ff-thres": "ff_thres",
+        "--context-ff-thres": "context_ff_thres",
+        "--single-attn-thres": "single_attn_thres",
+        "--single-mlp-thres": "single_mlp_thres",
+    })
     for name, value in threshold_config(args).items():
         if not 0 <= value <= 1:
             parser.error(f"{name} threshold must be in [0, 1]")

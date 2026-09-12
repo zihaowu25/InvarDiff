@@ -22,6 +22,9 @@ import types
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from cache_presets import add_preset_argument, apply_preset
+
 try:
     from loguru import logger as _logger
 except ImportError:
@@ -52,6 +55,7 @@ from torch.distributed.checkpoint.state_dict import get_model_state_dict
 from hyvideo.commons import PIPELINE_CONFIGS
 from hyvideo.commons.infer_state import initialize_infer_state
 from hyvideo.commons.parallel_states import get_parallel_state, initialize_parallel_state
+from hyvideo.models.transformers.modules import attention as attention_module
 from hyvideo.models.transformers.modules.attention import parallel_attention
 from hyvideo.models.transformers.modules.mlp_layers import LinearWarpforSingle
 from hyvideo.models.transformers.modules.modulate_layers import apply_gate, modulate
@@ -73,6 +77,27 @@ MODULES = (
     "single.attn",
     "single.mlp",
 )
+
+
+def _configure_deterministic_attention(enabled):
+    """Enable the deterministic FlashAttention kernel for reproducible evals."""
+    if not enabled or getattr(attention_module, "_invardiff_deterministic", False):
+        return
+
+    flash2 = attention_module.flash_attn_no_pad
+    flash3 = attention_module.flash_attn_no_pad_v3
+
+    def deterministic_flash2(*args, **kwargs):
+        kwargs["deterministic"] = True
+        return flash2(*args, **kwargs)
+
+    def deterministic_flash3(*args, **kwargs):
+        kwargs["deterministic"] = True
+        return flash3(*args, **kwargs)
+
+    attention_module.flash_attn_no_pad = deterministic_flash2
+    attention_module.flash_attn_no_pad_v3 = deterministic_flash3
+    attention_module._invardiff_deterministic = True
 
 
 def str_to_bool(value):
@@ -978,6 +1003,10 @@ def _patch_model(model):
             "Fine-grained single-stream Cache requires unwrapped "
             "nn.Linear linear2.fc modules"
         )
+    if not hasattr(model, "invardiff_original_forward"):
+        object.__setattr__(model, "invardiff_original_forward", model.forward)
+        for block in (*model.double_blocks, *model.single_blocks):
+            object.__setattr__(block, "invardiff_original_forward", block.forward)
     model.forward = types.MethodType(invardiff_transformer_forward, model)
     for idx, block in enumerate(model.double_blocks):
         # This is a parent back-reference, not a child module.  Bypass
@@ -993,6 +1022,15 @@ def _patch_model(model):
         block.forward = types.MethodType(
             invardiff_single_block_forward, block
         )
+
+
+def _set_invardiff_patch(model, enabled):
+    if enabled:
+        _patch_model(model)
+        return
+    model.forward = model.invardiff_original_forward
+    for block in (*model.double_blocks, *model.single_blocks):
+        block.forward = block.invardiff_original_forward
 
 
 def _empty_module_books(model, num_steps):
@@ -1124,7 +1162,12 @@ def _cache_config(
         "nonskip": args.nonskip_rate,
         "step_threshold": args.step_thres,
         "module_thresholds": _thresholds(args),
+        "cache_preset": getattr(args, "cache_preset_resolved", "fast"),
+        "resolved_thresholds": getattr(args, "cache_resolved_thresholds", {
+            "step_thres": args.step_thres, **_thresholds(args)
+        }),
         "seed": args.seed,
+        "deterministic_attention": args.deterministic_attention,
         "double_blocks": depths["double.img_attn"],
         "single_blocks": depths["single.attn"],
     }
@@ -1192,6 +1235,11 @@ def _load_books(path, expected, steps, depths):
         "height",
         "frames",
         "steps",
+        "nonskip",
+        "step_threshold",
+        "module_thresholds",
+        "seed",
+        "deterministic_attention",
         "double_blocks",
         "single_blocks",
     )
@@ -1400,6 +1448,7 @@ def generate(args):
         enable_group,
         args.overlap_group_offloading,
     )
+    _configure_deterministic_attention(args.deterministic_attention)
     if args.checkpoint_path:
         load_checkpoint(pipe, args.checkpoint_path)
     if args.lora_path:
@@ -1528,37 +1577,102 @@ def generate(args):
             books=books,
             use=args.use_invardiff,
         )
-    if torch.cuda.is_available():
-        torch.cuda.reset_peak_memory_stats()
-        torch.cuda.synchronize()
-    started = time.perf_counter()
-    with torch.inference_mode():
-        out = run_once(output_type="pt", enable_sr=args.sr)
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()
+    generation_items = [(prompt, args.output_path)]
+    if args.generation_prompt_file:
+        prompts = [
+            line.strip()
+            for line in Path(args.generation_prompt_file).read_text(
+                encoding="utf-8"
+            ).splitlines()
+            if line.strip()
+        ]
+        if not prompts:
+            raise ValueError("generation_prompt_file contains no prompts")
+        if not args.output_dir:
+            raise ValueError("--output_dir is required with --generation_prompt_file")
+        generation_items = [
+            (
+                value,
+                os.path.join(
+                    args.output_dir,
+                    f"p{index + args.generation_index_offset}.mp4",
+                ),
+            )
+            for index, value in enumerate(prompts)
+        ]
+    for generation_prompt, requested_output in generation_items:
+        call_kwargs["prompt"] = generation_prompt
+        if args.paired_reference_dir:
+            _set_invardiff_patch(pipe.transformer, False)
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+            reference_started = time.perf_counter()
+            with torch.inference_mode():
+                reference_out = run_once(output_type="pt", enable_sr=args.sr)
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+            rank0_log(
+                "Paired reference elapsed: "
+                f"{time.perf_counter() - reference_started:.2f}s"
+            )
+            if rank0():
+                reference_path = os.path.join(
+                    args.paired_reference_dir,
+                    os.path.basename(requested_output),
+                )
+                os.makedirs(os.path.dirname(reference_path), exist_ok=True)
+                save_video(
+                    reference_out.sr_videos
+                    if args.sr and hasattr(reference_out, "sr_videos")
+                    else reference_out.videos,
+                    reference_path,
+                )
+            del reference_out
+            _set_invardiff_patch(pipe.transformer, True)
+            _init_runtime(
+                pipe.transformer,
+                args,
+                steps,
+                do_cfg,
+                books=books,
+                use=args.use_invardiff,
+            )
+        if enabled:
+            _reset_runtime(pipe.transformer)
+        if torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats()
+            torch.cuda.synchronize()
+        started = time.perf_counter()
+        with torch.inference_mode():
+            out = run_once(output_type="pt", enable_sr=args.sr)
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+            rank0_log(
+                "Generation peak allocated: "
+                f"{torch.cuda.max_memory_allocated() / 1024**3:.2f} GiB"
+            )
         rank0_log(
-            "Generation peak allocated: "
-            f"{torch.cuda.max_memory_allocated() / 1024**3:.2f} GiB"
+            f"Generation elapsed: {time.perf_counter() - started:.2f}s"
         )
-    rank0_log(
-        f"Generation elapsed: {time.perf_counter() - started:.2f}s"
-    )
-    if rank0():
-        output_path = args.output_path or (
-            f"./outputs/output_{version}_"
-            f"{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.mp4"
-        )
-        os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-        if args.sr and hasattr(out, "sr_videos"):
-            save_video(out.sr_videos, output_path)
-            if args.save_pre_sr_video:
-                base, ext = os.path.splitext(output_path)
-                save_video(out.videos, f"{base}_before_sr{ext}")
-        else:
-            save_video(out.videos, output_path)
-        if args.save_generation_config:
-            save_config(args, output_path, task, version)
-        print(f"Saved video to: {output_path}")
+        if rank0():
+            output_path = requested_output or (
+                f"./outputs/output_{version}_"
+                f"{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.mp4"
+            )
+            os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+            if args.sr and hasattr(out, "sr_videos"):
+                save_video(out.sr_videos, output_path)
+                if args.save_pre_sr_video:
+                    base, ext = os.path.splitext(output_path)
+                    save_video(out.videos, f"{base}_before_sr{ext}")
+            else:
+                save_video(out.videos, output_path)
+            if args.save_generation_config:
+                original_prompt = args.prompt
+                args.prompt = generation_prompt
+                save_config(args, output_path, task, version)
+                args.prompt = original_prompt
+            print(f"Saved video to: {output_path}")
 
 
 def build_parser():
@@ -1568,6 +1682,27 @@ def build_parser():
         )
     )
     parser.add_argument("--prompt", required=True)
+    parser.add_argument(
+        "--generation_prompt_file",
+        default=None,
+        help="Optional UTF-8 prompt list for sequential generation in one loaded process.",
+    )
+    parser.add_argument(
+        "--output_dir",
+        default=None,
+        help="Output directory used with --generation_prompt_file.",
+    )
+    parser.add_argument(
+        "--generation_index_offset",
+        type=int,
+        default=0,
+        help="Start pN batch output numbering at this non-negative offset.",
+    )
+    parser.add_argument(
+        "--paired_reference_dir",
+        default=None,
+        help="Generate an original, uncached paired reference before each candidate.",
+    )
     parser.add_argument("--negative_prompt", default="")
     parser.add_argument(
         "--resolution", required=True, choices=("480p", "720p")
@@ -1639,6 +1774,14 @@ def build_parser():
         "--dtype", choices=("bf16", "fp32"), default="bf16"
     )
     parser.add_argument("--seed", type=int, default=123)
+    parser.add_argument(
+        "--deterministic_attention",
+        type=str_to_bool,
+        nargs="?",
+        const=True,
+        default=False,
+        help="Use deterministic FlashAttention kernels for paired evaluation.",
+    )
     parser.add_argument("--image_path", default=None)
     parser.add_argument("--output_path", default=None)
     parser.add_argument(
@@ -1693,21 +1836,18 @@ def build_parser():
     parser.add_argument("--cache_book_path", default="./cache_books")
     parser.add_argument("--cache_book_file", default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    parser.add_argument("--step_thres", type=float, default=0.5)
-    parser.add_argument(
-        "--double_img_attn_thres", type=float, default=0.5
-    )
-    parser.add_argument(
-        "--double_txt_attn_thres", type=float, default=0.5
-    )
-    parser.add_argument(
-        "--double_img_mlp_thres", type=float, default=0.5
-    )
-    parser.add_argument(
-        "--double_txt_mlp_thres", type=float, default=0.5
-    )
-    parser.add_argument("--single_attn_thres", type=float, default=0.5)
-    parser.add_argument("--single_mlp_thres", type=float, default=0.5)
+    # fast (default, LPIPS 0.3158): step=0.20, img_attn=0.40, txt_attn=0.01,
+    # img_mlp=0.20, txt_mlp=0.32; balanced (LPIPS 0.1802): step=0.03,
+    # img_attn=0.40, txt_attn=0.01, img_mlp=0.04, txt_mlp=0.12;
+    # slow (LPIPS 0.0950): step=0.02, img_attn=0.40, txt_attn=0.01, remaining modules=0.00.
+    parser.add_argument("--step_thres", type=float, default=0.20)
+    parser.add_argument("--double_img_attn_thres", type=float, default=0.40)
+    parser.add_argument("--double_txt_attn_thres", type=float, default=0.01)
+    parser.add_argument("--double_img_mlp_thres", type=float, default=0.20)
+    parser.add_argument("--double_txt_mlp_thres", type=float, default=0.32)
+    parser.add_argument("--single_attn_thres", type=float, default=0.00)
+    parser.add_argument("--single_mlp_thres", type=float, default=0.00)
+    add_preset_argument(parser, "hunyuan_step_layer")
     parser.add_argument(
         "--calibration_feature_device",
         choices=("cpu", "gpu"),
@@ -1725,7 +1865,21 @@ def build_parser():
 
 
 def main():
-    args = build_parser().parse_args()
+    parser = build_parser()
+    args = parser.parse_args()
+    args = apply_preset(
+        args,
+        "hunyuan_step_layer",
+        {
+            "--step_thres": "step_thres",
+            "--double_img_attn_thres": "double_img_attn_thres",
+            "--double_txt_attn_thres": "double_txt_attn_thres",
+            "--double_img_mlp_thres": "double_img_mlp_thres",
+            "--double_txt_mlp_thres": "double_txt_mlp_thres",
+            "--single_attn_thres": "single_attn_thres",
+            "--single_mlp_thres": "single_mlp_thres",
+        },
+    )
     if (
         args.image_path is not None
         and args.image_path.lower().strip() == "none"

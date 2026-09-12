@@ -10,6 +10,9 @@ import warnings
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from cache_presets import add_preset_argument, apply_preset
+
 warnings.filterwarnings("ignore")
 
 import torch
@@ -349,6 +352,13 @@ def _cache_book_config(args, num_layers: int) -> Dict[str, object]:
         "self_attn": args.self_attn_thres,
         "cross_attn": args.cross_attn_thres,
         "ffn": args.ffn_thres,
+        "cache_preset": getattr(args, "cache_preset_resolved", "fast"),
+        "resolved_thresholds": getattr(args, "cache_resolved_thresholds", {
+            "step_thres": args.step_thres,
+            "self_attn_thres": args.self_attn_thres,
+            "cross_attn_thres": args.cross_attn_thres,
+            "ffn_thres": args.ffn_thres,
+        }),
         "base_seed": args.base_seed,
         "num_layers": num_layers,
     }
@@ -788,15 +798,27 @@ def _parse_args(cli_args=None):
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
     parser.add_argument("--cache_book_file", type=str, default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    # fast (default): step=0.40, layer=(self_attn=0.30, cross_attn=0.20, ffn=0.01);
-    # balanced: step=0.30, layer=(self_attn=0.20, cross_attn=0.10, ffn=0.01);
-    # slow: step=0.20, layer=(self_attn=0.10, cross_attn=0.00, ffn=0.00).
-    parser.add_argument("--step_thres", type=float, default=0.40)
-    parser.add_argument("--self_attn_thres", type=float, default=0.30)
-    parser.add_argument("--cross_attn_thres", type=float, default=0.20)
-    parser.add_argument("--ffn_thres", type=float, default=0.01)
+    # fast (default): step=0.50, self_attn=0.25, cross_attn=0.30, ffn=0.35;
+    # balanced: step=0.40, self_attn=0.10, cross_attn=0.15, ffn=0.20;
+    # slow: step=0.30, self_attn=0.04, cross_attn=0.05, ffn=0.07.
+    parser.add_argument("--step_thres", type=float, default=0.50)
+    parser.add_argument("--self_attn_thres", type=float, default=0.25)
+    parser.add_argument("--cross_attn_thres", type=float, default=0.30)
+    parser.add_argument("--ffn_thres", type=float, default=0.35)
+    add_preset_argument(parser, "wan_step_layer")
 
     args = parser.parse_args(cli_args)
+    args = apply_preset(
+        args,
+        "wan_step_layer",
+        {
+            "--step_thres": "step_thres",
+            "--self_attn_thres": "self_attn_thres",
+            "--cross_attn_thres": "cross_attn_thres",
+            "--ffn_thres": "ffn_thres",
+        },
+        cli_args,
+    )
     _validate_args(args)
     return args
 

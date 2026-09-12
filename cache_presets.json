@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "status": "lowcost_screening_validated_with_unverified_targets",
+  "description": "Three-prompt, seed-2027 low-cost LPIPS screening presets (17 video frames). Values are screening presets; native-frame/two-seed confirmation is still required. External hybrid step policies are intentionally not overridden.",
+  "policies": {
+    "dit_module": {
+      "presets": {
+        "fast": {"thresholds": {"msa_thres": 0.60, "mlp_thres": 0.65}},
+        "balanced": {"thresholds": {"msa_thres": 0.60, "mlp_thres": 0.62}},
+        "slow": {"thresholds": {"msa_thres": 0.62, "mlp_thres": 0.59}}
+      }
+    },
+    "dit_step_layer": {
+      "presets": {
+        "fast": {"thresholds": {"step_thres": 0.50, "msa_thres": 0.30, "mlp_thres": 0.10}},
+        "balanced": {"thresholds": {"step_thres": 0.45, "msa_thres": 0.40, "mlp_thres": 0.00}},
+        "slow": {"thresholds": {"step_thres": 0.35, "msa_thres": 0.30, "mlp_thres": 0.00}}
+      }
+    },
+    "flux_module": {
+      "presets": {
+        "fast": {"thresholds": {"attn_thres": 0.70, "context_attn_thres": 0.01, "ff_thres": 0.20, "context_ff_thres": 0.05, "single_attn_thres": 0.40, "single_mlp_thres": 0.02}},
+        "balanced": {"thresholds": {"attn_thres": 0.30, "context_attn_thres": 0.00, "ff_thres": 0.04, "context_ff_thres": 0.03, "single_attn_thres": 0.10, "single_mlp_thres": 0.02}},
+        "slow": {"thresholds": {"attn_thres": 0.08, "context_attn_thres": 0.00, "ff_thres": 0.01, "context_ff_thres": 0.02, "single_attn_thres": 0.03, "single_mlp_thres": 0.00}}
+      }
+    },
+    "flux_step_layer": {
+      "presets": {
+        "fast": {"thresholds": {"step_thres": 0.50, "attn_thres": 0.30, "context_attn_thres": 0.20, "ff_thres": 0.10, "context_ff_thres": 0.05, "single_attn_thres": 0.12, "single_mlp_thres": 0.02}},
+        "balanced": {"thresholds": {"step_thres": 0.45, "attn_thres": 0.25, "context_attn_thres": 0.15, "ff_thres": 0.06, "context_ff_thres": 0.04, "single_attn_thres": 0.10, "single_mlp_thres": 0.01}},
+        "slow": {"thresholds": {"step_thres": 0.35, "attn_thres": 0.20, "context_attn_thres": 0.10, "ff_thres": 0.03, "context_ff_thres": 0.02, "single_attn_thres": 0.08, "single_mlp_thres": 0.01}}
+      }
+    },
+    "wan_module": {
+      "presets": {
+        "fast": {"thresholds": {"step_thres": 0.00, "self_attn_thres": 0.25, "cross_attn_thres": 0.30, "ffn_thres": 0.35}},
+        "balanced": {"thresholds": {"step_thres": 0.00, "self_attn_thres": 0.10, "cross_attn_thres": 0.15, "ffn_thres": 0.20}},
+        "slow": {"thresholds": {"step_thres": 0.00, "self_attn_thres": 0.04, "cross_attn_thres": 0.05, "ffn_thres": 0.07}}
+      }
+    },
+    "wan_step_layer": {
+      "presets": {
+        "fast": {"thresholds": {"step_thres": 0.50, "self_attn_thres": 0.25, "cross_attn_thres": 0.30, "ffn_thres": 0.35}},
+        "balanced": {"thresholds": {"step_thres": 0.40, "self_attn_thres": 0.10, "cross_attn_thres": 0.15, "ffn_thres": 0.20}},
+        "slow": {"thresholds": {"step_thres": 0.30, "self_attn_thres": 0.04, "cross_attn_thres": 0.05, "ffn_thres": 0.07}}
+      }
+    },
+    "hunyuan_module": {
+      "presets": {
+        "fast": {"thresholds": {"double_img_attn_thres": 0.40, "double_txt_attn_thres": 0.01, "double_img_mlp_thres": 0.20, "double_txt_mlp_thres": 0.32, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}},
+        "balanced": {"thresholds": {"double_img_attn_thres": 0.40, "double_txt_attn_thres": 0.01, "double_img_mlp_thres": 0.04, "double_txt_mlp_thres": 0.32, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}},
+        "slow": {"thresholds": {"double_img_attn_thres": 0.40, "double_txt_attn_thres": 0.01, "double_img_mlp_thres": 0.02, "double_txt_mlp_thres": 0.00, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}}
+      }
+    },
+    "hunyuan_step_layer": {
+      "presets": {
+        "fast": {"thresholds": {"step_thres": 0.20, "double_img_attn_thres": 0.40, "double_txt_attn_thres": 0.01, "double_img_mlp_thres": 0.20, "double_txt_mlp_thres": 0.32, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}},
+        "balanced": {"thresholds": {"step_thres": 0.03, "double_img_attn_thres": 0.40, "double_txt_attn_thres": 0.01, "double_img_mlp_thres": 0.04, "double_txt_mlp_thres": 0.12, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}},
+        "slow": {"thresholds": {"step_thres": 0.02, "double_img_attn_thres": 0.40, "double_txt_attn_thres": 0.01, "double_img_mlp_thres": 0.00, "double_txt_mlp_thres": 0.00, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}}
+      }
+    },
+    "hunyuan_hybrid": {
+      "presets": {
+        "hybrid": {"thresholds": {"double_img_attn_thres": 0.90, "double_txt_attn_thres": 0.20, "double_img_mlp_thres": 0.00, "double_txt_mlp_thres": 0.00, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}}
+      }
+    },
+    "flux_hybrid": {
+      "presets": {
+        "hybrid": {"thresholds": {"attn_thres": 0.20, "context_attn_thres": 0.10, "ff_thres": 0.05, "context_ff_thres": 0.03, "single_attn_thres": 0.08, "single_mlp_thres": 0.01}}
+      }
+    },
+    "wan_hybrid": {
+      "presets": {
+        "hybrid": {"thresholds": {"self_attn_thres": 0.10, "cross_attn_thres": 0.11, "ffn_thres": 0.12}}
+      }
+    }
+  }
+}

@@ -23,6 +23,9 @@ import types
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from cache_presets import add_preset_argument, apply_preset
+
 try:
     from loguru import logger as _logger
 except ImportError:
@@ -35,7 +38,7 @@ except ImportError:
     loguru_compat.logger = _logger
     sys.modules["loguru"] = loguru_compat
 
-OFFICIAL_ROOT = Path(__file__).resolve().parents[3] / "HunyuanVideo-1.5"
+OFFICIAL_ROOT = Path(__file__).resolve().parents[2] / "HunyuanVideo-1.5"
 if str(OFFICIAL_ROOT) not in sys.path:
     sys.path.insert(0, str(OFFICIAL_ROOT))
 
@@ -1842,20 +1845,16 @@ def build_parser():
     parser.add_argument("--cache_book_path", default="./cache_books")
     parser.add_argument("--cache_book_file", default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    parser.add_argument(
-        "--double_img_attn_thres", type=float, default=0.5
-    )
-    parser.add_argument(
-        "--double_txt_attn_thres", type=float, default=0.5
-    )
-    parser.add_argument(
-        "--double_img_mlp_thres", type=float, default=0.5
-    )
-    parser.add_argument(
-        "--double_txt_mlp_thres", type=float, default=0.5
-    )
-    parser.add_argument("--single_attn_thres", type=float, default=0.5)
-    parser.add_argument("--single_mlp_thres", type=float, default=0.5)
+    # hybrid (fixed module tier): img_attn=0.90, txt_attn=0.20,
+    # img_mlp=0.00, txt_mlp=0.00, single modules=0.00;
+    # TeaCache external default remains thresh=0.15.
+    parser.add_argument("--double_img_attn_thres", type=float, default=0.90)
+    parser.add_argument("--double_txt_attn_thres", type=float, default=0.20)
+    parser.add_argument("--double_img_mlp_thres", type=float, default=0.00)
+    parser.add_argument("--double_txt_mlp_thres", type=float, default=0.00)
+    parser.add_argument("--single_attn_thres", type=float, default=0.00)
+    parser.add_argument("--single_mlp_thres", type=float, default=0.00)
+    add_preset_argument(parser, "hunyuan_hybrid", tiers=("hybrid",))
     parser.add_argument(
         "--calibration_feature_device",
         choices=("cpu", "gpu"),
@@ -1873,7 +1872,16 @@ def build_parser():
 
 
 def main():
-    args = build_parser().parse_args()
+    parser = build_parser()
+    args = parser.parse_args()
+    args = apply_preset(args, "hunyuan_hybrid", {
+        "--double_img_attn_thres": "double_img_attn_thres",
+        "--double_txt_attn_thres": "double_txt_attn_thres",
+        "--double_img_mlp_thres": "double_img_mlp_thres",
+        "--double_txt_mlp_thres": "double_txt_mlp_thres",
+        "--single_attn_thres": "single_attn_thres",
+        "--single_mlp_thres": "single_mlp_thres",
+    })
     if (
         args.image_path is not None
         and args.image_path.lower().strip() == "none"

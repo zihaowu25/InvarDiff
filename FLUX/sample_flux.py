@@ -7,9 +7,13 @@ decisions are always False.
 import json
 import os
 import argparse
+import gc
 import sys
 import time
 from typing import Dict, List, Optional, Tuple
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from cache_presets import add_preset_argument, apply_preset
 
 import numpy as np
 import torch
@@ -366,18 +370,18 @@ def threshold_analyse(
     pipe,
     measure_prompts,
     nonskip_rate=0.1,
-    # fast (default): attn=0.30, context_attn=0.30, single_attn=0.40,
-    # ff=0.00, context_ff=0.00, single_mlp=0.00;
-    # balanced: attn=0.30, context_attn=0.30, single_attn=0.12,
-    # ff=0.22, context_ff=0.40, single_mlp=0.30;
-    # slow: attn=0.30, context_attn=0.30, single_attn=0.10,
-    # ff=0.00, context_ff=0.00, single_mlp=0.00.
-    attn_thres=0.30,
-    context_attn_thres=0.30,
-    ff_thres=0.00,
-    context_ff_thres=0.00,
+    # fast (default): attn=0.70, context_attn=0.01, ff=0.20,
+    # context_ff=0.05, single_attn=0.40, single_mlp=0.02;
+    # balanced: attn=0.30, context_attn=0.00, ff=0.04,
+    # context_ff=0.03, single_attn=0.10, single_mlp=0.02;
+    # slow: attn=0.08, context_attn=0.00, ff=0.01,
+    # context_ff=0.02, single_attn=0.03, single_mlp=0.00.
+    attn_thres=0.70,
+    context_attn_thres=0.01,
+    ff_thres=0.20,
+    context_ff_thres=0.05,
     Single_attn_thres=0.40,
-    Single_mlp_thres=0.00,
+    Single_mlp_thres=0.02,
     seed=42,
 ):
     """Run raw and corrected calibration for layer cache only."""
@@ -877,6 +881,19 @@ def main(args):
         Single_attn_thres,
         Single_mlp_thres,
     )
+    cache_config["cache_preset"] = getattr(args, "cache_preset_resolved", "fast")
+    cache_config["resolved_thresholds"] = getattr(
+        args,
+        "cache_resolved_thresholds",
+        {
+            "attn_thres": attn_thres,
+            "context_attn_thres": context_attn_thres,
+            "ff_thres": ff_thres,
+            "context_ff_thres": context_ff_thres,
+            "single_attn_thres": Single_attn_thres,
+            "single_mlp_thres": Single_mlp_thres,
+        },
+    )
     cache_book_path = args.cache_book_path
     cache_book_file = args.cache_book_file or cache_book_name(cache_config)
     cache_book_full_path = os.path.join(cache_book_path, cache_book_file)
@@ -931,8 +948,15 @@ def main(args):
         if args.calibration_only:
             return
         # Keep the standalone CLI convenient: a no-argument fast run performs
-        # calibration once and then re-enters the normal generation path.
+        # calibration once and then re-enters the normal generation path. The
+        # calibration pipeline owns Accelerate CPU-offload hooks, so dispose of
+        # it before constructing the fresh reload pipeline. Keeping both alive
+        # can leave the CLIP embedding and token IDs on different devices.
         args.generate_cache_books = False
+        del pipe, dynamic_model, original_transformer
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
         return main(args)
 
     else:
@@ -943,7 +967,11 @@ def main(args):
             expected_cache_scope="layer_only",
             expected_config=cache_config,
         )
-        pipe.to("cuda")
+        # Match calibration's component-wise placement. With the supported
+        # diffusers/Accelerate stack, ``pipe.to('cuda')`` can leave CLIP's
+        # token embedding on CPU while encode_prompt sends IDs to CUDA when a
+        # Cache Book is loaded in a fresh process.
+        pipe.enable_model_cpu_offload(device="cuda")
         dynamic_model.init_cache_book(transformer_cache_book, single_transformer_cache_book, step_cache_book)
         pipe.transformer = dynamic_model
 
@@ -963,7 +991,13 @@ def main(args):
             # "a photo of a white sandwich",
             # "a photo of a person"
         ]
-        prompts = [args.prompt]
+        if args.prompt_file:
+            with open(args.prompt_file, "r", encoding="utf-8") as file:
+                prompts = [line.strip() for line in file if line.strip()]
+            if not prompts:
+                raise ValueError("--prompt-file contains no prompts")
+        else:
+            prompts = [args.prompt]
         images = []
         times = []
 
@@ -1018,6 +1052,11 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--prompt", default="A cinematic photograph of a red fox sitting beside a moss-covered tree in a sunlit forest, natural colors, detailed fur, soft depth of field.")
     parser.add_argument(
+        "--prompt-file",
+        default=None,
+        help="UTF-8 generation prompt list; useful for low-cost three-sample evaluation.",
+    )
+    parser.add_argument(
         "--calibration-prompt",
         action="append",
         default=None,
@@ -1032,19 +1071,35 @@ if __name__ == "__main__":
     parser.add_argument("--cache-book-path", default="./cache_books")
     parser.add_argument("--cache-book-file", default=None)
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
-    # fast (default): attn=0.30, context_attn=0.30, single_attn=0.40,
-    # ff=0.00, context_ff=0.00, single_mlp=0.00;
-    # balanced: attn=0.30, context_attn=0.30, single_attn=0.12,
-    # ff=0.22, context_ff=0.40, single_mlp=0.30;
-    # slow: attn=0.30, context_attn=0.30, single_attn=0.10,
-    # ff=0.00, context_ff=0.00, single_mlp=0.00.
-    parser.add_argument("--attn-thres", type=float, default=0.30)
-    parser.add_argument("--context-attn-thres", type=float, default=0.30)
-    parser.add_argument("--ff-thres", type=float, default=0.00)
-    parser.add_argument("--context-ff-thres", type=float, default=0.00)
+    # fast (default, LPIPS 0.3398): attn=0.70, context_attn=0.01, ff=0.20,
+    # context_ff=0.05, single_attn=0.40, single_mlp=0.02;
+    # balanced (LPIPS 0.2014): attn=0.30, context_attn=0.00, ff=0.04,
+    # context_ff=0.03, single_attn=0.10, single_mlp=0.02;
+    # slow (screen LPIPS 0.0775, just below the 0.08 target band): attn=0.08,
+    # context_attn=0.00, ff=0.01, context_ff=0.02, single_attn=0.03,
+    # single_mlp=0.00.  The neighboring exploratory .09/.009/.009/.04 run
+    # measured 0.0763; both remain screening evidence, not confirmation.
+    parser.add_argument("--attn-thres", type=float, default=0.70)
+    parser.add_argument("--context-attn-thres", type=float, default=0.01)
+    parser.add_argument("--ff-thres", type=float, default=0.20)
+    parser.add_argument("--context-ff-thres", type=float, default=0.05)
     parser.add_argument("--single-attn-thres", type=float, default=0.40)
-    parser.add_argument("--single-mlp-thres", type=float, default=0.00)
+    parser.add_argument("--single-mlp-thres", type=float, default=0.02)
+    add_preset_argument(parser, "flux_module")
     parser.add_argument("--guidance-scale", type=float, default=3.5)
     parser.add_argument("--generate-cache-books", action="store_true")
     parser.add_argument("--calibration-only", action="store_true")
-    main(parser.parse_args())
+    args = parser.parse_args()
+    args = apply_preset(
+        args,
+        "flux_module",
+        {
+            "--attn-thres": "attn_thres",
+            "--context-attn-thres": "context_attn_thres",
+            "--ff-thres": "ff_thres",
+            "--context-ff-thres": "context_ff_thres",
+            "--single-attn-thres": "single_attn_thres",
+            "--single-mlp-thres": "single_mlp_thres",
+        },
+    )
+    main(args)

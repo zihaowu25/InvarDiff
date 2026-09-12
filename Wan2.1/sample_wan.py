@@ -10,6 +10,9 @@ import warnings
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from cache_presets import add_preset_argument, apply_preset
+
 warnings.filterwarnings("ignore")
 
 import torch
@@ -266,6 +269,12 @@ def _cache_book_config(args, num_layers: int) -> Dict[str, object]:
         "ffn": args.ffn_thres,
         "base_seed": args.base_seed,
         "num_layers": num_layers,
+        "cache_preset": getattr(args, "cache_preset_resolved", "fast"),
+        "resolved_thresholds": getattr(args, "cache_resolved_thresholds", {
+            "self_attn_thres": args.self_attn_thres,
+            "cross_attn_thres": args.cross_attn_thres,
+            "ffn_thres": args.ffn_thres,
+        }),
     }
 
 
@@ -679,14 +688,22 @@ def _parse_args(cli_args=None):
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
     parser.add_argument("--cache_book_file", type=str, default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    # fast (default): self_attn=0.20, cross_attn=0.00, ffn=0.00;
-    # balanced: self_attn=0.20, cross_attn=0.20, ffn=0.05;
-    # slow: self_attn=0.10, cross_attn=0.00, ffn=0.00.
-    parser.add_argument("--self_attn_thres", type=float, default=0.20)
-    parser.add_argument("--cross_attn_thres", type=float, default=0.00)
-    parser.add_argument("--ffn_thres", type=float, default=0.00)
+    # fast (default, LPIPS 0.3549): self_attn=0.25, cross_attn=0.30, ffn=0.35;
+    # balanced (LPIPS 0.1942): self_attn=0.10, cross_attn=0.15, ffn=0.20;
+    # slow (screen LPIPS 0.1069): self_attn=0.04, cross_attn=0.05, ffn=0.07.
+    # The superseded .05/.07/.09 probe measured 0.1335 and is retained only
+    # as a boundary diagnostic.
+    parser.add_argument("--self_attn_thres", type=float, default=0.25)
+    parser.add_argument("--cross_attn_thres", type=float, default=0.30)
+    parser.add_argument("--ffn_thres", type=float, default=0.35)
+    add_preset_argument(parser, "wan_module")
 
     args = parser.parse_args(cli_args)
+    args = apply_preset(args, "wan_module", {
+        "--self_attn_thres": "self_attn_thres",
+        "--cross_attn_thres": "cross_attn_thres",
+        "--ffn_thres": "ffn_thres",
+    }, cli_args)
     _validate_args(args)
     return args
 

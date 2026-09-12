@@ -13,6 +13,9 @@ import sys
 import time
 from typing import Optional
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from cache_presets import add_preset_argument, apply_preset
+
 import numpy as np
 import torch
 from diffusers.models import AutoencoderKL
@@ -287,11 +290,11 @@ def threshold_analyse(
     class_labels,
     input_size,
     nonskip_rate=0,
-    # fast (default): msa=0.45, mlp=0.10;
-    # balanced: msa=0.40, mlp=0.00;
-    # slow: msa=0.30, mlp=0.10.
-    msa_thres=0.45,
-    mlp_thres=0.10,
+    # fast (default): msa=0.60, mlp=0.65;
+    # balanced: msa=0.60, mlp=0.62;
+    # slow: msa=0.62, mlp=0.59.
+    msa_thres=0.60,
+    mlp_thres=0.65,
     num_analysis=10,
 ):
     """Run raw and cache-corrected calibration for MSA/MLP only."""
@@ -542,6 +545,8 @@ def save_cache_books(
     msa_thres,
     mlp_thres,
     cache_book_path="./cache_books",
+    preset_name="fast",
+    resolved_thresholds=None,
 ):
     config = cache_book_config(
         num_timesteps,
@@ -554,6 +559,11 @@ def save_cache_books(
         "cache_scope": CACHE_SCOPE,
         "config": config,
         "rate_method": RATE_METHOD,
+        "cache_preset": preset_name,
+        "resolved_thresholds": resolved_thresholds or {
+            "msa_thres": msa_thres,
+            "mlp_thres": mlp_thres,
+        },
         "step_cache_book": step_cache_book.tolist(),
         "msa_cache_book": msa_cache_book.tolist(),
         "mlp_cache_book": mlp_cache_book.tolist(),
@@ -662,6 +672,8 @@ def main(args):
             args.msa_thres,
             args.mlp_thres,
             args.cache_book_path,
+            args.cache_preset_resolved,
+            args.cache_resolved_thresholds,
         )
         if args.calibration_only:
             return
@@ -784,11 +796,12 @@ if __name__ == "__main__":
         default=0,
         help="Initial timestep ratio forced to recompute layer modules.",
     )
-    # fast (default): msa=0.45, mlp=0.10;
-    # balanced: msa=0.40, mlp=0.00;
-    # slow: msa=0.30, mlp=0.10.
-    parser.add_argument("--msa-thres", type=float, default=0.45)
-    parser.add_argument("--mlp-thres", type=float, default=0.10)
+    # fast (default, three-sample LPIPS 0.4049): msa=0.60, mlp=0.65;
+    # balanced (LPIPS 0.2137): msa=0.60, mlp=0.62;
+    # slow (LPIPS 0.1073): msa=0.62, mlp=0.59.
+    parser.add_argument("--msa-thres", type=float, default=0.60)
+    parser.add_argument("--mlp-thres", type=float, default=0.65)
+    add_preset_argument(parser, "dit_module")
     parser.add_argument("--num-analysis", type=int, default=16)
     parser.add_argument("--output-dir", type=str, default="images")
     parser.add_argument("--calibration-only", action="store_true")
@@ -811,4 +824,9 @@ if __name__ == "__main__":
     ]
 
     args = parser.parse_args() if len(sys.argv) > 1 else parser.parse_args(debug_args)
+    args = apply_preset(
+        args,
+        "dit_module",
+        {"--msa-thres": "msa_thres", "--mlp-thres": "mlp_thres"},
+    )
     main(args)

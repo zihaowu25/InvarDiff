@@ -7,6 +7,9 @@ import numpy as np
 import time
 import argparse
 import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from cache_presets import add_preset_argument, apply_preset
 from diffusion import create_diffusion
 from download import find_model
 from torchvision.utils import save_image
@@ -489,6 +492,8 @@ def save_cache_books(
     mlp_thres,
     cache_book_path="./cache_books",
     calibration_classes=None,
+    preset_name="fast",
+    resolved_thresholds=None,
 ):
     config = cache_book_config(
         num_timesteps,
@@ -502,6 +507,12 @@ def save_cache_books(
         "cache_scope": CACHE_SCOPE,
         "config": config,
         "rate_method": RATE_METHOD,
+        "cache_preset": preset_name,
+        "resolved_thresholds": resolved_thresholds or {
+            "step_thres": step_thres,
+            "msa_thres": msa_thres,
+            "mlp_thres": mlp_thres,
+        },
         "calibration_count": (
             len(calibration_classes) if calibration_classes is not None else None
         ),
@@ -609,6 +620,8 @@ def main(args):
             mlp_thres=args.mlp_thres,
             cache_book_path=args.cache_book_path,
             calibration_classes=measure_labels,
+            preset_name=args.cache_preset_resolved,
+            resolved_thresholds=args.cache_resolved_thresholds,
         )
         if args.calibration_only:
             return
@@ -739,6 +752,7 @@ if __name__ == "__main__":
                         help='Quantile threshold for MSA module skipping.')
     parser.add_argument('--mlp-thres', type=float, default=0.10,
                         help='Quantile threshold for MLP module skipping.')
+    add_preset_argument(parser, 'dit_step_layer')
     parser.add_argument('--num-analysis', type=int, default=1,
                         help='Number of calibration trajectories; 1 uses single-image calibration.')
     parser.add_argument(
@@ -773,4 +787,9 @@ if __name__ == "__main__":
     ]
     
     args = parser.parse_args() if len(sys.argv) > 1 else parser.parse_args(debug_args)
+    args = apply_preset(
+        args,
+        'dit_step_layer',
+        {'--step-thres': 'step_thres', '--msa-thres': 'msa_thres', '--mlp-thres': 'mlp_thres'},
+    )
     main(args)

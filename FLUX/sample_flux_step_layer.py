@@ -10,7 +10,12 @@ import json
 import os
 import argparse
 import time
+import sys
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from cache_presets import add_preset_argument, apply_preset
 
 import numpy as np
 import torch
@@ -757,19 +762,19 @@ def threshold_analyse(
     pipe,
     measure_prompts,
     nonskip_rate=0.1,
-    # fast (default): step=0.58, attn=0.30, context_attn=0.30,
-    # single_attn=0.12, ff=0.22, context_ff=0.40, single_mlp=0.30;
-    # balanced: step=0.50, attn=0.30, context_attn=0.30,
-    # single_attn=0.12, ff=0.22, context_ff=0.40, single_mlp=0.20;
-    # slow: step=0.35, attn=0.20, context_attn=0.20,
-    # single_attn=0.06, ff=0.10, context_ff=0.20, single_mlp=0.10.
-    step_thres=0.58,
+    # fast (default): step=0.50, attn=0.30, context_attn=0.20,
+    # single_attn=0.12, ff=0.10, context_ff=0.05, single_mlp=0.02;
+    # balanced: step=0.45, attn=0.25, context_attn=0.15,
+    # single_attn=0.10, ff=0.06, context_ff=0.04, single_mlp=0.01;
+    # slow: step=0.35, attn=0.20, context_attn=0.10,
+    # single_attn=0.08, ff=0.03, context_ff=0.02, single_mlp=0.01.
+    step_thres=0.50,
     attn_thres=0.30,
-    context_attn_thres=0.30,
-    ff_thres=0.22,
-    context_ff_thres=0.40,
+    context_attn_thres=0.20,
+    ff_thres=0.10,
+    context_ff_thres=0.05,
     Single_attn_thres=0.12,
-    Single_mlp_thres=0.30,
+    Single_mlp_thres=0.02,
     seed=42,
 ):
     """Run full step-level and layer-level resampling calibration."""
@@ -1067,12 +1072,12 @@ def main(args):
     original_transformer = pipe.transformer
     # Default calibration uses two prompts (seed=42).  The following settings
     # are the validated reference presets for the step + layer policy.
-    # fast (default): step=0.58, attn=0.30, context_attn=0.30,
-    # single_attn=0.12, ff=0.22, context_ff=0.40, single_mlp=0.30;
-    # balanced: step=0.50, attn=0.30, context_attn=0.30,
-    # single_attn=0.12, ff=0.22, context_ff=0.40, single_mlp=0.20;
-    # slow: step=0.35, attn=0.20, context_attn=0.20,
-    # single_attn=0.06, ff=0.10, context_ff=0.20, single_mlp=0.10.
+    # fast (default): step=0.50, attn=0.30, context_attn=0.20,
+    # single_attn=0.12, ff=0.10, context_ff=0.05, single_mlp=0.02;
+    # balanced: step=0.45, attn=0.25, context_attn=0.15,
+    # single_attn=0.10, ff=0.06, context_ff=0.04, single_mlp=0.01;
+    # slow: step=0.35, attn=0.20, context_attn=0.10,
+    # single_attn=0.08, ff=0.03, context_ff=0.02, single_mlp=0.01.
 
     # Experiment controls are local to this standalone comparison script.
     num_inference_steps = args.num_inference_steps
@@ -1118,6 +1123,20 @@ def main(args):
         context_ff_thres,
         single_attn_thres,
         single_mlp_thres,
+    )
+    cache_config["cache_preset"] = getattr(args, "cache_preset_resolved", "fast")
+    cache_config["resolved_thresholds"] = getattr(
+        args,
+        "cache_resolved_thresholds",
+        {
+            "step_thres": step_thres,
+            "attn_thres": attn_thres,
+            "context_attn_thres": context_attn_thres,
+            "ff_thres": ff_thres,
+            "context_ff_thres": context_ff_thres,
+            "single_attn_thres": single_attn_thres,
+            "single_mlp_thres": single_mlp_thres,
+        },
     )
     cache_book_file = args.cache_book_file or _cache_book_name(cache_config)
     cache_book_full_path = os.path.join(cache_book_path, cache_book_file)
@@ -1263,21 +1282,35 @@ if __name__ == "__main__":
     parser.add_argument("--cache-book-path", default="./cache_books")
     parser.add_argument("--cache-book-file", default=None)
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
-    # fast (default, two calibration prompts):
-    # step=0.58, layer=(attn=0.30, context_attn=0.30, single_attn=0.12,
-    #        ff=0.22, context_ff=0.40, single_mlp=0.30);
-    # balanced: step=0.50, layer=(attn=0.30, context_attn=0.30, single_attn=0.12,
-    #        ff=0.22, context_ff=0.40, single_mlp=0.20);
-    # slow: step=0.35, layer=(attn=0.20, context_attn=0.20, single_attn=0.06,
-    #        ff=0.10, context_ff=0.20, single_mlp=0.10).
-    parser.add_argument("--step-thres", type=float, default=0.58)
+    # fast (default): step=0.50, layer=(attn=0.30, context_attn=0.20,
+    #        ff=0.10, context_ff=0.05, single_attn=0.12, single_mlp=0.02);
+    # balanced: step=0.45, layer=(attn=0.25, context_attn=0.15,
+    #        ff=0.06, context_ff=0.04, single_attn=0.10, single_mlp=0.01);
+    # slow: step=0.35, layer=(attn=0.20, context_attn=0.10,
+    #        ff=0.03, context_ff=0.02, single_attn=0.08, single_mlp=0.01).
+    parser.add_argument("--step-thres", type=float, default=0.50)
     parser.add_argument("--attn-thres", type=float, default=0.30)
-    parser.add_argument("--context-attn-thres", type=float, default=0.30)
-    parser.add_argument("--ff-thres", type=float, default=0.22)
-    parser.add_argument("--context-ff-thres", type=float, default=0.40)
+    parser.add_argument("--context-attn-thres", type=float, default=0.20)
+    parser.add_argument("--ff-thres", type=float, default=0.10)
+    parser.add_argument("--context-ff-thres", type=float, default=0.05)
     parser.add_argument("--single-attn-thres", type=float, default=0.12)
-    parser.add_argument("--single-mlp-thres", type=float, default=0.30)
+    parser.add_argument("--single-mlp-thres", type=float, default=0.02)
+    add_preset_argument(parser, "flux_step_layer")
     parser.add_argument("--guidance-scale", type=float, default=3.5)
     parser.add_argument("--generate-cache-books", action="store_true")
     parser.add_argument("--calibration-only", action="store_true")
-    main(parser.parse_args())
+    args = parser.parse_args()
+    args = apply_preset(
+        args,
+        "flux_step_layer",
+        {
+            "--step-thres": "step_thres",
+            "--attn-thres": "attn_thres",
+            "--context-attn-thres": "context_attn_thres",
+            "--ff-thres": "ff_thres",
+            "--context-ff-thres": "context_ff_thres",
+            "--single-attn-thres": "single_attn_thres",
+            "--single-mlp-thres": "single_mlp_thres",
+        },
+    )
+    main(args)

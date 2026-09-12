@@ -10,6 +10,9 @@ import warnings
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from cache_presets import add_preset_argument, apply_preset
+
 warnings.filterwarnings("ignore")
 
 import torch
@@ -249,11 +252,13 @@ def _books_from_scores(
     return _to_bool_list(step_cache_bool), {k: _to_bool_list(v) for k, v in module_cache_book.items()}
 
 
-def _save_cache_books(file_path: str, step_cache_bool: List[bool], module_cache_book: Dict[str, List[List[bool]]] ):
+def _save_cache_books(file_path: str, step_cache_bool: List[bool], module_cache_book: Dict[str, List[List[bool]]], config: Optional[Dict[str, object]] = None):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     payload = {
         "cache_version": CACHE_BOOK_VERSION,
         "rate_method": RATE_METHOD,
+        "cache_preset": (config or {}).get("cache_preset", "fast"),
+        "resolved_thresholds": (config or {}).get("resolved_thresholds", {}),
         "step_cache_bool": step_cache_bool,
         "module_cache_book": module_cache_book,
     }
@@ -578,12 +583,28 @@ def _parse_args(cli_args=None):
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
     parser.add_argument("--cache_book_file", type=str, default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    parser.add_argument("--step_thres", type=float, default=0.5)
-    parser.add_argument("--self_attn_thres", type=float, default=0.5)
-    parser.add_argument("--cross_attn_thres", type=float, default=0.5)
-    parser.add_argument("--ffn_thres", type=float, default=0.5)
+    # fast (default, LPIPS 0.3549): step=0.00, self_attn=0.25, cross_attn=0.30, ffn=0.35;
+    # balanced (LPIPS 0.1942): step=0.00, self_attn=0.10, cross_attn=0.15, ffn=0.20;
+    # slow (screen LPIPS 0.1069): step=0.00, self_attn=0.04, cross_attn=0.05,
+    # ffn=0.07.  The superseded .05/.07/.09 probe measured 0.1335.
+    parser.add_argument("--step_thres", type=float, default=0.00)
+    parser.add_argument("--self_attn_thres", type=float, default=0.25)
+    parser.add_argument("--cross_attn_thres", type=float, default=0.30)
+    parser.add_argument("--ffn_thres", type=float, default=0.35)
+    add_preset_argument(parser, "wan_module")
 
     args = parser.parse_args(cli_args)
+    args = apply_preset(
+        args,
+        "wan_module",
+        {
+            "--step_thres": "step_thres",
+            "--self_attn_thres": "self_attn_thres",
+            "--cross_attn_thres": "cross_attn_thres",
+            "--ffn_thres": "ffn_thres",
+        },
+        cli_args,
+    )
     _validate_args(args)
     return args
 
@@ -704,7 +725,24 @@ def _calibrate_invardiff(run_once, model, args):
 
     cache_file = args.cache_book_file or _build_default_cache_book_filename(args)
     cache_path = os.path.join(args.cache_book_path, cache_file)
-    _save_cache_books(cache_path, final_step_cache_bool, final_module_cache_book)
+    _save_cache_books(
+        cache_path,
+        final_step_cache_bool,
+        final_module_cache_book,
+        {
+            "cache_preset": getattr(args, "cache_preset_resolved", "fast"),
+            "resolved_thresholds": getattr(
+                args,
+                "cache_resolved_thresholds",
+                {
+                    "step_thres": args.step_thres,
+                    "self_attn_thres": args.self_attn_thres,
+                    "cross_attn_thres": args.cross_attn_thres,
+                    "ffn_thres": args.ffn_thres,
+                },
+            ),
+        },
+    )
     logging.info(f"Finegrained Cache books saved to: {cache_path}")
 
     return final_step_cache_bool, final_module_cache_book

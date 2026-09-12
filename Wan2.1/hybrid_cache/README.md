@@ -49,7 +49,7 @@ pass.
 | Script | Step policy | Supported official Wan tasks | Default threshold |
 | --- | --- | --- | --- |
 | MagCache | calibrated or published magnitude-ratio policy | T2V, T2I, I2V, VACE | `0.12` |
-| TeaCache | dynamic polynomial accumulated relative L1 | T2V, T2I, I2V | `0.2` |
+| TeaCache | dynamic polynomial accumulated relative L1 | T2V, T2I, I2V | `0.08` |
 | SeaCache | dynamic scheduler-aware spectral relative L1 | T2V, T2I, I2V | `0.2` |
 
 FLF2V is rejected by all three scripts. TeaCache and SeaCache reject VACE

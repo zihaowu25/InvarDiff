@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "ccmr_prompts": [
+    "A locked-off cinematic shot of a ceramic teapot on a wooden table, soft window light, almost no motion.",
+    "A wide aerial camera flies forward above a winding river through a green valley at sunrise.",
+    "A dancer performs a fast sequence of turns and arm movements on a theater stage.",
+    "A crowded night market in heavy rain, people walking in different directions, fabric and signs moving in the wind."
+  ],
+  "screen_prompts": [
+    "A red fox sits beside a moss-covered tree while leaves move gently in the wind, locked camera, cinematic natural light.",
+    "A camera tracks a vintage train crossing a desert valley at sunrise, long shadows and realistic motion.",
+    "A dancer performs a sequence of turns on a theater stage, detailed clothing and controlled lighting.",
+    "A crowded rainy night market with pedestrians, umbrellas, steam and neon reflections, complex motion."
+  ],
+  "confirmation_prompts": [
+    "A red fox walks slowly through a snowy forest at dawn, the camera tracking smoothly from left to right.",
+    "An elderly astronaut turns toward the camera inside a softly lit spacecraft cabin.",
+    "A cyclist rides through a Tokyo street at night as neon signs reflect on wet pavement.",
+    "A transparent glass teapot pours tea into a cup on a dark wooden table, close product shot.",
+    "A snowy mountain village at dusk, smoke rising from chimneys while the camera moves forward.",
+    "A surreal underwater city with glowing jellyfish and schools of colorful fish swimming past.",
+    "A vintage steam train crosses a desert valley at sunrise as the camera pans alongside it.",
+    "A small robot waters yellow flowers inside a greenhouse while leaves sway in morning light."
+  ],
+  "dit_confirmation_classes": [0, 37, 142, 279, 417, 751, 980, 992],
+  "screen_seed": 2027,
+  "confirmation_seeds": [2027, 2028]
+}
