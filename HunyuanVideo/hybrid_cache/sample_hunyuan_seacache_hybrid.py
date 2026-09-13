@@ -1,8 +1,22 @@
+#!/usr/bin/env python3
 """Standalone HunyuanVideo-1.5 SeaCache + Finegrained Cache sampler.
 
-The HunyuanVideo-1.5 pipeline integration is based on Tencent-Hunyuan commit
-60783e7. SeaCache policy details are ported from jiwoogit/SeaCache commit
-8dcf490. No executable sampling module is imported.
+Upstream references:
+- HunyuanVideo-1.5 pipeline (Tencent Hunyuan Community License):
+  https://github.com/Tencent-Hunyuan/HunyuanVideo-1.5/tree/60783e704160023913bee78f0b47036d393d4dfa
+  License: https://github.com/Tencent-Hunyuan/HunyuanVideo-1.5/blob/60783e704160023913bee78f0b47036d393d4dfa/LICENSE
+  Notice: https://github.com/Tencent-Hunyuan/HunyuanVideo-1.5/blob/60783e704160023913bee78f0b47036d393d4dfa/NOTICE
+- SeaCache HunyuanVideo policy:
+  https://github.com/jiwoogit/SeaCache/tree/8dcf490/HunyuanVideo
+
+No LICENSE or NOTICE file exists at the referenced SeaCache commit. The link
+provides source attribution only and does not establish redistribution rights;
+obtain or verify permission before publishing this SeaCache-derived file.
+Modification notice: this file adapts the referenced HunyuanVideo-1.5
+pipeline and SeaCache policy, then integrates InvarDiff module-level Cache
+Book decisions. The Hunyuan-derived portions remain subject to the upstream
+license and use restrictions. No upstream sampling module is imported at
+runtime.
 """
 
 import os

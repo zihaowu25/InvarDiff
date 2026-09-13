@@ -1,10 +1,19 @@
 #!/usr/bin/env python3
 """Standalone Wan2.1 SeaCache + Finegrained Cache hybrid sampler.
 
-Wan orchestration follows the official Wan2.1 generator.  SeaCache is adapted
-from ali-vilab/SeaCache (commit 8dcf490).  The referenced checkout has no
-visible license; confirm redistribution rights before publishing this file.
-No executable module is imported from local baseline or open-source scripts.
+Upstream references:
+- Wan2.1 generator (Apache-2.0):
+  https://github.com/Wan-Video/Wan2.1/tree/9737cba9c1c3c4d04b33fcad41c111989865d315
+  License: https://github.com/Wan-Video/Wan2.1/blob/9737cba9c1c3c4d04b33fcad41c111989865d315/LICENSE.txt
+- SeaCache for Wan2.1:
+  https://github.com/jiwoogit/SeaCache/tree/8dcf490/Wan2.1
+
+No LICENSE or NOTICE file exists at the referenced SeaCache commit. The link
+provides source attribution only and does not establish redistribution rights;
+obtain or verify permission before publishing this SeaCache-derived file.
+Modification notice: this file adapts the upstream Wan orchestration and
+SeaCache cross-step policy, then integrates InvarDiff module-level Cache Book
+decisions. No upstream source tree is imported at runtime.
 """
 
 # Copyright 2024-2025 The Alibaba Wan Team Authors. All rights reserved.

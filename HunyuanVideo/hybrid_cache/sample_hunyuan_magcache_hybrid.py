@@ -1,8 +1,20 @@
+#!/usr/bin/env python3
 """Standalone HunyuanVideo-1.5 MagCache + Finegrained Cache sampler.
 
-HunyuanVideo-1.5 integration follows Tencent-Hunyuan commit 60783e7.
-MagCache follows the official ComfyUI-MagCache adaptation at commit 47bdd2a
-(Apache-2.0). No executable sampling module is imported.
+Upstream references:
+- HunyuanVideo-1.5 pipeline (Tencent Hunyuan Community License):
+  https://github.com/Tencent-Hunyuan/HunyuanVideo-1.5/tree/60783e704160023913bee78f0b47036d393d4dfa
+  License: https://github.com/Tencent-Hunyuan/HunyuanVideo-1.5/blob/60783e704160023913bee78f0b47036d393d4dfa/LICENSE
+  Notice: https://github.com/Tencent-Hunyuan/HunyuanVideo-1.5/blob/60783e704160023913bee78f0b47036d393d4dfa/NOTICE
+- MagCache HunyuanVideo-1.5 adaptation (Apache-2.0):
+  https://github.com/Zehong-Ma/ComfyUI-MagCache/tree/47bdd2a
+  License: https://github.com/Zehong-Ma/ComfyUI-MagCache/blob/47bdd2a/LICENSE
+
+Modification notice: this file adapts the referenced HunyuanVideo-1.5
+pipeline and MagCache policy, then integrates InvarDiff module-level Cache
+Book decisions. The Hunyuan-derived portions remain subject to the upstream
+license and use restrictions. No upstream sampling module is imported at
+runtime.
 """
 
 import os

@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """Standalone FLUX Finegrained Cache + SeaCache sampler.
 
-SeaCache policy adapted from open-source/SeaCache/FLUX (commit 8dcf490).
-No license file was visible in that checkout at implementation time; verify
-redistribution terms before publishing this derivative.
+Upstream reference:
+https://github.com/jiwoogit/SeaCache/tree/8dcf490/FLUX
+No LICENSE or NOTICE file exists at the referenced SeaCache commit. This link
+provides source attribution only and does not establish redistribution rights;
+obtain or verify permission before publishing this SeaCache-derived file.
+
+Modification notice: this InvarDiff integration adapts the upstream FLUX
+spectral cache policy and combines it with InvarDiff's module-level Cache Book
+decisions. No upstream source tree is imported at runtime.
 """
 
 import argparse

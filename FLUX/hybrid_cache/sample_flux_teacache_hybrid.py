@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """Standalone FLUX Finegrained Cache + TeaCache sampler.
 
-TeaCache policy adapted from open-source/TeaCache/TeaCache4FLUX
-(Apache-2.0, upstream commit 7c10efc).  It preserves the official FLUX
-polynomial, accumulated relative-L1 gate, and first/last-step refreshes.
+Upstream reference:
+https://github.com/ali-vilab/TeaCache/tree/7c10efc4702c6b619f47805f7abe4a7a08085aa0/TeaCache4FLUX
+TeaCache is licensed under Apache-2.0; see:
+https://github.com/ali-vilab/TeaCache/blob/7c10efc4702c6b619f47805f7abe4a7a08085aa0/LICENSE
+
+Modification notice: this InvarDiff integration retains the upstream FLUX
+polynomial, accumulated relative-L1 gate, and first/last-step refresh rules,
+then combines that cross-step policy with InvarDiff's module-level Cache Book
+decisions. No upstream source tree is imported at runtime.
 """
 
 import argparse
