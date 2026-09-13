@@ -73,6 +73,11 @@
       "presets": {
         "hybrid": {"thresholds": {"self_attn_thres": 0.10, "cross_attn_thres": 0.11, "ffn_thres": 0.12}}
       }
+    },
+    "wan_teacache_hybrid": {
+      "presets": {
+        "hybrid": {"thresholds": {"self_attn_thres": 0.40, "cross_attn_thres": 0.50, "ffn_thres": 0.60}}
+      }
     }
   }
 }

@@ -1075,10 +1075,10 @@ if __name__ == "__main__":
     # context_ff=0.05, single_attn=0.40, single_mlp=0.02;
     # balanced (LPIPS 0.2014): attn=0.30, context_attn=0.00, ff=0.04,
     # context_ff=0.03, single_attn=0.10, single_mlp=0.02;
-    # slow (screen LPIPS 0.0775, just below the 0.08 target band): attn=0.08,
+    # slow (confirmed LPIPS 0.0753, below target): attn=0.08,
     # context_attn=0.00, ff=0.01, context_ff=0.02, single_attn=0.03,
-    # single_mlp=0.00.  The neighboring exploratory .09/.009/.009/.04 run
-    # measured 0.0763; both remain screening evidence, not confirmation.
+    # single_mlp=0.00. Context_attn=0.10/0.11 reached 0.078863 but remained
+    # strictly below 0.08, so those candidates were not promoted.
     parser.add_argument("--attn-thres", type=float, default=0.70)
     parser.add_argument("--context-attn-thres", type=float, default=0.01)
     parser.add_argument("--ff-thres", type=float, default=0.20)

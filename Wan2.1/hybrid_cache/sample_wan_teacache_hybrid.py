@@ -968,12 +968,13 @@ def _parse_args(cli_args=None):
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
     parser.add_argument("--cache_book_file", type=str, default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    # hybrid (fixed module tier): self_attn=0.10, cross_attn=0.11, ffn=0.12;
-    # TeaCache external default remains thresh=0.08.
-    parser.add_argument("--self_attn_thres", type=float, default=0.10)
-    parser.add_argument("--cross_attn_thres", type=float, default=0.11)
-    parser.add_argument("--ffn_thres", type=float, default=0.12)
-    add_preset_argument(parser, "wan_hybrid", tiers=("hybrid",))
+    # hybrid (fixed module tier): self_attn=0.40, cross_attn=0.50, ffn=0.60;
+    # TeaCache external default remains thresh=0.08.  This method-specific
+    # preset avoids changing the validated MagCache/SeaCache thresholds.
+    parser.add_argument("--self_attn_thres", type=float, default=0.40)
+    parser.add_argument("--cross_attn_thres", type=float, default=0.50)
+    parser.add_argument("--ffn_thres", type=float, default=0.60)
+    add_preset_argument(parser, "wan_teacache_hybrid", tiers=("hybrid",))
     parser.add_argument("--disable_step_cache", action="store_true", default=False)
     parser.add_argument("--disable_progress_bar", action="store_true", default=False)
     parser.add_argument(
@@ -993,7 +994,7 @@ def _parse_args(cli_args=None):
     parser.add_argument("--use_ret_steps", action="store_true", default=False)
 
     args = parser.parse_args(cli_args)
-    args = apply_preset(args, "wan_hybrid", {
+    args = apply_preset(args, "wan_teacache_hybrid", {
         "--self_attn_thres": "self_attn_thres",
         "--cross_attn_thres": "cross_attn_thres",
         "--ffn_thres": "ffn_thres",
