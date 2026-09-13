@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 """Standalone Wan2.1 MagCache + Finegrained Cache hybrid sampler.
 
-Wan orchestration follows the official Wan2.1 generator.  MagCache is adapted
-from ali-vilab/MagCache (Apache-2.0, commit df81cb1).  No executable module is
-imported from either the local baseline scripts or the open-source checkout.
+Upstream references:
+- Wan2.1 generator (Apache-2.0):
+  https://github.com/Wan-Video/Wan2.1/tree/9737cba9c1c3c4d04b33fcad41c111989865d315
+  License: https://github.com/Wan-Video/Wan2.1/blob/9737cba9c1c3c4d04b33fcad41c111989865d315/LICENSE.txt
+- MagCache for Wan2.1 (Apache-2.0):
+  https://github.com/Zehong-Ma/MagCache/tree/df81cb181776c2c61477c08e1d21f87fda1cd938/MagCache4Wan2.1
+  License: https://github.com/Zehong-Ma/MagCache/blob/df81cb181776c2c61477c08e1d21f87fda1cd938/LICENSE
+
+Modification notice: this file adapts the upstream Wan orchestration and
+MagCache cross-step policy, then integrates InvarDiff module-level Cache Book
+decisions. No upstream source tree is imported at runtime.
 """
 
 # Copyright 2024-2025 The Alibaba Wan Team Authors. All rights reserved.

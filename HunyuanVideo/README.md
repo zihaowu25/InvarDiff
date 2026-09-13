@@ -14,13 +14,18 @@ implementation code from each other. Model components, pipelines, schedulers,
 and the super-resolution pipeline are loaded from the official
 HunyuanVideo-1.5 repository.
 
+The Hunyuan-derived integration is subject to the upstream Tencent Hunyuan
+Community License and attribution requirements. Copies are included as
+[`LICENSE-HUNYUAN`](LICENSE-HUNYUAN) and [`NOTICE`](NOTICE); the hybrid script
+headers identify the additional cache-policy sources and modifications.
+
 ## 1. Environment and directory layout
 
 Install the dependencies and download a supported model by following the
 official HunyuanVideo-1.5 instructions. The default directory layout is:
 
 ```text
-/root/autodl-tmp/
+<workspace>/
 ├── HunyuanVideo-1.5/          # Official repository
 └── InvarDiff/
     └── HunyuanVideo/
@@ -30,7 +35,7 @@ official HunyuanVideo-1.5 instructions. The default directory layout is:
 ```
 
 The scripts automatically add the sibling
-`/root/autodl-tmp/HunyuanVideo-1.5` repository to the Python import path.
+`<workspace>/HunyuanVideo-1.5` repository to the Python import path.
 `--model_path` must point to a complete official model directory, which
 normally contains the Transformer, VAE, scheduler, and text-encoder
 components.
@@ -38,7 +43,7 @@ components.
 Display all available arguments with:
 
 ```bash
-cd /root/autodl-tmp/InvarDiff/HunyuanVideo
+cd /path/to/InvarDiff/HunyuanVideo
 
 python sample_hunyuan.py --help
 python sample_hunyuan_step_layer.py --help
@@ -171,7 +176,7 @@ The examples below assume:
 ```bash
 export MODEL_PATH=/path/to/HunyuanVideo-1.5-model
 export IMAGE_PATH=/path/to/reference.png
-cd /root/autodl-tmp/InvarDiff/HunyuanVideo
+cd /path/to/InvarDiff/HunyuanVideo
 ```
 
 ### 3.1 Layer-only calibration and generation

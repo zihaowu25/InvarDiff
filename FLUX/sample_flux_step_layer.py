@@ -1263,7 +1263,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FLUX step + layer sampler")
     parser.add_argument("--model-path", default="black-forest-labs/FLUX.1-dev")
-    parser.add_argument("--cache-dir", default="/root/autodl-tmp/InvarDiff/FLUX")
+    parser.add_argument("--cache-dir", default=None)
     parser.add_argument("--num-inference-steps", type=int, default=28)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--prompt", default="A cinematic photograph of a red fox sitting beside a moss-covered tree in a sunlit forest, natural colors, detailed fur, soft depth of field.")

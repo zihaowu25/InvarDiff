@@ -1,8 +1,20 @@
+#!/usr/bin/env python3
 """Standalone HunyuanVideo-1.5 TeaCache + Finegrained Cache sampler.
 
-The HunyuanVideo-1.5 pipeline integration is based on Tencent-Hunyuan commit
-60783e7. TeaCache policy details are ported from ali-vilab/TeaCache commit
-7c10efc (Apache-2.0). No executable sampling module is imported.
+Upstream references:
+- HunyuanVideo-1.5 pipeline (Tencent Hunyuan Community License):
+  https://github.com/Tencent-Hunyuan/HunyuanVideo-1.5/tree/60783e704160023913bee78f0b47036d393d4dfa
+  License: https://github.com/Tencent-Hunyuan/HunyuanVideo-1.5/blob/60783e704160023913bee78f0b47036d393d4dfa/LICENSE
+  Notice: https://github.com/Tencent-Hunyuan/HunyuanVideo-1.5/blob/60783e704160023913bee78f0b47036d393d4dfa/NOTICE
+- TeaCache policy (Apache-2.0):
+  https://github.com/ali-vilab/TeaCache/tree/7c10efc4702c6b619f47805f7abe4a7a08085aa0
+  License: https://github.com/ali-vilab/TeaCache/blob/7c10efc4702c6b619f47805f7abe4a7a08085aa0/LICENSE
+
+Modification notice: this file adapts the referenced HunyuanVideo-1.5
+pipeline and TeaCache policy, then integrates InvarDiff module-level Cache
+Book decisions. The Hunyuan-derived portions remain subject to the upstream
+license and use restrictions. No upstream sampling module is imported at
+runtime.
 """
 
 import os

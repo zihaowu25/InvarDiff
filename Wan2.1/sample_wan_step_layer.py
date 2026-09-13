@@ -1408,10 +1408,22 @@ def generate(args):
 
 if __name__ == "__main__":
 
+    default_ckpt_dir = os.environ.get(
+        "WAN_CKPT_DIR",
+        os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "..",
+                "models",
+                "Wan2.1-T2V-1.3B",
+            )
+        ),
+    )
     debug_args = [
     ## Core task/model
     "--task", "t2v-1.3B",
-    "--ckpt_dir", "/root/autodl-tmp/Wan2.1/Wan2.1-T2V-1.3B",
+    "--ckpt_dir", default_ckpt_dir,
 
     ## Output controls
     "--size", "832*480",

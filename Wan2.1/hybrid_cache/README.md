@@ -118,13 +118,11 @@ and source commit.
 
 ## Sources and licensing
 
-- MagCache source: local commit `df81cb1`, Apache-2.0.
-- TeaCache source: local commit `7c10efc`, Apache-2.0.
-- SeaCache source: local commit `8dcf490`. No license file was visible in the
-  referenced checkout. Confirm redistribution rights before publishing or
-  redistributing the SeaCache-derived script.
+- MagCache source: [`Zehong-Ma/MagCache@df81cb1`](https://github.com/Zehong-Ma/MagCache/tree/df81cb181776c2c61477c08e1d21f87fda1cd938/MagCache4Wan2.1), Apache-2.0.
+- TeaCache source: [`ali-vilab/TeaCache@7c10efc`](https://github.com/ali-vilab/TeaCache/tree/7c10efc4702c6b619f47805f7abe4a7a08085aa0/TeaCache4Wan2.1), Apache-2.0.
+- SeaCache source: [`jiwoogit/SeaCache@8dcf490`](https://github.com/jiwoogit/SeaCache/tree/8dcf490/Wan2.1). No LICENSE or NOTICE file exists at that commit; attribution does not itself grant redistribution permission.
 
-The Wan orchestration follows the locally installed Wan2.1 implementation.
+The Wan orchestration follows [`Wan-Video/Wan2.1@9737cba`](https://github.com/Wan-Video/Wan2.1/tree/9737cba9c1c3c4d04b33fcad41c111989865d315), licensed under Apache-2.0.
 Later Wan/Hunyuan ports should use their corresponding model-specific source
 constants and CFG layouts rather than reusing the values in these FLUX/Wan
 scripts.

@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 """Standalone FLUX Finegrained Cache + MagCache sampler.
 
-MagCache policy adapted from open-source/MagCache/MagCache4FLUX
-(Apache-2.0, upstream commit df81cb1).  The implementation intentionally keeps
-the official FLUX magnitude-ratio accumulator, K limit, retention prefix and
-the mapped 28-step forced-refresh point.
+Upstream reference:
+https://github.com/Zehong-Ma/MagCache/tree/df81cb181776c2c61477c08e1d21f87fda1cd938/MagCache4FLUX
+MagCache is licensed under Apache-2.0; see:
+https://github.com/Zehong-Ma/MagCache/blob/df81cb181776c2c61477c08e1d21f87fda1cd938/LICENSE
+
+Modification notice: this InvarDiff integration retains the upstream FLUX
+magnitude-ratio accumulator, K limit, retention prefix, and mapped 28-step
+forced refresh, then combines that cross-step policy with InvarDiff's
+module-level Cache Book decisions. No upstream source tree is imported at
+runtime.
 """
 
 import argparse

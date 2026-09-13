@@ -36,10 +36,7 @@ def parse_args():
     )
     parser.add_argument(
         "--model-path",
-        default=(
-            "/root/autodl-tmp/InvarDiff/FLUX/"
-            "models--black-forest-labs--FLUX.1-dev"
-        ),
+        default="",
         help=(
             "Local model snapshot or Hugging Face cache repository root. "
             "Pass an empty string to load --model-id from the Hub."
@@ -47,7 +44,7 @@ def parse_args():
     )
     parser.add_argument(
         "--cache-dir",
-        default="/root/autodl-tmp/InvarDiff/FLUX",
+        default=None,
     )
     parser.add_argument("--num-inference-steps", type=int, default=28)
     parser.add_argument("--height", type=int, default=1024)
