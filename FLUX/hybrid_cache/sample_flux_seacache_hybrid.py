@@ -1058,16 +1058,14 @@ def parse_args():
     )
     parser.add_argument("--cache-book-file")
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
-    # hybrid (fixed module tier): attn=0.20, context_attn=0.10,
-    # ff=0.05, context_ff=0.03, single_attn=0.08, single_mlp=0.01;
-    # SeaCache external default remains thresh=0.30.
+    # Native FLUX-28 hybrid setting; SeaCache's step threshold stays at 0.30.
     parser.add_argument("--attn-thres", type=float, default=0.30)
-    parser.add_argument("--context-attn-thres", type=float, default=0.20)
-    parser.add_argument("--ff-thres", type=float, default=0.10)
-    parser.add_argument("--context-ff-thres", type=float, default=0.05)
-    parser.add_argument("--single-attn-thres", type=float, default=0.12)
-    parser.add_argument("--single-mlp-thres", type=float, default=0.02)
-    add_preset_argument(parser, "flux_hybrid", tiers=("hybrid",))
+    parser.add_argument("--context-attn-thres", type=float, default=0.30)
+    parser.add_argument("--ff-thres", type=float, default=0.20)
+    parser.add_argument("--context-ff-thres", type=float, default=0.20)
+    parser.add_argument("--single-attn-thres", type=float, default=0.30)
+    parser.add_argument("--single-mlp-thres", type=float, default=0.20)
+    add_preset_argument(parser, "flux_seacache_hybrid", tiers=("hybrid",))
     parser.add_argument("--disable-step-cache", action="store_true")
     parser.add_argument("--disable-progress-bar", action="store_true")
     parser.add_argument("--seacache-thresh", type=float, default=0.3)
@@ -1082,7 +1080,7 @@ def parse_args():
         default=False,
     )
     args = parser.parse_args()
-    args = apply_preset(args, "flux_hybrid", {
+    args = apply_preset(args, "flux_seacache_hybrid", {
         "--attn-thres": "attn_thres",
         "--context-attn-thres": "context_attn_thres",
         "--ff-thres": "ff_thres",

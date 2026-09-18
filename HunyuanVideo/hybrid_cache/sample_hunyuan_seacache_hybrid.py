@@ -1905,16 +1905,15 @@ def build_parser():
     parser.add_argument("--cache_book_path", default="./cache_books")
     parser.add_argument("--cache_book_file", default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    # hybrid (fixed module tier): img_attn=0.90, txt_attn=0.20,
-    # img_mlp=0.00, txt_mlp=0.00, single modules=0.00;
-    # SeaCache external default remains thresh=0.20.
-    parser.add_argument("--double_img_attn_thres", type=float, default=0.90)
-    parser.add_argument("--double_txt_attn_thres", type=float, default=0.20)
+    # Native HunyuanVideo-1.5 121-frame hybrid setting. Joint attention is
+    # reused only when both coupled sides are eligible; other modules stay on.
+    parser.add_argument("--double_img_attn_thres", type=float, default=0.60)
+    parser.add_argument("--double_txt_attn_thres", type=float, default=0.50)
     parser.add_argument("--double_img_mlp_thres", type=float, default=0.00)
     parser.add_argument("--double_txt_mlp_thres", type=float, default=0.00)
     parser.add_argument("--single_attn_thres", type=float, default=0.00)
     parser.add_argument("--single_mlp_thres", type=float, default=0.00)
-    add_preset_argument(parser, "hunyuan_hybrid", tiers=("hybrid",))
+    add_preset_argument(parser, "hunyuan_seacache_hybrid", tiers=("hybrid",))
     parser.add_argument(
         "--calibration_feature_device",
         choices=("cpu", "gpu"),
@@ -1934,7 +1933,7 @@ def build_parser():
 def main():
     parser = build_parser()
     args = parser.parse_args()
-    args = apply_preset(args, "hunyuan_hybrid", {
+    args = apply_preset(args, "hunyuan_seacache_hybrid", {
         "--double_img_attn_thres": "double_img_attn_thres",
         "--double_txt_attn_thres": "double_txt_attn_thres",
         "--double_img_mlp_thres": "double_img_mlp_thres",
