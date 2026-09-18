@@ -1,11 +1,11 @@
-# Finegrained Cache for HunyuanVideo-1.5
+# HunyuanVideo-1.5 module-level caching
 
 This directory provides two independent Finegrained Cache implementations for
 HunyuanVideo-1.5:
 
 | Script | Cache scope | Cache Book policy |
 | --- | --- | --- |
-| `sample_hunyuan.py` | Layer-only cache | `layer` |
+| `sample_hunyuan.py` | Standalone module-level cache | `layer` |
 | `sample_hunyuan_step_layer.py` | Step and layer cache | `stplayer` |
 
 Both scripts contain complete model-loading, sampling, two-stage calibration,
@@ -40,13 +40,20 @@ The scripts automatically add the sibling
 normally contains the Transformer, VAE, scheduler, and text-encoder
 components.
 
+The standalone module sampler selects its single `default` configuration
+automatically: double-stream image/text attention thresholds `0.90/0.45`,
+image/text MLP thresholds `0.04/0.12`, and no single-stream module reuse.
+These values were screened at 720p, 121 frames, and 50 steps. They do not
+replace the separate step-layer policy or guarantee quality for other model
+or sampling settings.
+
 Display all available arguments with:
 
-```bash
-cd /path/to/InvarDiff/HunyuanVideo
+From the repository root:
 
-python sample_hunyuan.py --help
-python sample_hunyuan_step_layer.py --help
+```bash
+python HunyuanVideo/sample_hunyuan.py --help
+python HunyuanVideo/sample_hunyuan_step_layer.py --help
 ```
 
 ## 2. Algorithm
@@ -171,12 +178,12 @@ all ranks.
 
 ## 3. Quick start
 
-The examples below assume:
+Set `MODEL_PATH` to the downloaded model directory. For text-to-video,
+set `IMAGE_PATH` to `none`; for image-conditioned tasks, set it to the
+input image. Then, from the repository root:
 
 ```bash
-export MODEL_PATH=/path/to/HunyuanVideo-1.5-model
-export IMAGE_PATH=/path/to/reference.png
-cd /path/to/InvarDiff/HunyuanVideo
+cd HunyuanVideo
 ```
 
 ### 3.1 Layer-only calibration and generation

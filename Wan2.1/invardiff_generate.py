@@ -257,7 +257,7 @@ def _save_cache_books(file_path: str, step_cache_bool: List[bool], module_cache_
     payload = {
         "cache_version": CACHE_BOOK_VERSION,
         "rate_method": RATE_METHOD,
-        "cache_preset": (config or {}).get("cache_preset", "fast"),
+        "cache_preset": (config or {}).get("cache_preset", "default"),
         "resolved_thresholds": (config or {}).get("resolved_thresholds", {}),
         "step_cache_bool": step_cache_bool,
         "module_cache_book": module_cache_book,
@@ -583,15 +583,13 @@ def _parse_args(cli_args=None):
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
     parser.add_argument("--cache_book_file", type=str, default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    # fast (default, LPIPS 0.3549): step=0.00, self_attn=0.25, cross_attn=0.30, ffn=0.35;
-    # balanced (LPIPS 0.1942): step=0.00, self_attn=0.10, cross_attn=0.15, ffn=0.20;
-    # slow (screen LPIPS 0.1069): step=0.00, self_attn=0.04, cross_attn=0.05,
-    # ffn=0.07.  The superseded .05/.07/.09 probe measured 0.1335.
+    # The whole-step gate remains disabled here; module thresholds follow the
+    # selected Wan module configuration (see sample_wan.py for its timing boundary).
     parser.add_argument("--step_thres", type=float, default=0.00)
-    parser.add_argument("--self_attn_thres", type=float, default=0.25)
-    parser.add_argument("--cross_attn_thres", type=float, default=0.30)
-    parser.add_argument("--ffn_thres", type=float, default=0.35)
-    add_preset_argument(parser, "wan_module")
+    parser.add_argument("--self_attn_thres", type=float, default=0.40)
+    parser.add_argument("--cross_attn_thres", type=float, default=0.15)
+    parser.add_argument("--ffn_thres", type=float, default=0.20)
+    add_preset_argument(parser, "wan_module", tiers=("default",))
 
     args = parser.parse_args(cli_args)
     args = apply_preset(
@@ -730,7 +728,7 @@ def _calibrate_invardiff(run_once, model, args):
         final_step_cache_bool,
         final_module_cache_book,
         {
-            "cache_preset": getattr(args, "cache_preset_resolved", "fast"),
+            "cache_preset": getattr(args, "cache_preset_resolved", "default"),
             "resolved_thresholds": getattr(
                 args,
                 "cache_resolved_thresholds",

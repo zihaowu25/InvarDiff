@@ -11,7 +11,7 @@ def test_explicit_threshold_overrides_selected_preset(tmp_path, monkeypatch):
         "policies": {
             "example": {
                 "presets": {
-                    "fast": {"thresholds": {"attn_thres": 0.6, "ff_thres": 0.2}}
+                    "default": {"thresholds": {"attn_thres": 0.6, "ff_thres": 0.2}}
                 }
             }
         }
@@ -19,7 +19,7 @@ def test_explicit_threshold_overrides_selected_preset(tmp_path, monkeypatch):
     monkeypatch.setattr(cache_presets, "PRESET_PATH", path)
     monkeypatch.setattr(cache_presets, "load_presets", lambda path=path: json.loads(path.read_text())["policies"])
     args = argparse.Namespace(
-        cache_preset="fast",
+        cache_preset="default",
         attn_thres=0.7,
         ff_thres=0.0,
         magcache_thresh=0.24,
@@ -39,13 +39,63 @@ def test_explicit_threshold_overrides_selected_preset(tmp_path, monkeypatch):
     }
 
 
-def test_repository_module_presets_keep_independent_active_thresholds():
+def test_repository_module_presets_keep_nonuniform_active_thresholds():
     policies = cache_presets.load_presets()
     for policy in ("dit_module", "flux_module", "wan_module", "hunyuan_module"):
         presets = policies[policy]["presets"]
         for tier, item in presets.items():
             active = [value for value in item["thresholds"].values() if value > 0]
-            assert len(active) == len(set(active)), f"uniform active thresholds in {policy}:{tier}"
+            assert all(0 < value <= 1 for value in active)
+            assert len(set(active)) > 1, f"uniform active thresholds in {policy}:{tier}"
+
+
+def test_default_module_presets_match_selected_configs():
+    policies = cache_presets.load_presets()
+    expected = {
+        "dit_module": {"msa_thres": 0.53, "mlp_thres": 0.39},
+        "flux_module": {
+            "attn_thres": 0.70,
+            "context_attn_thres": 0.70,
+            "ff_thres": 0.30,
+            "context_ff_thres": 0.23,
+            "single_attn_thres": 0.50,
+            "single_mlp_thres": 0.02,
+        },
+        "wan_module": {
+            "step_thres": 0.00,
+            "self_attn_thres": 0.40,
+            "cross_attn_thres": 0.15,
+            "ffn_thres": 0.20,
+        },
+        "hunyuan_module": {
+            "double_img_attn_thres": 0.90,
+            "double_txt_attn_thres": 0.45,
+            "double_img_mlp_thres": 0.04,
+            "double_txt_mlp_thres": 0.12,
+            "single_attn_thres": 0.00,
+            "single_mlp_thres": 0.00,
+        },
+    }
+    for policy, thresholds in expected.items():
+        assert list(policies[policy]["presets"]) == ["default"]
+        assert policies[policy]["presets"]["default"]["thresholds"] == thresholds
+
+
+def test_preset_label_is_not_a_cache_book_execution_setting():
+    saved = {"cache_preset": "legacy", "attn_thres": 0.7, "steps": 28}
+    expected = {"cache_preset": "default", "attn_thres": 0.7, "steps": 28}
+    assert cache_presets.same_execution_config(saved, expected)
+    assert not cache_presets.same_execution_config(
+        saved, {**expected, "attn_thres": 0.8}
+    )
+
+
+def test_single_module_configuration_is_the_cli_default():
+    parser = argparse.ArgumentParser()
+    cache_presets.add_preset_argument(
+        parser, "dit_module", tiers=("default",)
+    )
+    assert parser.parse_args([]).cache_preset == "default"
 
 
 def test_external_hybrid_policy_is_one_fixed_tier():

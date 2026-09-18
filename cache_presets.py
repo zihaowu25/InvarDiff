@@ -19,6 +19,17 @@ def load_presets(path: Path = PRESET_PATH) -> dict:
     return payload["policies"]
 
 
+def same_execution_config(saved: object, expected: dict) -> bool:
+    """Compare Cache Book settings without treating a preset label as a setting."""
+    if not isinstance(saved, dict):
+        return False
+    return {
+        key: value for key, value in saved.items() if key != "cache_preset"
+    } == {
+        key: value for key, value in expected.items() if key != "cache_preset"
+    }
+
+
 def add_preset_argument(
     parser: argparse.ArgumentParser,
     policy: str,

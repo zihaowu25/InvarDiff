@@ -1,36 +1,30 @@
-# Finegrained Cache for FLUX
+# FLUX.1-dev module-level caching
 
-Fine-grained caching acceleration for FLUX.1-dev.
+[`sample_flux.py`](sample_flux.py) implements the standalone module-level
+Cache Book for FLUX.1-dev. The selected 1024 × 1024, 28-step configuration
+uses double-stream attention/context attention/FF/context FF thresholds
+`0.70/0.70/0.30/0.23` and single-stream attention/MLP thresholds
+`0.50/0.02`. It averages two calibration prompts by default; callers can
+provide another set with repeated `--calibration-prompt` flags or a
+`--calibration-prompt-file`.
 
-## Installation
+Install the FLUX dependencies (including PyTorch, diffusers, transformers,
+accelerate, safetensors, Pillow, NumPy, and tqdm) and obtain model access
+under the provider's terms. From the repository root, after setting
+`FLUX_MODEL` to a local model directory or supported model ID:
 
 ```bash
-pip install torch torchvision
-pip install diffusers transformers accelerate safetensors
-pip install Pillow numpy tqdm
+python FLUX/sample_flux.py --model-path "$FLUX_MODEL" \
+  --generate-cache-books --calibration-only
+
+python FLUX/sample_flux.py --model-path "$FLUX_MODEL" \
+  --prompt "A blue kingfisher perched above a river in morning light" \
+  --output-dir outputs/flux
 ```
 
-## Quick Start
-
-### Basic Usage
-
-```bash
-python sample_flux.py
-```
-
-The script will generate images using pre-calibrated cache books. Generated images will be saved in `./images/` directory.
-
-### Speed Modes Configuration
-
-Pre-configured speed modes with different quality-speed trade-offs:
-
-| Mode | Speedup | nonskip_rate | step_thres | attn_thres | ff_thres | context_ff_thres | Single_attn_thres | Single_mlp_thres |
-|------|-------|--------------|------------|------------|----------|------------------|-------------------|------------------|
-| Fast | 3.3× | 0.1 | 0.7 | 0.68 | 0.68 | 0.68 | 0.68 | 0.68 |
-| Medium-1 | 2.9× | 0.1 | 0.7 | 0.68 | 0.0 | 0.0 | 0.68 | 0.0 |
-| Medium-2 | 2.6× | 0.15 | 0.7 | 0.68 | 0.0 | 0.0 | 0.7 | 0.0 |
-| Slow | 2.5× | 0.22 | 0.72 | 0.68 | 0.66 | 0.0 | 0.68 | 0.62 |
-
-### Comparison
-
-![FLUX_compare](../assets/FLUX_compare.jpg)
+The module-only preset is `default` and is selected automatically. Explicit
+threshold flags override its individual values. Cache Books are compatible
+only with matching execution settings; recalibrate after changing model
+weights, scheduler, step count, resolution, guidance, precision, or module
+partition. The separate step-layer and hybrid samplers have different
+policies and should be evaluated under their own fixed configurations.
