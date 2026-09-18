@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "selected_module_configuration",
-  "description": "Each standalone module-only policy has one selected configuration. Step-layer and hybrid policies retain their separate experimental presets; speedups depend on the measurement boundary.",
+  "description": "Standalone module-only policies have selected configurations. Native-validated MagCache and SeaCache hybrid policies use policy-specific module thresholds; TeaCache and unvalidated hybrids retain exploratory presets. Speedups depend on the measurement boundary.",
   "policies": {
     "dit_module": {
       "presets": {
@@ -51,14 +51,39 @@
         "slow": {"thresholds": {"step_thres": 0.02, "double_img_attn_thres": 0.40, "double_txt_attn_thres": 0.01, "double_img_mlp_thres": 0.00, "double_txt_mlp_thres": 0.00, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}}
       }
     },
+    "hunyuan_seacache_hybrid": {
+      "presets": {
+        "hybrid": {"thresholds": {"double_img_attn_thres": 0.60, "double_txt_attn_thres": 0.50, "double_img_mlp_thres": 0.00, "double_txt_mlp_thres": 0.00, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}}
+      }
+    },
     "hunyuan_hybrid": {
       "presets": {
         "hybrid": {"thresholds": {"double_img_attn_thres": 0.90, "double_txt_attn_thres": 0.20, "double_img_mlp_thres": 0.00, "double_txt_mlp_thres": 0.00, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}}
       }
     },
+    "flux_magcache_hybrid": {
+      "presets": {
+        "hybrid": {"thresholds": {"attn_thres": 0.30, "context_attn_thres": 0.30, "ff_thres": 0.00, "context_ff_thres": 0.00, "single_attn_thres": 0.30, "single_mlp_thres": 0.00}}
+      }
+    },
+    "flux_seacache_hybrid": {
+      "presets": {
+        "hybrid": {"thresholds": {"attn_thres": 0.30, "context_attn_thres": 0.30, "ff_thres": 0.20, "context_ff_thres": 0.20, "single_attn_thres": 0.30, "single_mlp_thres": 0.20}}
+      }
+    },
     "flux_hybrid": {
       "presets": {
         "hybrid": {"thresholds": {"attn_thres": 0.20, "context_attn_thres": 0.10, "ff_thres": 0.05, "context_ff_thres": 0.03, "single_attn_thres": 0.08, "single_mlp_thres": 0.01}}
+      }
+    },
+    "wan_magcache_hybrid": {
+      "presets": {
+        "hybrid": {"thresholds": {"self_attn_thres": 0.30, "cross_attn_thres": 0.30, "ffn_thres": 0.00}}
+      }
+    },
+    "wan_seacache_hybrid": {
+      "presets": {
+        "hybrid": {"thresholds": {"self_attn_thres": 0.30, "cross_attn_thres": 0.30, "ffn_thres": 0.00}}
       }
     },
     "wan_hybrid": {

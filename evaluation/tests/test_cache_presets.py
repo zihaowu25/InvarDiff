@@ -109,6 +109,48 @@ def test_external_hybrid_policy_is_one_fixed_tier():
         assert list(policies[policy]["presets"]) == ["hybrid"]
 
 
+def test_native_validated_hybrid_defaults_are_policy_specific():
+    policies = cache_presets.load_presets()
+    expected = {
+        "flux_magcache_hybrid": {
+            "attn_thres": 0.30,
+            "context_attn_thres": 0.30,
+            "ff_thres": 0.00,
+            "context_ff_thres": 0.00,
+            "single_attn_thres": 0.30,
+            "single_mlp_thres": 0.00,
+        },
+        "flux_seacache_hybrid": {
+            "attn_thres": 0.30,
+            "context_attn_thres": 0.30,
+            "ff_thres": 0.20,
+            "context_ff_thres": 0.20,
+            "single_attn_thres": 0.30,
+            "single_mlp_thres": 0.20,
+        },
+        "wan_magcache_hybrid": {
+            "self_attn_thres": 0.30,
+            "cross_attn_thres": 0.30,
+            "ffn_thres": 0.00,
+        },
+        "wan_seacache_hybrid": {
+            "self_attn_thres": 0.30,
+            "cross_attn_thres": 0.30,
+            "ffn_thres": 0.00,
+        },
+        "hunyuan_seacache_hybrid": {
+            "double_img_attn_thres": 0.60,
+            "double_txt_attn_thres": 0.50,
+            "double_img_mlp_thres": 0.00,
+            "double_txt_mlp_thres": 0.00,
+            "single_attn_thres": 0.00,
+            "single_mlp_thres": 0.00,
+        },
+    }
+    for policy, thresholds in expected.items():
+        assert policies[policy]["presets"]["hybrid"]["thresholds"] == thresholds
+
+
 def test_wan_teacache_uses_a_method_specific_module_vector():
     policies = cache_presets.load_presets()
     tea = policies["wan_teacache_hybrid"]["presets"]["hybrid"]["thresholds"]
