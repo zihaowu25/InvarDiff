@@ -1,6 +1,7 @@
 # Copyright 2024-2025 The Alibaba Wan Team Authors. All rights reserved.
 import argparse
 import gc
+import hashlib
 import json
 import logging
 import os
@@ -33,6 +34,31 @@ POLICY_VARIANT = "layer"
 RATE_METHOD = "relative_l1"
 CACHE_BOOK_VERSION = 2
 RATE_CHUNK_SIZE = 1_048_576
+
+
+def _tensor_sha256(tensor: torch.Tensor) -> str:
+    value = tensor.detach().contiguous().cpu()
+    digest = hashlib.sha256()
+    digest.update(str(tuple(value.shape)).encode("utf-8"))
+    digest.update(str(value.dtype).encode("utf-8"))
+    digest.update(value.view(torch.uint8).numpy().tobytes())
+    return digest.hexdigest()
+
+
+def _execution_ledger(module_cache_book, steps, layers):
+    ledger = {}
+    for name in WAN_CACHE_MODULES:
+        book = None if module_cache_book is None else module_cache_book[name]
+        reused = 0 if book is None else sum(
+            bool(value) for row in book for value in row
+        )
+        total = steps * layers
+        ledger[name] = {
+            "total_positions": total,
+            "effective_reuse": reused,
+            "compute": total - reused,
+        }
+    return ledger
 
 EXAMPLE_PROMPT = {
     "t2v-1.3B": {
@@ -269,7 +295,7 @@ def _cache_book_config(args, num_layers: int) -> Dict[str, object]:
         "ffn": args.ffn_thres,
         "base_seed": args.base_seed,
         "num_layers": num_layers,
-        "cache_preset": getattr(args, "cache_preset_resolved", "fast"),
+        "cache_preset": getattr(args, "cache_preset_resolved", "default"),
         "resolved_thresholds": getattr(args, "cache_resolved_thresholds", {
             "self_attn_thres": args.self_attn_thres,
             "cross_attn_thres": args.cross_attn_thres,
@@ -661,6 +687,7 @@ def _parse_args(cli_args=None):
     parser.add_argument("--t5_cpu", action="store_true", default=False)
     parser.add_argument("--dit_fsdp", action="store_true", default=False)
     parser.add_argument("--save_file", type=str, default=None)
+    parser.add_argument("--metrics_json", type=str, default=None)
 
     parser.add_argument("--src_video", type=str, default=None)
     parser.add_argument("--src_mask", type=str, default=None)
@@ -688,15 +715,13 @@ def _parse_args(cli_args=None):
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
     parser.add_argument("--cache_book_file", type=str, default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    # fast (default, LPIPS 0.3549): self_attn=0.25, cross_attn=0.30, ffn=0.35;
-    # balanced (LPIPS 0.1942): self_attn=0.10, cross_attn=0.15, ffn=0.20;
-    # slow (screen LPIPS 0.1069): self_attn=0.04, cross_attn=0.05, ffn=0.07.
-    # The superseded .05/.07/.09 probe measured 0.1335 and is retained only
-    # as a boundary diagnostic.
-    parser.add_argument("--self_attn_thres", type=float, default=0.25)
-    parser.add_argument("--cross_attn_thres", type=float, default=0.30)
-    parser.add_argument("--ffn_thres", type=float, default=0.35)
-    add_preset_argument(parser, "wan_module")
+    # Selected module-only setting: self/cross attention=0.40/0.15, FFN=0.20.
+    # Wan2.1-T2V-1.3B, 832x480, 81 frames, 50 steps: 1.342x denoising
+    # speedup (1.302x text-encoder-to-decoded-tensor) on one prompt.
+    parser.add_argument("--self_attn_thres", type=float, default=0.40)
+    parser.add_argument("--cross_attn_thres", type=float, default=0.15)
+    parser.add_argument("--ffn_thres", type=float, default=0.20)
+    add_preset_argument(parser, "wan_module", tiers=("default",))
 
     args = parser.parse_args(cli_args)
     args = apply_preset(args, "wan_module", {
@@ -927,10 +952,15 @@ def _prepare_invardiff_books(model, args):
         use_invardiff=args.use_invardiff and module_cache_book is not None,
         analyzer=None,
     )
+    return module_cache_book
 
 
 def generate(args):
     video = None
+    module_cache_book = None
+    generation_times = []
+    denoising_times = []
+    latent_sha256 = None
     rank, world_size, device = _setup_distributed(args)
 
     if dist.is_initialized():
@@ -978,25 +1008,73 @@ def generate(args):
         if enable_invardiff:
             pipeline.model.forward = invardiff_forward.__get__(pipeline.model, pipeline.model.__class__)
 
+        target_size = SIZE_CONFIGS[args.size]
+        target_shape = (
+            pipeline.vae.model.z_dim,
+            (args.frame_num - 1) // pipeline.vae_stride[0] + 1,
+            target_size[1] // pipeline.vae_stride[1],
+            target_size[0] // pipeline.vae_stride[2],
+        )
+        audit_generator = torch.Generator(device=pipeline.device)
+        audit_generator.manual_seed(args.base_seed)
+        audit_noise = torch.randn(
+            *target_shape,
+            dtype=torch.float32,
+            device=pipeline.device,
+            generator=audit_generator,
+        )
+        latent_sha256 = _tensor_sha256(audit_noise)
+        del audit_noise
+
         def run_once():
+            timing_state = {"calls": 0, "started": None}
+            expected_calls = args.sample_steps * 2
+
+            def pre_hook(_module, _inputs):
+                if timing_state["calls"] == 0:
+                    if torch.cuda.is_available():
+                        torch.cuda.synchronize()
+                    timing_state["started"] = time.perf_counter()
+
+            def post_hook(_module, _inputs, _output):
+                timing_state["calls"] += 1
+                if timing_state["calls"] == expected_calls:
+                    if torch.cuda.is_available():
+                        torch.cuda.synchronize()
+                    denoising_times.append(
+                        time.perf_counter() - timing_state["started"]
+                    )
+
+            pre_handle = pipeline.model.register_forward_pre_hook(pre_hook)
+            post_handle = pipeline.model.register_forward_hook(post_hook)
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
             t0 = time.perf_counter()
 
-            out = pipeline.generate(
-                args.prompt,
-                size=SIZE_CONFIGS[args.size],
-                frame_num=args.frame_num,
-                shift=args.sample_shift,
-                sample_solver=args.sample_solver,
-                sampling_steps=args.sample_steps,
-                guide_scale=args.sample_guide_scale,
-                seed=args.base_seed,
-                offload_model=args.offload_model,
-            )
+            try:
+                out = pipeline.generate(
+                    args.prompt,
+                    size=SIZE_CONFIGS[args.size],
+                    frame_num=args.frame_num,
+                    shift=args.sample_shift,
+                    sample_solver=args.sample_solver,
+                    sampling_steps=args.sample_steps,
+                    guide_scale=args.sample_guide_scale,
+                    seed=args.base_seed,
+                    offload_model=args.offload_model,
+                )
+            finally:
+                pre_handle.remove()
+                post_handle.remove()
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
             dt = time.perf_counter() - t0
+            generation_times.append(dt)
+            if timing_state["calls"] != expected_calls:
+                raise RuntimeError(
+                    f"Observed {timing_state['calls']} denoiser calls; "
+                    f"expected {expected_calls}."
+                )
             if rank == 0:
                 logging.info(f"[Latency] {args.task} generate: {dt:.4f}s")
 
@@ -1015,7 +1093,7 @@ def generate(args):
                 )
                 video = run_once()
         elif args.use_invardiff:
-            _prepare_invardiff_books(pipeline.model, args)
+            module_cache_book = _prepare_invardiff_books(pipeline.model, args)
             video = run_once()
         else:
             video = run_once()
@@ -1248,6 +1326,7 @@ def generate(args):
                 f"{args.ulysses_size}_{args.ring_size}_{formatted_prompt}_{formatted_time}{suffix}"
             )
         save_path = os.path.abspath(args.save_file)
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
         if "t2i" in args.task:
             cache_image(
                 tensor=video.squeeze(1)[None],
@@ -1257,8 +1336,21 @@ def generate(args):
                 value_range=(-1, 1),
             )
         else:
+            video_to_save = video
+            if not torch.is_floating_point(video_to_save):
+                logging.info(
+                    "Converting decoded integer video to [-1, 1] float "
+                    "before torchvision grid normalization."
+                )
+                video_to_save = video_to_save.to(torch.float32).div(127.5).sub(1.0)
+            elif video_to_save.numel() and video_to_save.max().item() > 1.5:
+                logging.info(
+                    "Converting decoded [0, 255] float video to [-1, 1] "
+                    "before torchvision grid normalization."
+                )
+                video_to_save = video_to_save.div(127.5).sub(1.0)
             cache_video(
-                tensor=video[None],
+                tensor=video_to_save[None],
                 save_file=save_path,
                 fps=cfg.sample_fps,
                 nrow=1,
@@ -1266,6 +1358,42 @@ def generate(args):
                 value_range=(-1, 1),
             )
         logging.info(f"Output will be saved to: {save_path}")
+
+    if rank == 0 and args.metrics_json:
+        metrics = {
+            "schema_version": 1,
+            "model": args.task,
+            "size": args.size,
+            "frame_num": args.frame_num,
+            "sample_steps": args.sample_steps,
+            "sample_solver": args.sample_solver,
+            "sample_shift": args.sample_shift,
+            "sample_guide_scale": args.sample_guide_scale,
+            "seed": args.base_seed,
+            "prompt": args.prompt,
+            "latent_sha256": latent_sha256,
+            "generation_seconds": generation_times,
+            "denoising_seconds": denoising_times,
+            "peak_allocated_gib": (
+                torch.cuda.max_memory_allocated() / (1024 ** 3)
+                if torch.cuda.is_available() else None
+            ),
+            "execution_ledger": _execution_ledger(
+                module_cache_book,
+                args.sample_steps,
+                len(pipeline.model.blocks),
+            ),
+            "output_file": (
+                os.path.abspath(args.save_file) if video is not None else None
+            ),
+        }
+        metrics_path = os.path.abspath(args.metrics_json)
+        os.makedirs(os.path.dirname(metrics_path), exist_ok=True)
+        temporary = metrics_path + ".tmp"
+        with open(temporary, "w", encoding="utf-8") as file:
+            json.dump(metrics, file, indent=2)
+            file.write("\n")
+        os.replace(temporary, metrics_path)
 
     logging.info("Finished.")
 

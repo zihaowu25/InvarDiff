@@ -6,6 +6,7 @@ not import implementation code from sample_dit_step_layer.py.
 """
 
 import argparse
+import hashlib
 import json
 import os
 import random
@@ -36,6 +37,56 @@ CACHE_BOOK_VERSION = 2
 CACHE_SCOPE = "layer_only"
 POLICY_VARIANT = "layer"
 RATE_CHUNK_SIZE = 1_048_576
+
+
+def tensor_sha256(tensor: torch.Tensor) -> str:
+    """Hash tensor values together with shape and dtype for pairing audits."""
+    value = tensor.detach().contiguous().cpu()
+    digest = hashlib.sha256()
+    digest.update(str(tuple(value.shape)).encode("utf-8"))
+    digest.update(str(value.dtype).encode("utf-8"))
+    digest.update(value.view(torch.uint8).numpy().tobytes())
+    return digest.hexdigest()
+
+
+def file_sha256(path: str) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def decode_vae_in_batches(vae, latents, batch_size: int):
+    """Decode without changing sample order while bounding peak VAE memory."""
+    scaled = latents / 0.18215
+    if batch_size <= 0 or batch_size >= scaled.shape[0]:
+        return vae.decode(scaled).sample
+    return torch.cat(
+        [vae.decode(chunk).sample for chunk in scaled.split(batch_size)],
+        dim=0,
+    )
+
+
+def cache_execution_ledger(step_cache_book, msa_cache_book, mlp_cache_book):
+    """Count the module decisions that the layer-only runtime executes."""
+    ledger = {}
+    for name, book in (("msa", msa_cache_book), ("mlp", mlp_cache_book)):
+        reused = int(torch.as_tensor(book, dtype=torch.bool).sum().item())
+        total = int(torch.as_tensor(book).numel())
+        ledger[name] = {
+            "total_positions": total,
+            "effective_reuse": reused,
+            "compute": total - reused,
+        }
+    step_book = torch.as_tensor(step_cache_book, dtype=torch.bool)
+    reused = int(step_book.sum().item())
+    ledger["whole_step"] = {
+        "total_positions": int(step_book.numel()),
+        "effective_reuse": reused,
+        "compute": int(step_book.numel()) - reused,
+    }
+    return ledger
 
 
 def set_seed(seed):
@@ -290,12 +341,9 @@ def threshold_analyse(
     class_labels,
     input_size,
     nonskip_rate=0,
-    # fast (default): msa=0.60, mlp=0.65;
-    # balanced: msa=0.60, mlp=0.62;
-    # slow: msa=0.62, mlp=0.59.
-    msa_thres=0.60,
-    mlp_thres=0.65,
-    num_analysis=10,
+    msa_thres=0.53,
+    mlp_thres=0.39,
+    num_analysis=1,
 ):
     """Run raw and cache-corrected calibration for MSA/MLP only."""
     # Cross-step threshold is intentionally disabled:
@@ -545,7 +593,7 @@ def save_cache_books(
     msa_thres,
     mlp_thres,
     cache_book_path="./cache_books",
-    preset_name="fast",
+    preset_name="default",
     resolved_thresholds=None,
 ):
     config = cache_book_config(
@@ -633,11 +681,29 @@ def main(args):
     base_dit.eval()
 
     all_classes = list(range(args.num_classes))
-    class_labels = [207, 992, 387, 37, 142, 979, 417, 279][:args.num_sample_classes]
-    if args.num_analysis <= 1:
+    default_labels = [207, 992, 387, 37, 142, 979, 417, 279]
+    if args.class_label_file:
+        with open(args.class_label_file, "r", encoding="utf-8") as file:
+            class_labels = [int(line.strip()) for line in file if line.strip()]
+        if not class_labels:
+            raise ValueError("--class-label-file contains no labels")
+        if any(label < 0 or label >= args.num_classes for label in class_labels):
+            raise ValueError("class label is outside --num-classes")
+    else:
+        class_labels = default_labels[:args.num_sample_classes]
+    if args.calibration_class_file:
+        with open(args.calibration_class_file, "r", encoding="utf-8") as file:
+            measure_labels = [int(line.strip()) for line in file if line.strip()]
+        if not measure_labels:
+            raise ValueError("--calibration-class-file contains no labels")
+        if any(label < 0 or label >= args.num_classes for label in measure_labels):
+            raise ValueError("calibration label is outside --num-classes")
+    elif args.num_analysis <= 1:
         measure_labels = [class_labels[0]]
     else:
-        measure_labels = random.sample(all_classes, min(args.num_analysis, len(all_classes)))
+        measure_labels = random.sample(
+            all_classes, min(args.num_analysis, len(all_classes))
+        )
 
     cache_config = cache_book_config(
         num_timesteps,
@@ -695,7 +761,7 @@ def main(args):
     )
     dynamic_dit.eval()
     vae = AutoencoderKL.from_pretrained(
-        f"stabilityai/sd-vae-ft-{args.vae}"
+        args.vae_path or f"stabilityai/sd-vae-ft-{args.vae}"
     ).to(device)
 
     num_samples = len(class_labels)
@@ -706,6 +772,8 @@ def main(args):
         input_size,
         device=device,
     )
+    latent_sha256 = tensor_sha256(z)
+    per_sample_latent_sha256 = [tensor_sha256(item) for item in z]
     y = torch.tensor(class_labels, device=device)
 
     z = torch.cat([z, z], dim=0)
@@ -716,8 +784,13 @@ def main(args):
     y = torch.cat([y, y_null], dim=0)
     model_kwargs = dict(y=y, cfg_scale=args.cfg_scale)
 
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats()
     times = []
     for _ in range(args.sample_times):
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
         start_time = time.time()
         samples = diffusion.ddim_sample_loop(
             dynamic_dit.forward_with_cfg,
@@ -728,6 +801,8 @@ def main(args):
             progress=True,
             device=device,
         )
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
         times.append(time.time() - start_time)
         dynamic_dit.reset_inference()
 
@@ -741,16 +816,17 @@ def main(args):
         print(f"Accelerated sampling time: {times[0]:.3f} s")
 
     samples, _ = samples.chunk(2, dim=0)
-    samples = vae.decode(samples / 0.18215).sample
+    samples = decode_vae_in_batches(vae, samples, args.vae_batch_size)
 
     output_dir = args.output_dir
     os.makedirs(output_dir, exist_ok=True)
     timestamp = time.strftime("%m%d_%H%M%S")
-    save_name = (
+    save_name = args.output_file or (
         f"{output_dir}/{POLICY_VARIANT}_NFE{num_timesteps}"
         f"_CFG{args.cfg_scale}_msa{args.msa_thres:.2f}"
         f"_mlp{args.mlp_thres:.2f}_seed{args.seed}_{timestamp}.png"
     )
+    os.makedirs(os.path.dirname(os.path.abspath(save_name)), exist_ok=True)
     save_image(
         samples,
         save_name,
@@ -759,6 +835,63 @@ def main(args):
         value_range=(-1, 1),
     )
     print(f"Samples saved to {save_name}.")
+    sample_items = []
+    if args.save_individual_dir:
+        os.makedirs(args.save_individual_dir, exist_ok=True)
+        for index, (label, sample) in enumerate(zip(class_labels, samples)):
+            individual_path = os.path.join(
+                args.save_individual_dir,
+                f"class_{label:04d}_seed_{args.seed}.png",
+            )
+            save_image(
+                sample,
+                individual_path,
+                normalize=True,
+                value_range=(-1, 1),
+            )
+            sample_items.append(
+                {
+                    "class_label": label,
+                    "seed": args.seed,
+                    "latent_sha256": per_sample_latent_sha256[index],
+                    "candidate_path": os.path.abspath(individual_path),
+                    "candidate_sha256": file_sha256(individual_path),
+                }
+            )
+    if args.metrics_json:
+        measured_times = times[1:] if len(times) > 1 else times
+        metrics = {
+            "schema_version": 2,
+            "model": args.model,
+            "image_size": args.image_size,
+            "num_timesteps": num_timesteps,
+            "cfg_scale": args.cfg_scale,
+            "vae_batch_size": args.vae_batch_size,
+            "seed": args.seed,
+            "class_labels": class_labels,
+            "latent_sha256": latent_sha256,
+            "per_sample_latent_sha256": per_sample_latent_sha256,
+            "items": sample_items,
+            "sampling_seconds": times,
+            "sampling_mean_seconds": float(np.mean(measured_times)),
+            "sampling_std_seconds": float(np.std(measured_times)),
+            "peak_allocated_gib": (
+                torch.cuda.max_memory_allocated() / (1024 ** 3)
+                if torch.cuda.is_available() else None
+            ),
+            "execution_ledger": cache_execution_ledger(
+                step_cache_book,
+                msa_cache_book,
+                mlp_cache_book,
+            ),
+            "output_file": os.path.abspath(save_name),
+        }
+        os.makedirs(os.path.dirname(os.path.abspath(args.metrics_json)), exist_ok=True)
+        temporary = args.metrics_json + ".tmp"
+        with open(temporary, "w", encoding="utf-8") as file:
+            json.dump(metrics, file, indent=2)
+            file.write("\n")
+        os.replace(temporary, args.metrics_json)
 
 
 if __name__ == "__main__":
@@ -775,6 +908,8 @@ if __name__ == "__main__":
         default="./pretrained_models/DiT-XL-2-256x256.pt",
     )
     parser.add_argument("--num-sample-classes", type=int, default=10)
+    parser.add_argument("--class-label-file", default=None)
+    parser.add_argument("--calibration-class-file", default=None)
     parser.add_argument("--cfg-scale", type=float, default=4.0)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--sample-times", type=int, default=6)
@@ -783,6 +918,12 @@ if __name__ == "__main__":
         type=str,
         default="ema",
         choices=["mse", "ema"],
+    )
+    parser.add_argument(
+        "--vae-path",
+        type=str,
+        default=None,
+        help="Optional local copy of the selected VAE for offline sampling.",
     )
     parser.add_argument("--generate-cache-books", action="store_true")
     parser.add_argument(
@@ -796,14 +937,23 @@ if __name__ == "__main__":
         default=0,
         help="Initial timestep ratio forced to recompute layer modules.",
     )
-    # fast (default, three-sample LPIPS 0.4049): msa=0.60, mlp=0.65;
-    # balanced (LPIPS 0.2137): msa=0.60, mlp=0.62;
-    # slow (LPIPS 0.1073): msa=0.62, mlp=0.59.
-    parser.add_argument("--msa-thres", type=float, default=0.60)
-    parser.add_argument("--mlp-thres", type=float, default=0.65)
-    add_preset_argument(parser, "dit_module")
-    parser.add_argument("--num-analysis", type=int, default=16)
+    # Selected module-only setting: MSA=0.53, MLP=0.39, one calibration class.
+    # DiT-XL/2 512, DDIM-50: 1.754x sampling speedup over Full on
+    # 100 classes x 2 seeds; this is not end-to-end latency.
+    parser.add_argument("--msa-thres", type=float, default=0.53)
+    parser.add_argument("--mlp-thres", type=float, default=0.39)
+    add_preset_argument(parser, "dit_module", tiers=("default",))
+    parser.add_argument("--num-analysis", type=int, default=1)
     parser.add_argument("--output-dir", type=str, default="images")
+    parser.add_argument("--output-file", default=None)
+    parser.add_argument("--save-individual-dir", default=None)
+    parser.add_argument("--metrics-json", default=None)
+    parser.add_argument(
+        "--vae-batch-size",
+        type=int,
+        default=0,
+        help="Decode this many samples per VAE call; 0 keeps one-shot decoding.",
+    )
     parser.add_argument("--calibration-only", action="store_true")
 
     debug_args = [
@@ -817,8 +967,8 @@ if __name__ == "__main__":
         "--seed", "0",
         "--sample-times", "1",
         "--nonskip-rate", "0",
-        "--msa-thres", "0.45",
-        "--mlp-thres", "0.10",
+        "--msa-thres", "0.53",
+        "--mlp-thres", "0.39",
         "--num-analysis", "1",
         "--generate-cache-books",
     ]

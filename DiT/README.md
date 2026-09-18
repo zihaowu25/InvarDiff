@@ -1,45 +1,35 @@
-# Finegrained Cache for DiT
+# DiT module-level caching
 
-Fine-grained caching acceleration for DiT (Diffusion Transformer) models.
+[`sample_dit.py`](sample_dit.py) implements the standalone module-level
+Cache Book for DiT-XL/2. Its selected configuration uses MSA threshold
+`0.53`, MLP threshold `0.39`, and one calibration class at 512 × 512 with
+50 DDIM steps. These are model- and sampler-specific settings, not universal
+thresholds. The separate [`sample_dit_step_layer.py`](sample_dit_step_layer.py)
+contains the cross-step/step-layer policy.
 
-## Installation
+## Setup
 
-```bash
-pip install torch torchvision
-pip install diffusers transformers accelerate
-pip install timm
-```
+Install PyTorch, torchvision, diffusers, transformers, accelerate, and timm.
+Download the DiT checkpoint with [`download.py`](download.py), or supply your
+own checkpoint using `--dit-ckpt`. The VAE can be loaded from its model ID or
+provided with `--vae-path`.
 
-## Download Pre-trained Models
+## Calibrate and generate
 
-```bash
-python download.py
-```
-
-This will download DiT-XL-2-256x256 and DiT-XL-2-512x512 checkpoints to `./pretrained_models/`.
-
-## Quick Start
-
-### Fast Mode (2.8× speedup)
+Run from the repository root after setting `DIT_CKPT` to the checkpoint file:
 
 ```bash
-python sample_dit.py --model DiT-XL/2 --image-size 256 --num-classes 1000 --num-timesteps 50 --dit-ckpt ./pretrained_models/DiT-XL-2-256x256.pt --num-sample-classes 8 --cfg-scale 4.0 --seed 0 --sample-times 6 --nonskip-rate 0 --msa-thres 0.45 --mlp-thres 0.10
+python DiT/sample_dit.py \
+  --dit-ckpt "$DIT_CKPT" --image-size 512 --num-timesteps 50 \
+  --num-analysis 1 --generate-cache-books --calibration-only
+
+python DiT/sample_dit.py \
+  --dit-ckpt "$DIT_CKPT" --image-size 512 --num-timesteps 50 \
+  --sample-times 1 --output-dir outputs/dit
 ```
 
-### Slow Mode (2.5× speedup, better quality)
-
-```bash
-python sample_dit_step_layer.py --model DiT-XL/2 --image-size 256 --num-classes 1000 --num-timesteps 50 --dit-ckpt ./pretrained_models/DiT-XL-2-256x256.pt --num-sample-classes 8 --cfg-scale 4.0 --seed 0 --sample-times 6 --nonskip-rate 0 --step-thres 0.61 --msa-thres 0.2 --mlp-thres 0.2
-```
-
-Generated images will be saved in `./images/` directory.
-
-## Cache Calibration
-
-To generate custom cache books for your own settings:
-
-### Fast Mode (for example)
-
-```bash
-python sample_dit.py --model DiT-XL/2 --image-size 256 --num-classes 1000 --num-timesteps 50 --dit-ckpt ./pretrained_models/DiT-XL-2-256x256.pt --num-sample-classes 8 --cfg-scale 4.0 --seed 42 --sample-times 6 --nonskip-rate 0 --msa-thres 0.45 --mlp-thres 0.10 --num-analysis 16 --generate-cache-books
-```
+The module-only preset is `default` and is selected automatically.
+`--msa-thres` and `--mlp-thres` override individual values. Calibrate again
+after changing the model, resolution, sampling schedule, or thresholds; a
+512 × 512 Cache Book should not be silently reused for 256 × 256 inference.
+The generated Cache Book and images are ignored by Git.

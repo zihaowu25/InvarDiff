@@ -4,6 +4,7 @@ Cross-step cache is disabled in this layer-only variant. Runtime step cache
 decisions are always False.
 """
 
+import hashlib
 import json
 import os
 import argparse
@@ -13,7 +14,7 @@ import time
 from typing import Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from cache_presets import add_preset_argument, apply_preset
+from cache_presets import add_preset_argument, apply_preset, same_execution_config
 
 import numpy as np
 import torch
@@ -45,12 +46,123 @@ CACHE_BOOK_VERSION = 2
 POLICY_VARIANT = "layer"
 RATE_CHUNK_SIZE = 1_048_576
 
-# Layer-only keeps the original single-prompt default.  Additional prompts
-# can be supplied by repeating --calibration-prompt or via a prompt file.
+# The selected module-only calibration averages two prompts; explicit CLI prompts or
+# a prompt file override this default calibration set.
 DEFAULT_CALIBRATION_PROMPTS = (
-    "A cinematic photograph of a red fox sitting beside a moss-covered tree "
-    "in a sunlit forest, natural colors, detailed fur, soft depth of field.",
+    "A cinematic shot of a baby raccoon wearing an intricate italian priest robe.",
+    "A futuristic cityscape with flying cars and neon lights.",
 )
+
+
+class RuntimeDeviceFluxPipeline(FluxPipeline):
+    """Resolve execution placement from the wrapped transformer itself."""
+
+    @property
+    def _execution_device(self):
+        transformer = getattr(self, "transformer", None)
+        if transformer is not None:
+            parameter = next(transformer.parameters(), None)
+            if parameter is not None:
+                return parameter.device
+        return super()._execution_device
+
+
+def tensor_sha256(tensor: torch.Tensor) -> str:
+    """Hash tensor values together with shape and dtype for pairing audits."""
+    value = tensor.detach().contiguous().cpu()
+    digest = hashlib.sha256()
+    digest.update(str(tuple(value.shape)).encode("utf-8"))
+    digest.update(str(value.dtype).encode("utf-8"))
+    digest.update(value.view(torch.uint8).numpy().tobytes())
+    return digest.hexdigest()
+
+
+def file_sha256(path: str) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def place_pipeline_on_cuda(pipe) -> None:
+    """Place all FLUX components explicitly for stable no-offload execution."""
+    pipe.to("cuda")
+    # Accelerate can occasionally leave a text-embedding table on CPU even
+    # after Pipeline.to().  Explicit placement avoids prompt-file-dependent
+    # device mismatches on the H800 runner.
+    for name in ("text_encoder", "text_encoder_2"):
+        component = getattr(pipe, name, None)
+        if component is not None:
+            component.to("cuda")
+
+
+def ensure_text_encoders_on_execution_device(pipe) -> None:
+    """Repair unexpected text-encoder placement before prompt encoding.
+
+    This is deliberately called at the prompt boundary: some Diffusers or
+    Accelerate combinations can leave a text encoder on CPU even when the
+    no-offload pipeline was initially placed on CUDA.
+    """
+    parameter = next(pipe.transformer.parameters(), None)
+    if parameter is None:
+        raise RuntimeError("FLUX transformer exposes no parameter device")
+    device = parameter.device
+    for name in ("text_encoder", "text_encoder_2"):
+        component = getattr(pipe, name, None)
+        if component is None:
+            continue
+        parameter_devices = {parameter.device for parameter in component.parameters()}
+        if parameter_devices and parameter_devices != {device}:
+            print(
+                f"Repairing {name} placement: "
+                f"{sorted(map(str, parameter_devices))} -> {device}",
+                flush=True,
+            )
+            component.to(device)
+
+
+def cache_execution_ledger(
+    step_cache_book,
+    transformer_cache_book,
+    single_transformer_cache_book,
+):
+    """Count effective module executions under the runtime's cache semantics."""
+    ledger = {}
+
+    def add(name, book, effective=None):
+        requested = sum(bool(value) for row in book for value in row)
+        total = sum(len(row) for row in book)
+        effective_reuse = requested if effective is None else effective
+        ledger[name] = {
+            "total_positions": total,
+            "requested_reuse": requested,
+            "effective_reuse": effective_reuse,
+            "compute": total - effective_reuse,
+        }
+
+    attn_book = transformer_cache_book["attn"]
+    context_attn_book = transformer_cache_book["context_attn"]
+    joint_reuse = sum(
+        bool(attn) and bool(context)
+        for attn_row, context_row in zip(attn_book, context_attn_book)
+        for attn, context in zip(attn_row, context_row)
+    )
+    add("double.attn", attn_book, joint_reuse)
+    add("double.context_attn", context_attn_book, joint_reuse)
+    add("double.ff", transformer_cache_book["ff"])
+    add("double.context_ff", transformer_cache_book["context_ff"])
+    add("single.attn", single_transformer_cache_book["attn"])
+    add("single.mlp", single_transformer_cache_book["mlp"])
+    ledger["whole_step"] = {
+        "total_positions": len(step_cache_book),
+        "requested_reuse": sum(bool(value) for value in step_cache_book),
+        "effective_reuse": sum(bool(value) for value in step_cache_book),
+        "compute": len(step_cache_book) - sum(
+            bool(value) for value in step_cache_book
+        ),
+    }
+    return ledger
 
 
 def compute_l1_distance(
@@ -370,17 +482,11 @@ def threshold_analyse(
     pipe,
     measure_prompts,
     nonskip_rate=0.1,
-    # fast (default): attn=0.70, context_attn=0.01, ff=0.20,
-    # context_ff=0.05, single_attn=0.40, single_mlp=0.02;
-    # balanced: attn=0.30, context_attn=0.00, ff=0.04,
-    # context_ff=0.03, single_attn=0.10, single_mlp=0.02;
-    # slow: attn=0.08, context_attn=0.00, ff=0.01,
-    # context_ff=0.02, single_attn=0.03, single_mlp=0.00.
     attn_thres=0.70,
-    context_attn_thres=0.01,
-    ff_thres=0.20,
-    context_ff_thres=0.05,
-    Single_attn_thres=0.40,
+    context_attn_thres=0.70,
+    ff_thres=0.30,
+    context_ff_thres=0.23,
+    Single_attn_thres=0.50,
     Single_mlp_thres=0.02,
     seed=42,
 ):
@@ -817,11 +923,16 @@ def load_cache_books(
             f"found {saved_cache_scope!r}."
         )
 
-    if expected_config is not None and cache_books.get("config") != expected_config:
-        raise ValueError(
-            "Cache-book configuration mismatch: "
-            f"expected {expected_config!r}, found {cache_books.get('config')!r}."
-        )
+    if expected_config is not None:
+        saved_config = cache_books.get("config")
+        # Preset names are provenance, not execution parameters. Earlier books
+        # remain usable only when every other setting, including thresholds,
+        # matches.
+        if not same_execution_config(saved_config, expected_config):
+            raise ValueError(
+                "Cache-book configuration mismatch: "
+                f"expected {expected_config!r}, found {saved_config!r}."
+            )
 
     step_cache_book = cache_books["step_cache_book"]
     if any(step_cache_book):
@@ -842,7 +953,7 @@ def main(args):
     print("Loading FLUX pipeline...")
     print("Cache scope: layer only")
     print(f"Rate method: {RATE_METHOD}")
-    pipe = FluxPipeline.from_pretrained(
+    pipe = RuntimeDeviceFluxPipeline.from_pretrained(
         args.model_path,
         torch_dtype=torch.bfloat16,
         cache_dir=args.cache_dir,
@@ -881,7 +992,7 @@ def main(args):
         Single_attn_thres,
         Single_mlp_thres,
     )
-    cache_config["cache_preset"] = getattr(args, "cache_preset_resolved", "fast")
+    cache_config["cache_preset"] = getattr(args, "cache_preset_resolved", "default")
     cache_config["resolved_thresholds"] = getattr(
         args,
         "cache_resolved_thresholds",
@@ -906,14 +1017,14 @@ def main(args):
     pipe.transformer = dynamic_model
 
     run_calibration = args.generate_cache_books
-    calibration_model_cpu_offload = True
+    calibration_model_cpu_offload = args.model_cpu_offload
 
     if run_calibration:
         if calibration_model_cpu_offload:
             print("Calibration model CPU offload: enabled")
             pipe.enable_model_cpu_offload(device="cuda")
         else:
-            pipe.to("cuda")
+            place_pipeline_on_cuda(pipe)
         step_cache_book, transformer_cache_book, single_transformer_cache_book, \
         avg_transformer_rates, avg_single_transformer_rates = threshold_analyse(
             model=dynamic_model,
@@ -947,7 +1058,7 @@ def main(args):
         print(f"\nCache books saved: {cache_book_full_path}")
         if args.calibration_only:
             return
-        # Keep the standalone CLI convenient: a no-argument fast run performs
+        # Keep the standalone CLI convenient: a no-argument run performs
         # calibration once and then re-enters the normal generation path. The
         # calibration pipeline owns Accelerate CPU-offload hooks, so dispose of
         # it before constructing the fresh reload pipeline. Keeping both alive
@@ -967,11 +1078,10 @@ def main(args):
             expected_cache_scope="layer_only",
             expected_config=cache_config,
         )
-        # Match calibration's component-wise placement. With the supported
-        # diffusers/Accelerate stack, ``pipe.to('cuda')`` can leave CLIP's
-        # token embedding on CPU while encode_prompt sends IDs to CUDA when a
-        # Cache Book is loaded in a fresh process.
-        pipe.enable_model_cpu_offload(device="cuda")
+        if args.model_cpu_offload:
+            pipe.enable_model_cpu_offload(device="cuda")
+        else:
+            place_pipeline_on_cuda(pipe)
         dynamic_model.init_cache_book(transformer_cache_book, single_transformer_cache_book, step_cache_book)
         pipe.transformer = dynamic_model
 
@@ -998,19 +1108,74 @@ def main(args):
                 raise ValueError("--prompt-file contains no prompts")
         else:
             prompts = [args.prompt]
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.reset_peak_memory_stats()
         images = []
         times = []
+        denoising_times = []
+        latent_sha256 = []
 
         for prompt in prompts:
+            if not args.model_cpu_offload:
+                ensure_text_encoders_on_execution_device(pipe)
+            timing_state = {"calls": 0, "started": None}
+
+            def denoising_pre_hook(_module, _inputs):
+                if timing_state["calls"] == 0:
+                    if torch.cuda.is_available():
+                        torch.cuda.synchronize()
+                    timing_state["started"] = time.perf_counter()
+
+            def denoising_post_hook(_module, _inputs, _output):
+                timing_state["calls"] += 1
+                if timing_state["calls"] == num_inference_steps:
+                    if torch.cuda.is_available():
+                        torch.cuda.synchronize()
+                    denoising_times.append(
+                        time.perf_counter() - timing_state["started"]
+                    )
+
+            pre_handle = dynamic_model.register_forward_pre_hook(
+                denoising_pre_hook
+            )
+            post_handle = dynamic_model.register_forward_hook(
+                denoising_post_hook
+            )
+            generator = torch.Generator(device="cpu").manual_seed(seed)
+            initial_latents, _ = pipe.prepare_latents(
+                batch_size=1,
+                num_channels_latents=pipe.transformer.config.in_channels // 4,
+                height=args.height,
+                width=args.width,
+                dtype=torch.bfloat16,
+                device=next(pipe.transformer.parameters()).device,
+                generator=generator,
+                latents=None,
+            )
+            latent_sha256.append(tensor_sha256(initial_latents))
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
             start_time = time.time()
-            image = pipe(
-                prompt,
-                num_inference_steps=num_inference_steps,
-                guidance_scale=args.guidance_scale,
-                generator=torch.Generator(device="cpu").manual_seed(seed),
-            ).images[0]
+            try:
+                image = pipe(
+                    prompt,
+                    height=args.height,
+                    width=args.width,
+                    num_inference_steps=num_inference_steps,
+                    guidance_scale=args.guidance_scale,
+                    generator=generator,
+                    latents=initial_latents,
+                ).images[0]
+            finally:
+                pre_handle.remove()
+                post_handle.remove()
+            if timing_state["calls"] != num_inference_steps:
+                raise RuntimeError(
+                    "Denoising timer observed "
+                    f"{timing_state['calls']} transformer calls; expected "
+                    f"{num_inference_steps}."
+                )
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
             times.append(time.time() - start_time)
@@ -1032,7 +1197,7 @@ def main(args):
 
         os.makedirs(args.output_dir, exist_ok=True)
         timestamp = time.strftime("%m%d_%H%M%S")
-        save_name = (
+        save_name = args.output_file or (
             f"{args.output_dir}/imgs_{POLICY_VARIANT}_stp{num_inference_steps}"
             f"_n{nonskip_rate}"
             f"_attn{attn_thres}_ff{ff_thres}"
@@ -1041,14 +1206,83 @@ def main(args):
             f"_sattn{Single_attn_thres}_smlp{Single_mlp_thres}"
             f"_{timestamp}.png"
         )
+        os.makedirs(os.path.dirname(os.path.abspath(save_name)), exist_ok=True)
         combined.save(save_name)
         print(f"Images saved to {save_name}")
+        sample_items = []
+        if args.save_individual_dir:
+            os.makedirs(args.save_individual_dir, exist_ok=True)
+            for index, image in enumerate(images):
+                individual_path = os.path.join(
+                    args.save_individual_dir,
+                    f"prompt_{index:04d}_seed_{seed}.png",
+                )
+                image.save(individual_path)
+                sample_items.append(
+                    {
+                        "prompt": prompts[index],
+                        "seed": seed,
+                        "latent_sha256": latent_sha256[index],
+                        "candidate_path": os.path.abspath(individual_path),
+                        "candidate_sha256": file_sha256(individual_path),
+                        "candidate_elapsed_seconds": times[index],
+                        "candidate_denoising_seconds": denoising_times[index],
+                    }
+                )
+        if args.metrics_json:
+            measured_times = times[1:] if len(times) > 1 else times
+            metrics = {
+                "schema_version": 2,
+                "model": args.model_path,
+                "height": args.height,
+                "width": args.width,
+                "num_inference_steps": num_inference_steps,
+                "guidance_scale": args.guidance_scale,
+                "model_cpu_offload": args.model_cpu_offload,
+                "seed": seed,
+                "prompts": prompts,
+                "latent_sha256": latent_sha256,
+                "items": sample_items,
+                "sampling_seconds": times,
+                "sampling_mean_seconds": float(np.mean(measured_times)),
+                "sampling_std_seconds": float(np.std(measured_times)),
+                "denoising_seconds": denoising_times,
+                "denoising_mean_seconds": float(np.mean(denoising_times)),
+                "denoising_std_seconds": float(np.std(denoising_times)),
+                "execution_ledger": cache_execution_ledger(
+                    step_cache_book,
+                    transformer_cache_book,
+                    single_transformer_cache_book,
+                ),
+                "peak_allocated_gib": (
+                    torch.cuda.max_memory_allocated() / (1024 ** 3)
+                    if torch.cuda.is_available() else None
+                ),
+                "output_file": os.path.abspath(save_name),
+            }
+            os.makedirs(
+                os.path.dirname(os.path.abspath(args.metrics_json)),
+                exist_ok=True,
+            )
+            temporary = args.metrics_json + ".tmp"
+            with open(temporary, "w", encoding="utf-8") as file:
+                json.dump(metrics, file, indent=2)
+                file.write("\n")
+            os.replace(temporary, args.metrics_json)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FLUX layer-only sampler")
     parser.add_argument("--model-path", default="black-forest-labs/FLUX.1-dev")
     parser.add_argument("--cache-dir", default=None)
+    parser.add_argument(
+        "--model-cpu-offload",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Use diffusers sequential model CPU offload; disabled for H800 timing.",
+    )
     parser.add_argument("--num-inference-steps", type=int, default=28)
+    parser.add_argument("--height", type=int, default=1024)
+    parser.add_argument("--width", type=int, default=1024)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--prompt", default="A cinematic photograph of a red fox sitting beside a moss-covered tree in a sunlit forest, natural colors, detailed fur, soft depth of field.")
     parser.add_argument(
@@ -1068,24 +1302,23 @@ if __name__ == "__main__":
         help="UTF-8 text file with one calibration prompt per non-empty line.",
     )
     parser.add_argument("--output-dir", default="images")
+    parser.add_argument("--output-file", default=None)
+    parser.add_argument("--save-individual-dir", default=None)
+    parser.add_argument("--metrics-json", default=None)
     parser.add_argument("--cache-book-path", default="./cache_books")
     parser.add_argument("--cache-book-file", default=None)
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
-    # fast (default, LPIPS 0.3398): attn=0.70, context_attn=0.01, ff=0.20,
-    # context_ff=0.05, single_attn=0.40, single_mlp=0.02;
-    # balanced (LPIPS 0.2014): attn=0.30, context_attn=0.00, ff=0.04,
-    # context_ff=0.03, single_attn=0.10, single_mlp=0.02;
-    # slow (confirmed LPIPS 0.0753, below target): attn=0.08,
-    # context_attn=0.00, ff=0.01, context_ff=0.02, single_attn=0.03,
-    # single_mlp=0.00. Context_attn=0.10/0.11 reached 0.078863 but remained
-    # strictly below 0.08, so those candidates were not promoted.
+    # Selected module-only setting (two calibration prompts): double-stream
+    # attn/context attn/FF/context FF=0.70/0.70/0.30/0.23; single-stream
+    # attn/MLP=0.50/0.02. FLUX.1-dev 1024, 28 steps: 1.379x synchronous
+    # sampling and 1.445x denoising speedup in one-prompt isolated timing.
     parser.add_argument("--attn-thres", type=float, default=0.70)
-    parser.add_argument("--context-attn-thres", type=float, default=0.01)
-    parser.add_argument("--ff-thres", type=float, default=0.20)
-    parser.add_argument("--context-ff-thres", type=float, default=0.05)
-    parser.add_argument("--single-attn-thres", type=float, default=0.40)
+    parser.add_argument("--context-attn-thres", type=float, default=0.70)
+    parser.add_argument("--ff-thres", type=float, default=0.30)
+    parser.add_argument("--context-ff-thres", type=float, default=0.23)
+    parser.add_argument("--single-attn-thres", type=float, default=0.50)
     parser.add_argument("--single-mlp-thres", type=float, default=0.02)
-    add_preset_argument(parser, "flux_module")
+    add_preset_argument(parser, "flux_module", tiers=("default",))
     parser.add_argument("--guidance-scale", type=float, default=3.5)
     parser.add_argument("--generate-cache-books", action="store_true")
     parser.add_argument("--calibration-only", action="store_true")

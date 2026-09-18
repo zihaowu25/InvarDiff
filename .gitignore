@@ -1,34 +1,51 @@
+# Python and editor state
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+.ipynb_checkpoints/
+.venv/
+venv/
 .env
+.env.local
+.DS_Store
+
+# Generated media, experiments, model weights, and local reports
 outputs/
 runs/
 logs/
+images/
 checkpoints/
 weights/
 *.safetensors
 *.pt
 *.ckpt
-.ipynb_checkpoints/
-*.aux *.log *.out *.toc *.bbl *.blg *.synctex.gz
-.DS_Store
-.locks/
-models--black-forest-labs--FLUX.1-dev/
-images/
-# Keep all tuning reports, curves, candidate outputs, metrics and helper
-# scripts local to this filesystem; do not include them in remote commits.
 /report/
-# Generated cache books at any directory depth.
+/agent_skills/
+/assets/venvs/
+/assets/paper_main_tools/
 **/cache_books/
 raw_cache_books/
-agent_skills
+models--black-forest-labs--FLUX.1-dev/
 
-# Local HunyuanVideo calibration and generation debug artifacts.
+# Transient files
+*.log
+*.aux
+*.out
+*.toc
+*.bbl
+*.blg
+*.synctex.gz
+.locks/
+
+# Local HunyuanVideo calibration and generation debug artifacts
 /HunyuanVideo/debug_cache_books/
 /HunyuanVideo/debug_outputs/
 
-# Local CCMR v1 exploratory duplicates. The audited v2 paths are explicitly
-# selected for synchronization; keep these regenerated copies on disk only.
+# Regenerated CCMR exploratory copies; audited formal inputs remain tracked
 /assets/ccmr_formal/data/combined/dit_only/
 /assets/ccmr_formal/figures/appendix/
 /assets/ccmr_formal/figures/paper/

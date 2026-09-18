@@ -1,85 +1,113 @@
-# InvarDiff: Cross-Scale Invariance Caching for Accelerated Diffusion Models
+# InvarDiff
 
-<p align="center">
-  <strong>Paper: </strong>
-  <a href="https://arxiv.org/abs/2512.05134">arXiv:2512.05134</a>
-  &nbsp;·&nbsp;
-  <a href="https://arxiv.org/pdf/2512.05134.pdf">PDF</a>
-</p>
+Training-free, fine-grained offline caching for diffusion transformers. The
+current standalone samplers construct a fixed **module-level Cache Book** from
+a small calibration set and reuse selected module outputs during generation.
+They do not require retraining the denoiser or an online routing network.
 
-<p align="center"><b><i>(a) FLUX.1-dev</i></b></p>
+An [earlier InvarDiff preprint](https://arxiv.org/abs/2512.05134) describes
+cross-step and layer-level caching. This repository also retains separate
+step-layer and hybrid experiments; their schedules and reported speedups
+should not be treated as direct module-only baselines.
 
-![teaser1](assets/teaser1.jpg)
+## How it works
 
-<p align="center"><b><i>(b) DiT-XL/2</i></b></p>
+1. Run the pretrained denoiser on deterministic calibration trajectories and
+   measure adjacent module-feature displacements.
+2. Rank timestep–layer–module positions by the normalized adjacent L1
+   displacement ratio. A second full-compute pass updates the scoring
+   reference according to the provisional reuse history, then writes the
+   final Cache Book.
+3. During generation, compute or reuse each module according to that fixed
+   book. Reuse reads the most recent computed output for the same branch; it
+   does not mix conditional and unconditional CFG features.
 
-![teaser2](assets/teaser2.jpg)
+The score prioritizes reuse; it is **not** a bound on image or video error.
+Cache Books are tied to the model, scheduler, step count, resolution/frame
+count, guidance, precision, and module partition. Recalibrate or validate
+transfer when these settings change.
 
-## Introduction
+## Supported standalone samplers
 
-*InvarDiff* is a training-free acceleration framework for diffusion models.
+| Model | Module-only entry point | Evaluated setting |
+| --- | --- | --- |
+| DiT-XL/2 | [`DiT/sample_dit.py`](DiT/sample_dit.py) | 512 × 512, DDIM-50 |
+| FLUX.1-dev | [`FLUX/sample_flux.py`](FLUX/sample_flux.py) | 1024 × 1024, 28 steps |
+| Wan2.1-T2V-1.3B | [`Wan2.1/sample_wan.py`](Wan2.1/sample_wan.py) | 832 × 480, 81 frames, 50 steps |
+| HunyuanVideo-1.5 | [`HunyuanVideo/sample_hunyuan.py`](HunyuanVideo/sample_hunyuan.py) | 720p, 121 frames, 50 steps |
 
-Built on feature invariance in deterministic sampling, InvarDiff generates a binary reuse plan across timesteps and layers and applies a step-first, then layer-wise caching policy at inference, reducing redundant compute while preserving fidelity. The method is validated on FLUX.1-dev and DiT-XL/2.
+Each module-only sampler has **one selected configuration**, named `default`
+in [`cache_presets.json`](cache_presets.json). The CLI selects it automatically;
+individual threshold flags still override its values. The selected settings
+were visually screened on limited conditions and are not universal quality
+guarantees. Other policies in the JSON file belong to separate step-layer or
+hybrid experiments and retain their own names.
 
-### Core contributions
+## Getting started
 
-- **Cross-scale invariance identification**
-  
-  Quantile-based change metrics measure stability at the timestep and layer/module levels, producing an interpretable binary cache matrix `C[t, l, s]` and a step gate `c[t]`.
-- **Two-phase calibration with resampling correction**
-  
-  A few deterministic runs generate the initial thresholds; a second pass applies resampling correction to mitigate drift under consecutive reuse, yielding robust plans for deployment.
-- **Deterministic execution: step-first, layer-wise next**
-  
-  At runtime, InvarDiff first decides whether an entire step can be reused, otherwise it selectively reuses modules/layers. The schedule is fixed and predictable, requiring no model retraining.
-- **Strong end-to-end speedups with minimal quality loss**
-  
-  Under paper settings, InvarDiff reaches up to 3.31× e2e speedup on FLUX.1-dev (T=28) and up to 2.86× on DiT-XL/2 (T=50), with minimal impact on standard quality metrics and qualitatively near-identical results to full computation.
-- **Practical and easy to reproduce**
-  
-  A three-step workflow: calibrate → build plan → accelerated sampling, with small calibration sets, JSON plans that can be versioned, and scripts for benchmarking and visualization.
+Install PyTorch and the dependencies of the model you intend to run, then
+obtain its pretrained weights under the model provider's terms. Model-specific
+setup and arguments are documented in [`DiT/README.md`](DiT/README.md),
+[`FLUX/README.md`](FLUX/README.md), [`Wan2.1/README.md`](Wan2.1/README.md),
+and [`HunyuanVideo/README.md`](HunyuanVideo/README.md). From the repository
+root, inspect the sampler options with, for example:
 
-### Speed–Quality tradeoff on FLUX.1-dev (A800, $T{=}28$)
+```bash
+python DiT/sample_dit.py --help
+python FLUX/sample_flux.py --help
+python Wan2.1/sample_wan.py --help
+python HunyuanVideo/sample_hunyuan.py --help
+```
 
-![speed_quality_curves](assets/speed_quality_curves.jpg)
+Calibrate before generation. For example, after setting `DIT_CKPT` to a DiT
+checkpoint and installing its VAE:
 
-- Each point shows latency and LPIPS for one operating point (35 total, calibration averages 5 prompts). 
-- Each polyline fixes $\tau_{\mathrm{step}}\in\{0.40,0.50,0.60,0.70,0.75\}$ and sweeps seven preset threshold bundles. A bundle is $(\tau_{\text{warm-up}}, \tau_{\text{dual-attn}}, \tau_{\text{dual-ff}}, \tau_{\text{dual-context-ff}}, \tau_{\text{single-attn}}, \tau_{\text{single-ff}})$.
+```bash
+python DiT/sample_dit.py \
+  --dit-ckpt "$DIT_CKPT" --image-size 512 --num-timesteps 50 \
+  --num-analysis 1 --generate-cache-books --calibration-only
 
-- Bundle order is aligned across polylines, only $\tau_{\mathrm{step}}$ changes.
+python DiT/sample_dit.py \
+  --dit-ckpt "$DIT_CKPT" --image-size 512 --num-timesteps 50 \
+  --sample-times 1 --output-dir outputs/dit
+```
 
-### Overview
+The FLUX sampler defaults to two calibration prompts; use
+`--calibration-prompt` more than once or `--calibration-prompt-file` to choose
+another calibration set. Video samplers require the corresponding official
+model repository and checkpoint; see their model-specific READMEs. Generated
+media, Cache Books, model weights, environments, and experiment runs are
+ignored by Git.
 
-#### ***FLUX.1-dev***
+## Reproducibility and scope
 
-![images](assets/images.jpg)
-
-![ours_images](assets/ours_images.jpg)
-
-![ours_images1](assets/ours_images1.jpg)
-
-![ours_images2](assets/ours_images2.jpg)
-
-#### ***DiT-XL/2***
-
-![dit_images1](assets/dit_images1.jpg)
-
-![dit_images2](assets/dit_images2.jpg)
-
-
+- Compare methods under the same model, scheduler, resolution, frame count,
+  guidance, precision, prompts/classes, and initial noise.
+- Report the measurement boundary: denoising time, sampling time, and
+  end-to-end time are not interchangeable. Cache reads/writes and model
+  loading can materially affect wall-clock speed.
+- For compatibility experiments, compare a fixed cross-step policy **with
+  versus without** module caching; a standalone module policy and a
+  cross-step policy do not form a like-for-like ranking.
+- The repository does not include pretrained model weights. Outputs and
+  experiment reports are local artifacts, not source files.
 
 ## Citation
 
-If you find InvarDiff useful or interesting for research or applications, please cite this work using the BibTeX below:
+The earlier cross-scale InvarDiff preprint is available as:
 
 ```bibtex
 @misc{wu2025invardiffcrossscaleinvariancecaching,
-      title={InvarDiff: Cross-Scale Invariance Caching for Accelerated Diffusion Models}, 
-      author={Zihao Wu},
-      year={2025},
-      eprint={2512.05134},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2512.05134}, 
+  title={InvarDiff: Cross-Scale Invariance Caching for Accelerated Diffusion Models},
+  author={Zihao Wu},
+  year={2025},
+  eprint={2512.05134},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV},
+  url={https://arxiv.org/abs/2512.05134}
 }
 ```
+
+Please follow the licenses and use restrictions of each upstream model and
+its weights. HunyuanVideo-specific license and attribution files are included
+in [`HunyuanVideo/`](HunyuanVideo/).

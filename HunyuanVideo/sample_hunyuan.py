@@ -13,6 +13,7 @@ import argparse
 import copy
 import datetime
 import gc
+import hashlib
 import json
 import logging
 import random
@@ -77,6 +78,66 @@ MODULES = (
     "single.attn",
     "single.mlp",
 )
+CACHE_COMPATIBILITY_FIELDS = (
+    "transformer_version",
+    "task",
+    "width",
+    "height",
+    "frames",
+    "steps",
+    "nonskip",
+    "module_thresholds",
+    "deterministic_attention",
+    "double_blocks",
+    "single_blocks",
+)
+
+
+def _tensor_sha256(tensor):
+    value = tensor.detach().contiguous().cpu()
+    digest = hashlib.sha256()
+    digest.update(str(tuple(value.shape)).encode("utf-8"))
+    digest.update(str(value.dtype).encode("utf-8"))
+    digest.update(value.view(torch.uint8).numpy().tobytes())
+    return digest.hexdigest()
+
+
+def _file_sha256(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _execution_ledger(books, steps, depths):
+    ledger = {}
+    joint_attn_reuse = 0
+    if books is not None:
+        joint_attn_reuse = sum(
+            bool(img) and bool(txt)
+            for img_row, txt_row in zip(
+                books["double.img_attn"], books["double.txt_attn"]
+            )
+            for img, txt in zip(img_row, txt_row)
+        )
+    for name in MODULES:
+        total = steps * depths[name]
+        requested = 0 if books is None else sum(
+            bool(value) for row in books[name] for value in row
+        )
+        effective = (
+            joint_attn_reuse
+            if name in ("double.img_attn", "double.txt_attn")
+            else requested
+        )
+        ledger[name] = {
+            "total_positions": total,
+            "requested_reuse": requested,
+            "effective_reuse": effective,
+            "compute": total - effective,
+        }
+    return ledger
 
 
 def _configure_deterministic_attention(enabled):
@@ -1061,7 +1122,7 @@ def _cache_config(
         "steps": steps,
         "nonskip": args.nonskip_rate,
         "module_thresholds": _thresholds(args),
-        "cache_preset": getattr(args, "cache_preset_resolved", "fast"),
+        "cache_preset": getattr(args, "cache_preset_resolved", "default"),
         "resolved_thresholds": getattr(args, "cache_resolved_thresholds", _thresholds(args)),
         "seed": args.seed,
         "deterministic_attention": args.deterministic_attention,
@@ -1123,21 +1184,9 @@ def _load_books(path, expected, steps, depths):
             "with this script"
         )
     config = payload.get("config", {})
-    required = (
-        "transformer_version",
-        "task",
-        "width",
-        "height",
-        "frames",
-        "steps",
-        "nonskip",
-        "module_thresholds",
-        "seed",
-        "deterministic_attention",
-        "double_blocks",
-        "single_blocks",
-    )
-    for key in required:
+    # The calibration seed is provenance, not a schedule-compatibility field:
+    # an offline Cache Book must be reusable for independently sampled noise.
+    for key in CACHE_COMPATIBILITY_FIELDS:
         if config.get(key) != expected.get(key):
             raise ValueError(
                 f"Cache Book mismatch for {key}: "
@@ -1376,6 +1425,24 @@ def generate(args):
         )
         for name in MODULES
     }
+    latent_length, latent_height, latent_width = pipe.get_latent_size(
+        args.video_length, height, width
+    )
+    audit_generator = torch.Generator(device=pipe.noise_init_device)
+    audit_generator.manual_seed(args.seed)
+    audit_latents = pipe.prepare_latents(
+        1,
+        pipe.transformer.config.in_channels,
+        latent_height,
+        latent_width,
+        latent_length,
+        pipe.target_dtype,
+        pipe.execution_device,
+        audit_generator,
+    )
+    latent_sha256 = _tensor_sha256(audit_latents)
+    latent_shape = list(audit_latents.shape)
+    del audit_latents
     if args.seed == -1:
         args.seed = _broadcast_object(
             random.randint(100000, 999999) if rank0() else None
@@ -1401,6 +1468,44 @@ def generate(args):
             output_type=output_type,
             **call_kwargs,
         )
+
+    def timed_run_once(output_type="pt", enable_sr=False):
+        timing_state = {"calls": 0, "started": None, "denoising": None}
+
+        def pre_hook(_module, _inputs):
+            if timing_state["calls"] == 0:
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
+                timing_state["started"] = time.perf_counter()
+
+        def post_hook(_module, _inputs, _output):
+            timing_state["calls"] += 1
+            if timing_state["calls"] == steps:
+                if torch.cuda.is_available():
+                    torch.cuda.synchronize()
+                timing_state["denoising"] = (
+                    time.perf_counter() - timing_state["started"]
+                )
+
+        pre_handle = pipe.transformer.register_forward_pre_hook(pre_hook)
+        post_handle = pipe.transformer.register_forward_hook(post_hook)
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        started = time.perf_counter()
+        try:
+            output = run_once(output_type=output_type, enable_sr=enable_sr)
+        finally:
+            pre_handle.remove()
+            post_handle.remove()
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        elapsed = time.perf_counter() - started
+        if timing_state["calls"] != steps or timing_state["denoising"] is None:
+            raise RuntimeError(
+                "Denoising timer observed "
+                f"{timing_state['calls']} transformer calls; expected {steps}."
+            )
+        return output, elapsed, timing_state["denoising"]
 
     books = None
     config = _cache_config(
@@ -1481,20 +1586,25 @@ def generate(args):
             )
             for index, value in enumerate(prompts)
         ]
+    metric_items = []
     for generation_prompt, requested_output in generation_items:
         call_kwargs["prompt"] = generation_prompt
+        reference_elapsed = None
+        reference_denoising = None
+        reference_path = None
         if args.paired_reference_dir:
             _set_invardiff_patch(pipe.transformer, False)
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
-            reference_started = time.perf_counter()
             with torch.inference_mode():
-                reference_out = run_once(output_type="pt", enable_sr=args.sr)
-            if torch.cuda.is_available():
-                torch.cuda.synchronize()
+                (
+                    reference_out,
+                    reference_elapsed,
+                    reference_denoising,
+                ) = timed_run_once(output_type="pt", enable_sr=args.sr)
             rank0_log(
                 "Paired reference elapsed: "
-                f"{time.perf_counter() - reference_started:.2f}s"
+                f"{reference_elapsed:.2f}s (denoising {reference_denoising:.2f}s)"
             )
             if rank0():
                 reference_path = os.path.join(
@@ -1523,9 +1633,10 @@ def generate(args):
         if torch.cuda.is_available():
             torch.cuda.reset_peak_memory_stats()
             torch.cuda.synchronize()
-        started = time.perf_counter()
         with torch.inference_mode():
-            out = run_once(output_type="pt", enable_sr=args.sr)
+            out, generation_elapsed, generation_denoising = timed_run_once(
+                output_type="pt", enable_sr=args.sr
+            )
         if torch.cuda.is_available():
             torch.cuda.synchronize()
             rank0_log(
@@ -1533,7 +1644,8 @@ def generate(args):
                 f"{torch.cuda.max_memory_allocated() / 1024**3:.2f} GiB"
             )
         rank0_log(
-            f"Generation elapsed: {time.perf_counter() - started:.2f}s"
+            f"Generation elapsed: {generation_elapsed:.2f}s "
+            f"(denoising {generation_denoising:.2f}s)"
         )
         if rank0():
             output_path = requested_output or (
@@ -1554,6 +1666,55 @@ def generate(args):
                 save_config(args, output_path, task, version)
                 args.prompt = original_prompt
             print(f"Saved video to: {output_path}")
+            metric_items.append(
+                {
+                    "prompt": generation_prompt,
+                    "seed": args.seed,
+                    "latent_sha256": latent_sha256,
+                    "candidate_path": os.path.abspath(output_path),
+                    "candidate_sha256": _file_sha256(output_path),
+                    "candidate_elapsed_seconds": generation_elapsed,
+                    "candidate_denoising_seconds": generation_denoising,
+                    "candidate_peak_allocated_gib": (
+                        torch.cuda.max_memory_allocated() / 1024**3
+                        if torch.cuda.is_available() else None
+                    ),
+                    "reference_path": (
+                        os.path.abspath(reference_path)
+                        if reference_path is not None else None
+                    ),
+                    "reference_sha256": (
+                        _file_sha256(reference_path)
+                        if reference_path is not None else None
+                    ),
+                    "reference_elapsed_seconds": reference_elapsed,
+                    "reference_denoising_seconds": reference_denoising,
+                }
+            )
+
+    if rank0() and args.metrics_json:
+        metrics = {
+            "schema_version": 1,
+            "model": "HunyuanVideo-1.5",
+            "transformer_version": version,
+            "task": task,
+            "width": width,
+            "height": height,
+            "video_length": args.video_length,
+            "num_inference_steps": steps,
+            "seed": args.seed,
+            "latent_sha256": latent_sha256,
+            "latent_shape": latent_shape,
+            "execution_ledger": _execution_ledger(books, steps, depths),
+            "items": metric_items,
+        }
+        metrics_path = os.path.abspath(args.metrics_json)
+        os.makedirs(os.path.dirname(metrics_path), exist_ok=True)
+        temporary = metrics_path + ".tmp"
+        with open(temporary, "w", encoding="utf-8") as handle:
+            json.dump(metrics, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+        os.replace(temporary, metrics_path)
 
 
 def build_parser():
@@ -1665,6 +1826,7 @@ def build_parser():
     )
     parser.add_argument("--image_path", default=None)
     parser.add_argument("--output_path", default=None)
+    parser.add_argument("--metrics_json", default=None)
     parser.add_argument(
         "--use_sageattn",
         type=str_to_bool,
@@ -1717,16 +1879,17 @@ def build_parser():
     parser.add_argument("--cache_book_path", default="./cache_books")
     parser.add_argument("--cache_book_file", default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    # fast (default, LPIPS 0.4259): img_attn=0.40, txt_attn=0.01, img_mlp=0.20, txt_mlp=0.32;
-    # balanced (LPIPS 0.1841): img_attn=0.40, txt_attn=0.01, img_mlp=0.04, txt_mlp=0.32;
-    # slow (default candidate LPIPS 0.0863): img_attn=0.40, txt_attn=0.01, img_mlp=0.02, txt_mlp=0.00.
-    parser.add_argument("--double_img_attn_thres", type=float, default=0.40)
-    parser.add_argument("--double_txt_attn_thres", type=float, default=0.01)
-    parser.add_argument("--double_img_mlp_thres", type=float, default=0.20)
-    parser.add_argument("--double_txt_mlp_thres", type=float, default=0.32)
+    # Selected module-only setting: double-stream image/text attention=0.90/0.45,
+    # image/text MLP=0.04/0.12; single-stream modules remain disabled.
+    # HunyuanVideo-1.5, 720p/121 frames: about 1.43-1.44x denoising
+    # speedup on two exploratory prompts, not an isolated timing estimate.
+    parser.add_argument("--double_img_attn_thres", type=float, default=0.90)
+    parser.add_argument("--double_txt_attn_thres", type=float, default=0.45)
+    parser.add_argument("--double_img_mlp_thres", type=float, default=0.04)
+    parser.add_argument("--double_txt_mlp_thres", type=float, default=0.12)
     parser.add_argument("--single_attn_thres", type=float, default=0.00)
     parser.add_argument("--single_mlp_thres", type=float, default=0.00)
-    add_preset_argument(parser, "hunyuan_module")
+    add_preset_argument(parser, "hunyuan_module", tiers=("default",))
     parser.add_argument(
         "--calibration_feature_device",
         choices=("cpu", "gpu"),
@@ -1737,8 +1900,9 @@ def build_parser():
         choices=("auto", "gpu", "cpu"),
         default="auto",
     )
+    # Match the GPU-cache reserve used for the module-only timing above.
     parser.add_argument(
-        "--runtime_cache_gpu_reserve_gib", type=float, default=2.0
+        "--runtime_cache_gpu_reserve_gib", type=float, default=8.0
     )
     return parser
 
