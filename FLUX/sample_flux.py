@@ -715,7 +715,7 @@ def threshold_analyse(
         initial_transformer_scores,
         transformer_thresholds,
         num_transformer_layers,
-        protected_prefix=1,
+        protected_prefix=num_nonskip,
     )
     transformer_cache_book["ip_attn"] = (
         transformer_cache_book["attn"].clone()
@@ -724,7 +724,7 @@ def threshold_analyse(
         initial_single_scores,
         single_thresholds,
         num_single_layers,
-        protected_prefix=1,
+        protected_prefix=num_nonskip,
     )
 
     avg_transformer_rates, avg_single_transformer_rates = (
@@ -1308,7 +1308,8 @@ if __name__ == "__main__":
     parser.add_argument("--cache-book-path", default="./cache_books")
     parser.add_argument("--cache-book-file", default=None)
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
-    # Selected module-only setting (two calibration prompts): double-stream
+    # Selected module-only setting (two calibration prompts and two protected
+    # denoising steps): double-stream
     # attn/context attn/FF/context FF=0.70/0.70/0.30/0.23; single-stream
     # attn/MLP=0.50/0.02. FLUX.1-dev 1024, 28 steps: 1.379x synchronous
     # sampling and 1.445x denoising speedup in one-prompt isolated timing.
