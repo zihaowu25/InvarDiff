@@ -846,6 +846,7 @@ def _finegrained_core_forward(self, x, e, kwargs, grid_sizes, hints_factory=None
                     module_plan[mod_name] = False
                 else:
                     self.layer_hits[cfg_slot] += 1
+                    self.module_hits[mod_name][cfg_slot] += 1
 
             x, outputs = _wan_block_forward_with_cache(
                 block, x, kwargs, module_plan, layer_cache
@@ -957,6 +958,7 @@ def _init_finegrained_runtime(
     model.step_hits = [0, 0]
     model.computed_steps = [0, 0]
     model.layer_hits = [0, 0]
+    model.module_hits = {name: [0, 0] for name in WAN_CACHE_MODULES}
     model.runtime_cache_device = runtime_cache_device
     model.runtime_cache_gpu_reserve_gib = runtime_cache_gpu_reserve_gib
 
@@ -1414,6 +1416,7 @@ def _log_runtime_cache_stats(model, args):
         100.0 * total_layer_hits / computed_module_slots,
         100.0 * combined_saved_modules / combined_slots,
     )
+    logging.info("[Cache] effective module hits by family: %s", model.module_hits)
 
 
 def _timed_generate(task, callable_):

@@ -64,6 +64,17 @@ DEFAULT_CALIBRATION_PROMPT = (
 )
 
 
+class RuntimeDeviceFluxPipeline(FluxPipeline):
+    """Resolve the active device after wrapping the transformer for caching."""
+
+    @property
+    def _execution_device(self):
+        parameter = next(self.transformer.parameters(), None)
+        if parameter is not None:
+            return parameter.device
+        return super()._execution_device
+
+
 def compute_l1_distance(
     x_start: torch.Tensor,
     x_end: torch.Tensor,
@@ -475,6 +486,14 @@ class HybridFluxTransformer(nn.Module):
         self.step_hits = 0
         self.computed_steps = 0
         self.layer_hits = 0
+        self.module_hits = {
+            "double.attn": 0,
+            "double.context_attn": 0,
+            "double.ff": 0,
+            "double.context_ff": 0,
+            "single.attn": 0,
+            "single.mlp": 0,
+        }
         if self.step_policy is not None:
             self.step_policy.reset()
 
@@ -578,6 +597,10 @@ class HybridFluxTransformer(nn.Module):
                 )
                 self.layer_hits += 2 * int(joint_attn_hit)
                 self.layer_hits += int(ff_hit) + int(context_ff_hit)
+                self.module_hits["double.attn"] += int(joint_attn_hit)
+                self.module_hits["double.context_attn"] += int(joint_attn_hit)
+                self.module_hits["double.ff"] += int(ff_hit)
+                self.module_hits["double.context_ff"] += int(context_ff_hit)
                 encoder_hidden_states, hidden_states, outputs = (
                     finegrained_double_forward(
                         block,
@@ -612,6 +635,8 @@ class HybridFluxTransformer(nn.Module):
                     and self.single_cache["mlp"][block_idx] is not None
                 )
                 self.layer_hits += int(attn_hit) + int(mlp_hit)
+                self.module_hits["single.attn"] += int(attn_hit)
+                self.module_hits["single.mlp"] += int(mlp_hit)
                 encoder_hidden_states, hidden_states, outputs = (
                     finegrained_single_forward(
                         block,
@@ -934,7 +959,7 @@ def resolve_model_path(path_value):
 
 def load_pipeline(args, cpu_offload):
     model_path = resolve_model_path(args.model_path)
-    pipe = FluxPipeline.from_pretrained(
+    pipe = RuntimeDeviceFluxPipeline.from_pretrained(
         model_path,
         torch_dtype=torch.bfloat16,
         local_files_only=True,
@@ -946,6 +971,10 @@ def load_pipeline(args, cpu_offload):
         pipe.enable_model_cpu_offload(device="cuda")
     else:
         pipe.to("cuda")
+        for name in ("text_encoder", "text_encoder_2"):
+            component = getattr(pipe, name, None)
+            if component is not None:
+                component.to("cuda")
     return pipe, model
 
 
@@ -1018,6 +1047,7 @@ def generate(pipe, model, prompts, args):
             f"combined effective skip={combined_skip_ratio:.2%}, "
             f"peak allocated={peak_gib:.2f} GiB"
         )
+        print(f"Effective module hits by family: {model.module_hits}")
         images.append(image)
         times.append(elapsed)
     measured = times[1:] if len(times) > 1 else times

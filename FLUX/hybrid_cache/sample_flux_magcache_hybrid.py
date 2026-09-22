@@ -15,6 +15,7 @@ runtime.
 
 import argparse
 import gc
+import hashlib
 import json
 import os
 import sys
@@ -73,6 +74,15 @@ DEFAULT_PROMPTS = [
 DEFAULT_CALIBRATION_PROMPT = (
     "A cinematic shot of a baby raccoon wearing an intricate italian priest robe."
 )
+
+
+class RuntimeDeviceFluxPipeline(FluxPipeline):
+    @property
+    def _execution_device(self):
+        parameter = next(self.transformer.parameters(), None)
+        if parameter is not None:
+            return parameter.device
+        return super()._execution_device
 
 
 def compute_l1_distance(
@@ -459,6 +469,14 @@ class HybridFluxTransformer(nn.Module):
         self.step_hits = 0
         self.computed_steps = 0
         self.layer_hits = 0
+        self.module_hits = {
+            "double.attn": 0,
+            "double.context_attn": 0,
+            "double.ff": 0,
+            "double.context_ff": 0,
+            "single.attn": 0,
+            "single.mlp": 0,
+        }
         if self.step_policy is not None:
             self.step_policy.reset()
 
@@ -557,6 +575,10 @@ class HybridFluxTransformer(nn.Module):
                 )
                 self.layer_hits += 2 * int(joint_attn_hit)
                 self.layer_hits += int(ff_hit) + int(context_ff_hit)
+                self.module_hits["double.attn"] += int(joint_attn_hit)
+                self.module_hits["double.context_attn"] += int(joint_attn_hit)
+                self.module_hits["double.ff"] += int(ff_hit)
+                self.module_hits["double.context_ff"] += int(context_ff_hit)
                 encoder_hidden_states, hidden_states, outputs = (
                     finegrained_double_forward(
                         block,
@@ -591,6 +613,8 @@ class HybridFluxTransformer(nn.Module):
                     and self.single_cache["mlp"][block_idx] is not None
                 )
                 self.layer_hits += int(attn_hit) + int(mlp_hit)
+                self.module_hits["single.attn"] += int(attn_hit)
+                self.module_hits["single.mlp"] += int(mlp_hit)
                 encoder_hidden_states, hidden_states, outputs = (
                     finegrained_single_forward(
                         block,
@@ -933,7 +957,7 @@ def resolve_model_path(path_value):
 
 def load_pipeline(args, cpu_offload):
     model_path = resolve_model_path(args.model_path)
-    pipe = FluxPipeline.from_pretrained(
+    pipe = RuntimeDeviceFluxPipeline.from_pretrained(
         model_path,
         torch_dtype=torch.bfloat16,
         local_files_only=True,
@@ -945,6 +969,10 @@ def load_pipeline(args, cpu_offload):
         pipe.enable_model_cpu_offload(device="cuda")
     else:
         pipe.to("cuda")
+        for name in ("text_encoder", "text_encoder_2"):
+            component = getattr(pipe, name, None)
+            if component is not None:
+                component.to("cuda")
     return pipe, model
 
 
@@ -966,16 +994,25 @@ def save_images(images, output_dir, args):
     for index, image in enumerate(images):
         combined.paste(image, (index * width, 0))
     timestamp = time.strftime("%m%d_%H%M%S")
-    path = output_dir / (
+    path = Path(args.output_file) if args.output_file else output_dir / (
         f"flux_{METHOD}_hybrid_steps{args.num_inference_steps}"
         f"_seed{args.seed}_{timestamp}.png"
     )
+    path.parent.mkdir(parents=True, exist_ok=True)
     combined.save(path)
     return path
 
 
+def file_sha256(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def generate(pipe, model, prompts, args):
-    images, times = [], []
+    images, times, ledgers = [], [], []
     for prompt_idx, prompt in enumerate(prompts):
         model.reset_runtime()
         generator = torch.Generator(device="cpu").manual_seed(args.seed)
@@ -1019,6 +1056,14 @@ def generate(pipe, model, prompts, args):
         )
         images.append(image)
         times.append(elapsed)
+        ledgers.append({
+            "step_hits": model.step_hits,
+            "computed_steps": model.computed_steps,
+            "layer_hits": model.layer_hits,
+            "module_hits": dict(model.module_hits),
+            "layer_slots_per_step": layer_slots_per_step,
+            "total_layer_slots": total_layer_slots,
+        })
     measured = times[1:] if len(times) > 1 else times
     print(
         f"Sampling time: {np.mean(measured):.4f} ± "
@@ -1026,6 +1071,48 @@ def generate(pipe, model, prompts, args):
     )
     path = save_images(images, Path(args.output_dir), args)
     print(f"Images saved to {path}")
+    items = []
+    if args.save_individual_dir:
+        sample_dir = Path(args.save_individual_dir)
+        sample_dir.mkdir(parents=True, exist_ok=True)
+        for index, (prompt, image) in enumerate(zip(prompts, images)):
+            sample_path = sample_dir / f"prompt_{index:04d}_seed_{args.seed}.png"
+            image.save(sample_path)
+            items.append({
+                "prompt": prompt,
+                "seed": args.seed,
+                "candidate_path": str(sample_path.resolve()),
+                "candidate_sha256": file_sha256(sample_path),
+                "candidate_elapsed_seconds": times[index],
+                "execution_ledger": ledgers[index],
+            })
+    if args.metrics_json:
+        payload = {
+            "schema_version": 1,
+            "model": "FLUX.1-dev",
+            "method": METHOD,
+            "height": args.height,
+            "width": args.width,
+            "num_inference_steps": args.num_inference_steps,
+            "guidance_scale": args.guidance_scale,
+            "seed": args.seed,
+            "prompts": prompts,
+            "sampling_seconds": times,
+            "sampling_mean_seconds": float(np.mean(measured)),
+            "peak_allocated_gib": torch.cuda.max_memory_allocated() / 1024**3,
+            "items": items,
+            "output_file": str(path.resolve()),
+            "step_policy": {
+                "threshold": args.magcache_thresh,
+                "k": args.magcache_k,
+                "retention_ratio": args.retention_ratio,
+            },
+        }
+        metrics_path = Path(args.metrics_json)
+        metrics_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = metrics_path.with_suffix(metrics_path.suffix + ".tmp")
+        temporary.write_text(json.dumps(payload, indent=2) + "\n")
+        os.replace(temporary, metrics_path)
 
 
 def parse_args():
@@ -1043,6 +1130,9 @@ def parse_args():
         default=None,
     )
     parser.add_argument("--output-dir", default=str(script_dir.parent / "images"))
+    parser.add_argument("--output-file")
+    parser.add_argument("--save-individual-dir")
+    parser.add_argument("--metrics-json")
     parser.add_argument("--height", type=int, default=1024)
     parser.add_argument("--width", type=int, default=1024)
     parser.add_argument("--num-inference-steps", type=int, default=28)
