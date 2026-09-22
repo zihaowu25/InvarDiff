@@ -1,11 +1,10 @@
 # Wan2.1 Finegrained Hybrid Cache
 
-This directory contains three standalone Wan2.1 samplers that combine a
+This directory contains two standalone Wan2.1 samplers that combine a
 whole-step cache with Finegrained Cache at the residual branches inside every
 Wan Transformer block:
 
 - `sample_wan_magcache_hybrid.py`
-- `sample_wan_teacache_hybrid.py`
 - `sample_wan_seacache_hybrid.py`
 
 The scripts do not import one another, the existing Wan sampling scripts, or
@@ -49,24 +48,23 @@ pass.
 | Script | Step policy | Supported official Wan tasks | Default threshold |
 | --- | --- | --- | --- |
 | MagCache | calibrated or published magnitude-ratio policy | T2V, T2I, I2V, VACE | `0.12` |
-| TeaCache | dynamic polynomial accumulated relative L1 | T2V, T2I, I2V | `0.08` |
 | SeaCache | dynamic scheduler-aware spectral relative L1 | T2V, T2I, I2V | `0.2` |
 
-FLF2V is rejected by all three scripts. TeaCache and SeaCache reject VACE
-because their referenced Wan2.1 implementations do not provide that path.
+FLF2V is rejected by both scripts. SeaCache rejects VACE because its referenced
+Wan2.1 implementation does not provide that path.
 
 MagCache embeds the official Wan2.1 T2V-1.3B, T2V-14B, I2V-480P,
 I2V-720P, VACE-1.3B, and VACE-14B ratio tables. Joint calibration stores the
 conditional/unconditional ratios and static masks in the hybrid Cache Book.
-TeaCache and SeaCache remain dynamic during output generation; their observer
-masks are diagnostics only and are not saved as runtime policies.
+SeaCache remains dynamic during output generation; its observer masks are
+diagnostics only and are not saved as runtime policies.
 
 ## Usage
 
 Step-cache-only generation (no layer Cache Book):
 
 ```bash
-python sample_wan_teacache_hybrid.py \
+python sample_wan_seacache_hybrid.py \
   --task t2v-1.3B --size '832*480' \
   --ckpt_dir /path/to/Wan2.1-T2V-1.3B \
   --prompt 'Two cats box under stage lights.' \
@@ -119,7 +117,6 @@ and source commit.
 ## Sources and licensing
 
 - MagCache source: [`Zehong-Ma/MagCache@df81cb1`](https://github.com/Zehong-Ma/MagCache/tree/df81cb181776c2c61477c08e1d21f87fda1cd938/MagCache4Wan2.1), Apache-2.0.
-- TeaCache source: [`ali-vilab/TeaCache@7c10efc`](https://github.com/ali-vilab/TeaCache/tree/7c10efc4702c6b619f47805f7abe4a7a08085aa0/TeaCache4Wan2.1), Apache-2.0.
 - SeaCache source: [`jiwoogit/SeaCache@8dcf490`](https://github.com/jiwoogit/SeaCache/tree/8dcf490/Wan2.1). No LICENSE or NOTICE file exists at that commit; attribution does not itself grant redistribution permission.
 
 The Wan orchestration follows [`Wan-Video/Wan2.1@9737cba`](https://github.com/Wan-Video/Wan2.1/tree/9737cba9c1c3c4d04b33fcad41c111989865d315), licensed under Apache-2.0.

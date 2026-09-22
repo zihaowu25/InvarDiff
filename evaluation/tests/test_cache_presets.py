@@ -101,12 +101,7 @@ def test_single_module_configuration_is_the_cli_default():
 
 def test_external_hybrid_policy_is_one_fixed_tier():
     policies = cache_presets.load_presets()
-    for policy in (
-        "flux_hybrid",
-        "wan_hybrid",
-        "wan_teacache_hybrid",
-        "hunyuan_hybrid",
-    ):
+    for policy in ("hunyuan_hybrid",):
         assert list(policies[policy]["presets"]) == ["hybrid"]
 
 
@@ -150,19 +145,3 @@ def test_native_validated_hybrid_defaults_are_policy_specific():
     }
     for policy, thresholds in expected.items():
         assert policies[policy]["presets"]["hybrid"]["thresholds"] == thresholds
-
-
-def test_wan_teacache_uses_a_method_specific_module_vector():
-    policies = cache_presets.load_presets()
-    tea = policies["wan_teacache_hybrid"]["presets"]["hybrid"]["thresholds"]
-    shared = policies["wan_hybrid"]["presets"]["hybrid"]["thresholds"]
-    assert tea == {
-        "self_attn_thres": 0.40,
-        "cross_attn_thres": 0.50,
-        "ffn_thres": 0.60,
-    }
-    assert shared == {
-        "self_attn_thres": 0.10,
-        "cross_attn_thres": 0.11,
-        "ffn_thres": 0.12,
-    }

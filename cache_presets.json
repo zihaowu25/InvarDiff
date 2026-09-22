@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "selected_module_configuration",
-  "description": "Standalone module-only policies have selected configurations. Native-validated MagCache and SeaCache hybrid policies use policy-specific module thresholds; TeaCache and unvalidated hybrids retain exploratory presets. Speedups depend on the measurement boundary.",
+  "description": "Standalone module-only policies have selected configurations. Native-validated MagCache and SeaCache hybrid policies use policy-specific module thresholds; unvalidated hybrids retain exploratory presets. Speedups depend on the measurement boundary.",
   "policies": {
     "dit_module": {
       "presets": {
@@ -71,11 +71,6 @@
         "hybrid": {"thresholds": {"attn_thres": 0.30, "context_attn_thres": 0.30, "ff_thres": 0.20, "context_ff_thres": 0.20, "single_attn_thres": 0.30, "single_mlp_thres": 0.20}}
       }
     },
-    "flux_hybrid": {
-      "presets": {
-        "hybrid": {"thresholds": {"attn_thres": 0.20, "context_attn_thres": 0.10, "ff_thres": 0.05, "context_ff_thres": 0.03, "single_attn_thres": 0.08, "single_mlp_thres": 0.01}}
-      }
-    },
     "wan_magcache_hybrid": {
       "presets": {
         "hybrid": {"thresholds": {"self_attn_thres": 0.30, "cross_attn_thres": 0.30, "ffn_thres": 0.00}}
@@ -84,16 +79,6 @@
     "wan_seacache_hybrid": {
       "presets": {
         "hybrid": {"thresholds": {"self_attn_thres": 0.30, "cross_attn_thres": 0.30, "ffn_thres": 0.00}}
-      }
-    },
-    "wan_hybrid": {
-      "presets": {
-        "hybrid": {"thresholds": {"self_attn_thres": 0.10, "cross_attn_thres": 0.11, "ffn_thres": 0.12}}
-      }
-    },
-    "wan_teacache_hybrid": {
-      "presets": {
-        "hybrid": {"thresholds": {"self_attn_thres": 0.40, "cross_attn_thres": 0.50, "ffn_thres": 0.60}}
       }
     }
   }

@@ -1,11 +1,10 @@
 # FLUX Finegrained Hybrid Cache
 
-This directory contains three standalone FLUX.1-dev sampling scripts:
+This directory contains two standalone FLUX.1-dev sampling scripts:
 
 | Script | Whole-step policy | Layer policy |
 | --- | --- | --- |
 | `sample_flux_magcache_hybrid.py` | MagCache | Finegrained Cache |
-| `sample_flux_teacache_hybrid.py` | TeaCache | Finegrained Cache |
 | `sample_flux_seacache_hybrid.py` | SeaCache | Finegrained Cache |
 
 The files intentionally do not import each other or a shared runtime module.
@@ -21,8 +20,8 @@ conditioning, output normalization, and output projection are always
 recomputed.
 
 MagCache performs one joint raw pass that collects both magnitude ratios and
-layer scores, followed by one hybrid-aware layer correction pass. TeaCache and
-SeaCache remain dynamic: their raw calibration pass observes the official
+layer scores, followed by one hybrid-aware layer correction pass. SeaCache
+remains dynamic: its raw calibration pass observes the official
 would-skip path without actually skipping, and the correction pass uses that
 per-prompt path only to update layer references. Dynamic observer masks are not
 saved as runtime policies.
@@ -56,14 +55,13 @@ python sample_flux_magcache_hybrid.py \
   --prompt "a photo of a cat"
 ```
 
-Replace the script name with the TeaCache or SeaCache variant as needed. Run
+Replace the script name with the SeaCache variant as needed. Run
 `python <script> --help` for all options. The comparison defaults are BF16,
 28 denoising steps, 1024×1024, guidance 3.5, and seed 42.
 
 ## Cache-specific defaults
 
 - MagCache: threshold `0.24`, `K=5`, retention ratio `0.1`.
-- TeaCache: official FLUX polynomial and threshold `0.6`.
 - SeaCache: threshold `0.3`, scheduler-aware flow filter,
   `power_exp=2.0`, spatial dimensions `(-2, -3)`, mean normalization.
 
@@ -79,8 +77,8 @@ negative runtime-cache slots.
 
 ## Source and licensing notes
 
-The MagCache and TeaCache adaptations are based on their Apache-2.0
-repositories and include source commit identifiers in generated Cache Books.
+The MagCache adaptation is based on its Apache-2.0 repository and includes a
+source commit identifier in generated Cache Books.
 The inspected SeaCache checkout did not contain a visible license file.
 Confirm its redistribution terms before publishing or redistributing the
 SeaCache-derived script.
