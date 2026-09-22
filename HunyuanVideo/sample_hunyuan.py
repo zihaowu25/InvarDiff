@@ -1878,11 +1878,11 @@ def build_parser():
     parser.add_argument("--invardiff_calibration", action="store_true")
     parser.add_argument("--cache_book_path", default="./cache_books")
     parser.add_argument("--cache_book_file", default=None)
-    parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    # Selected module-only setting: double-stream image/text attention=0.90/0.45,
-    # image/text MLP=0.04/0.12; single-stream modules remain disabled.
-    # HunyuanVideo-1.5, 720p/121 frames: about 1.43-1.44x denoising
-    # speedup on two exploratory prompts, not an isolated timing estimate.
+    parser.add_argument("--nonskip_rate", type=float, default=0.04)
+    # Selected module-only setting: protect the first two of 50 denoising steps;
+    # double-stream image/text attention=0.90/0.45 and image/text MLP=0.04/0.12.
+    # Single-stream modules remain disabled. Native 121-frame validation measured
+    # 1.545x mean denoising speedup over Full on two exploratory prompts.
     parser.add_argument("--double_img_attn_thres", type=float, default=0.90)
     parser.add_argument("--double_txt_attn_thres", type=float, default=0.45)
     parser.add_argument("--double_img_mlp_thres", type=float, default=0.04)

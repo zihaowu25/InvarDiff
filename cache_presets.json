@@ -5,7 +5,7 @@
   "policies": {
     "dit_module": {
       "presets": {
-        "default": {"thresholds": {"msa_thres": 0.53, "mlp_thres": 0.39}}
+        "default": {"thresholds": {"msa_thres": 0.55, "mlp_thres": 0.55}}
       }
     },
     "dit_step_layer": {
@@ -29,7 +29,7 @@
     },
     "wan_module": {
       "presets": {
-        "default": {"thresholds": {"step_thres": 0.00, "self_attn_thres": 0.40, "cross_attn_thres": 0.15, "ffn_thres": 0.20}}
+        "default": {"thresholds": {"step_thres": 0.00, "self_attn_thres": 0.50, "cross_attn_thres": 0.35, "ffn_thres": 0.20}}
       }
     },
     "wan_step_layer": {

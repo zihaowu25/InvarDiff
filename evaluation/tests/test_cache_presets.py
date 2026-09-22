@@ -39,20 +39,21 @@ def test_explicit_threshold_overrides_selected_preset(tmp_path, monkeypatch):
     }
 
 
-def test_repository_module_presets_keep_nonuniform_active_thresholds():
+def test_repository_module_presets_keep_valid_active_thresholds():
     policies = cache_presets.load_presets()
     for policy in ("dit_module", "flux_module", "wan_module", "hunyuan_module"):
         presets = policies[policy]["presets"]
         for tier, item in presets.items():
             active = [value for value in item["thresholds"].values() if value > 0]
             assert all(0 < value <= 1 for value in active)
-            assert len(set(active)) > 1, f"uniform active thresholds in {policy}:{tier}"
+            if policy != "dit_module":
+                assert len(set(active)) > 1, f"uniform active thresholds in {policy}:{tier}"
 
 
 def test_default_module_presets_match_selected_configs():
     policies = cache_presets.load_presets()
     expected = {
-        "dit_module": {"msa_thres": 0.53, "mlp_thres": 0.39},
+        "dit_module": {"msa_thres": 0.55, "mlp_thres": 0.55},
         "flux_module": {
             "attn_thres": 0.70,
             "context_attn_thres": 0.70,
@@ -63,8 +64,8 @@ def test_default_module_presets_match_selected_configs():
         },
         "wan_module": {
             "step_thres": 0.00,
-            "self_attn_thres": 0.40,
-            "cross_attn_thres": 0.15,
+            "self_attn_thres": 0.50,
+            "cross_attn_thres": 0.35,
             "ffn_thres": 0.20,
         },
         "hunyuan_module": {

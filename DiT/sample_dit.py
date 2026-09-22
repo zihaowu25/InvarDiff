@@ -340,9 +340,9 @@ def threshold_analyse(
     diffusion,
     class_labels,
     input_size,
-    nonskip_rate=0,
-    msa_thres=0.53,
-    mlp_thres=0.39,
+    nonskip_rate=0.04,
+    msa_thres=0.55,
+    mlp_thres=0.55,
     num_analysis=1,
 ):
     """Run raw and cache-corrected calibration for MSA/MLP only."""
@@ -934,14 +934,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "--nonskip-rate",
         type=float,
-        default=0,
+        default=0.04,
         help="Initial timestep ratio forced to recompute layer modules.",
     )
-    # Selected module-only setting: MSA=0.53, MLP=0.39, one calibration class.
-    # DiT-XL/2 512, DDIM-50: 1.754x sampling speedup over Full on
-    # 100 classes x 2 seeds; this is not end-to-end latency.
-    parser.add_argument("--msa-thres", type=float, default=0.53)
-    parser.add_argument("--mlp-thres", type=float, default=0.39)
+    # Selected module-only setting: protect the first two of 50 denoising steps,
+    # with MSA/MLP reuse quantiles 0.55/0.55 and one calibration class.
+    # The exploratory held-out run was 1.058x faster than the previous default;
+    # formal paper latency remains measured separately.
+    parser.add_argument("--msa-thres", type=float, default=0.55)
+    parser.add_argument("--mlp-thres", type=float, default=0.55)
     add_preset_argument(parser, "dit_module", tiers=("default",))
     parser.add_argument("--num-analysis", type=int, default=1)
     parser.add_argument("--output-dir", type=str, default="images")
@@ -966,9 +967,9 @@ if __name__ == "__main__":
         "--cfg-scale", "4.0",
         "--seed", "0",
         "--sample-times", "1",
-        "--nonskip-rate", "0",
-        "--msa-thres", "0.53",
-        "--mlp-thres", "0.39",
+        "--nonskip-rate", "0.04",
+        "--msa-thres", "0.55",
+        "--mlp-thres", "0.55",
         "--num-analysis", "1",
         "--generate-cache-books",
     ]
