@@ -53,7 +53,9 @@ def _read_media(path: Path):
 
 
 def _to_tensor(frames: np.ndarray) -> torch.Tensor:
-    tensor = torch.from_numpy(frames).permute(0, 3, 1, 2).float()
+    # PIL-backed arrays can be read-only; copy before torch conversion so no
+    # in-place normalization can alias immutable storage.
+    tensor = torch.from_numpy(frames.copy()).permute(0, 3, 1, 2).float()
     return tensor.div_(127.5).sub_(1.0)
 
 
@@ -79,6 +81,29 @@ def _summary(values: np.ndarray):
         "p95": float(np.percentile(values, 95)),
         "max": float(values.max()),
     }
+
+
+def _frame_ssim_rgb(left: np.ndarray, right: np.ndarray) -> np.ndarray:
+    """Canonical 11x11 Gaussian-window SSIM, averaged over RGB channels."""
+    c1 = (0.01 * 255.0) ** 2
+    c2 = (0.03 * 255.0) ** 2
+    values = []
+    for x, y in zip(left.astype(np.float64), right.astype(np.float64)):
+        mu_x = cv2.GaussianBlur(x, (11, 11), 1.5)
+        mu_y = cv2.GaussianBlur(y, (11, 11), 1.5)
+        sigma_x = cv2.GaussianBlur(x * x, (11, 11), 1.5) - mu_x * mu_x
+        sigma_y = cv2.GaussianBlur(y * y, (11, 11), 1.5) - mu_y * mu_y
+        sigma_xy = cv2.GaussianBlur(x * y, (11, 11), 1.5) - mu_x * mu_y
+        numerator = (2 * mu_x * mu_y + c1) * (2 * sigma_xy + c2)
+        denominator = (mu_x * mu_x + mu_y * mu_y + c1) * (
+            sigma_x + sigma_y + c2
+        )
+        score_map = numerator / np.maximum(denominator, 1e-12)
+        # Ignore the five-pixel Gaussian-padding boundary when possible.
+        if score_map.shape[0] > 10 and score_map.shape[1] > 10:
+            score_map = score_map[5:-5, 5:-5]
+        values.append(float(score_map.mean()))
+    return np.asarray(values, dtype=np.float64)
 
 
 def _split_horizontal_grid(frames, count, padding):
@@ -109,6 +134,7 @@ def evaluate(
     batch_size,
     image_grid_count=1,
     image_grid_padding=0,
+    metric=None,
 ):
     ref_frames, ref_meta = _read_media(reference)
     cand_frames, cand_meta = _read_media(candidate)
@@ -136,7 +162,8 @@ def evaluate(
 
     ref = _to_tensor(ref_frames)
     cand = _to_tensor(cand_frames)
-    metric = lpips.LPIPS(net=net, verbose=False).eval().to(device)
+    if metric is None:
+        metric = lpips.LPIPS(net=net, verbose=False).eval().to(device)
     frame_lpips = _batched_lpips(metric, ref, cand, device, batch_size)
 
     pixel_delta = (ref - cand).float()
@@ -144,6 +171,7 @@ def evaluate(
     frame_mse = pixel_delta.square().mean(dim=(1, 2, 3)).numpy() / 4.0
     # Clamp exact matches at 120 dB so the JSON remains standards-compliant.
     frame_psnr = -10.0 * np.log10(np.maximum(frame_mse, 1e-12))
+    frame_ssim = _frame_ssim_rgb(ref_frames, cand_frames)
 
     temporal = None
     if ref.shape[0] > 1:
@@ -168,7 +196,7 @@ def evaluate(
         }
 
     return {
-        "protocol_version": 1,
+        "protocol_version": 2,
         "reference": str(reference.resolve()),
         "candidate": str(candidate.resolve()),
         "reference_sha256": _sha256(reference),
@@ -184,10 +212,12 @@ def evaluate(
         "frame_lpips": _summary(frame_lpips),
         "frame_l1": _summary(frame_l1),
         "frame_psnr_db": _summary(frame_psnr),
+        "frame_ssim_rgb": _summary(frame_ssim),
         "temporal": temporal,
         "per_frame_lpips": frame_lpips.tolist(),
         "per_frame_l1": frame_l1.tolist(),
         "per_frame_psnr_db": frame_psnr.tolist(),
+        "per_frame_ssim_rgb": frame_ssim.tolist(),
     }
 
 
