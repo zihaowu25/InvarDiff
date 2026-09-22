@@ -1,10 +1,9 @@
 # HunyuanVideo-1.5 Finegrained Hybrid Cache
 
-This directory contains three standalone HunyuanVideo-1.5 samplers that combine
+This directory contains two standalone HunyuanVideo-1.5 samplers that combine
 a whole-step cache with a calibrated Finegrained Cache:
 
 - `sample_hunyuan_magcache_hybrid.py`
-- `sample_hunyuan_teacache_hybrid.py`
 - `sample_hunyuan_seacache_hybrid.py`
 
 The scripts intentionally do not import one another, the existing Hunyuan
@@ -18,16 +17,15 @@ whole-step policy, Cache Book I/O, timing, and video-saving path.
 |---|---:|---|
 | HunyuanVideo-1.5 | Tencent-Hunyuan `60783e7` | Native pipeline, model loading, T2V/I2V, SR, distributed execution and saving |
 | MagCache | ComfyUI-MagCache `47bdd2a` | Official HunyuanVideo-1.5 policy and 20/40-step tables |
-| TeaCache | TeaCache `7c10efc` | Faithful port of the official original-HunyuanVideo policy |
 | SeaCache | SeaCache `8dcf490` | Faithful port of the official original-HunyuanVideo policy |
 
-MagCache and TeaCache are distributed under Apache-2.0 in their source
-repositories. No visible license file was found in the pinned SeaCache checkout;
+MagCache is distributed under Apache-2.0 in its source repository. No visible
+license file was found in the pinned SeaCache checkout;
 confirm redistribution permission before publishing copied SeaCache code.
 
-TeaCache and SeaCache do not currently publish model-specific
-HunyuanVideo-1.5 coefficients or thresholds. Their scripts preserve the
-published original-HunyuanVideo formulas and defaults, but must not be described
+SeaCache does not currently publish model-specific HunyuanVideo-1.5 coefficients
+or thresholds. Its script preserves the published original-HunyuanVideo formula
+and default, but must not be described
 as official HunyuanVideo-1.5 parameterizations.
 
 ## Hybrid execution model
@@ -100,7 +98,7 @@ Calibration always consists of exactly two complete denoising passes:
 
 1. **Raw pass**: execute every Transformer block and collect layer features.
    MagCache simultaneously collects token-wise residual L2 magnitude ratios;
-   TeaCache and SeaCache record dynamic observer masks without skipping blocks.
+   SeaCache records dynamic observer masks without skipping blocks.
 2. **Correction pass**: still execute every block, but use the provisional
    whole-step and layer paths to control analyzer refresh/freeze behavior. A
    non-cached position refreshes the window; entering a cached segment refreshes
@@ -129,9 +127,9 @@ residuals. This port preserves that behavior inside the native batched pipeline:
 - mixed hit: slice all batch-shaped model inputs, calculate only the missing
   half, and concatenate the outputs back in native order.
 
-TeaCache and SeaCache use one shared dynamic decision for the complete CFG batch,
-matching their published HunyuanVideo implementations. Their cached layer
-tensors remain slot-separated even though their decisions are shared.
+SeaCache uses one shared dynamic decision for the complete CFG batch, matching
+its published HunyuanVideo implementation. Its cached layer tensors remain
+slot-separated even though the decision is shared.
 Guidance-distilled models use one slot.
 
 ## Whole-step policies and defaults
@@ -139,7 +137,6 @@ Guidance-distilled models use one slot.
 | Method | Default | Predictor | Boundary behavior |
 |---|---|---|---|
 | MagCache | threshold `0.03`, `K=2`, retention `0.25` | accumulated magnitude-ratio error | strict `<`; two independent semantic CFG slots |
-| TeaCache | threshold `0.15` | official fifth-order polynomial of relative L1 | first/last computed; history updated each step |
 | SeaCache | threshold `0.20`, power `3.0`, dims `(-2,-3,-4)`, mean normalization | scheduler-aware spectral relative L1 | filtering/history update also occurs on first/last steps |
 
 MagCache contains the official HunyuanVideo-1.5 20-step and 40-step ratio tables.
@@ -180,7 +177,6 @@ Method-specific arguments are:
 ```text
 MagCache: --magcache_thresh --magcache_K --retention_ratio
           --magcache_ratio_source {auto,official,calibrated}
-TeaCache: --teacache_thresh
 SeaCache: --seacache_thresh
 ```
 
@@ -221,7 +217,7 @@ python sample_hunyuan_magcache_hybrid.py \
 
 ### Two-pass calibration only
 
-Replace `METHOD` with `magcache`, `teacache`, or `seacache`:
+Replace `METHOD` with `magcache` or `seacache`:
 
 ```bash
 python "sample_hunyuan_${METHOD}_hybrid.py" \
@@ -233,11 +229,11 @@ python "sample_hunyuan_${METHOD}_hybrid.py" \
 ### Load and generate a hybrid result
 
 ```bash
-python sample_hunyuan_teacache_hybrid.py \
+python sample_hunyuan_seacache_hybrid.py \
   --model_path "$MODEL" --resolution 720p --prompt "$PROMPT" \
   --num_inference_steps 20 --seed 123 --sr false \
   --cache_book_path "$BOOKS" --use_finegrained_cache \
-  --output_path "$OUT/teacache_hybrid.mp4"
+  --output_path "$OUT/seacache_hybrid.mp4"
 ```
 
 ### Calibrate and immediately generate
@@ -297,8 +293,8 @@ calibration_peak_allocated_gib: raw and correction values
 ```
 
 MagCache additionally stores semantic conditional/unconditional magnitude
-ratios and native-order conditional/unconditional step masks. TeaCache and
-SeaCache store only their observer mask and observer hit rate because their
+ratios and native-order conditional/unconditional step masks. SeaCache stores
+only its observer mask and observer hit rate because its
 runtime policies remain dynamic.
 
 Loading rejects another method, old formats, a different model version, task,
@@ -329,15 +325,15 @@ Report at least:
 
 State explicitly whether offline calibration time is excluded from amortized
 inference latency. For fair dynamic-policy comparisons, do not include Cache
-Book calibration in TeaCache/SeaCache per-sample runtime, but report it
+Book calibration in SeaCache per-sample runtime, but report it
 separately as the Finegrained Cache preparation cost.
 
 ## Limitations and development notes
 
 - MagCache official tables cover only standard HunyuanVideo-1.5 T2V at 20/40
   steps. Other configurations require a task-specific hybrid book.
-- TeaCache and SeaCache use original-HunyuanVideo predictors and have not been
-  officially fitted for HunyuanVideo-1.5, especially I2V and distilled models.
+- SeaCache uses an original-HunyuanVideo predictor and has not been officially
+  fitted for HunyuanVideo-1.5, especially I2V and distilled models.
 - Mixed CFG MagCache slices every batch-shaped conditioning tensor. Validate
   this path again whenever the official pipeline adds a new batch-shaped input.
 - Finegrained single-stream projection requires `linear2.fc` to remain an
