@@ -1836,10 +1836,8 @@ def build_parser():
     parser.add_argument("--cache_book_path", default="./cache_books")
     parser.add_argument("--cache_book_file", default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    # fast (default, LPIPS 0.3158): step=0.20, img_attn=0.40, txt_attn=0.01,
-    # img_mlp=0.20, txt_mlp=0.32; balanced (LPIPS 0.1802): step=0.03,
-    # img_attn=0.40, txt_attn=0.01, img_mlp=0.04, txt_mlp=0.12;
-    # slow (LPIPS 0.0950): step=0.02, img_attn=0.40, txt_attn=0.01, remaining modules=0.00.
+    # Existing step-plus-module thresholds are retained for compatibility;
+    # this sampler does not inherit the new module-only fast thresholds.
     parser.add_argument("--step_thres", type=float, default=0.20)
     parser.add_argument("--double_img_attn_thres", type=float, default=0.40)
     parser.add_argument("--double_txt_attn_thres", type=float, default=0.01)

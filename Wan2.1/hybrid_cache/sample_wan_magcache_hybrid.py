@@ -54,6 +54,7 @@ RATE_METHOD = "relative_l1"
 CACHE_BOOK_VERSION = 2
 RATE_CHUNK_SIZE = 1_048_576
 SOURCE_COMMIT = "df81cb1"
+LAST_RUN_STATS = {}
 
 # Losslessly compressed JSON copies of the six official Wan2.1 ratio tables.
 _MAG_TABLES_B85 = {
@@ -822,6 +823,7 @@ def _finegrained_core_forward(self, x, e, kwargs, grid_sizes, hints_factory=None
                     module_plan[mod_name] = False
                 else:
                     self.layer_hits[cfg_slot] += 1
+                    self.module_hits[mod_name][cfg_slot] += 1
 
             x, outputs = _wan_block_forward_with_cache(
                 block, x, kwargs, module_plan, layer_cache
@@ -932,6 +934,7 @@ def _init_finegrained_runtime(
     model.step_hits = [0, 0]
     model.computed_steps = [0, 0]
     model.layer_hits = [0, 0]
+    model.module_hits = {name: [0, 0] for name in WAN_CACHE_MODULES}
     model.runtime_cache_device = runtime_cache_device
     model.runtime_cache_gpu_reserve_gib = runtime_cache_gpu_reserve_gib
 
@@ -1023,6 +1026,7 @@ def _parse_args(cli_args=None):
     parser.add_argument("--t5_cpu", action="store_true", default=False)
     parser.add_argument("--dit_fsdp", action="store_true", default=False)
     parser.add_argument("--save_file", type=str, default=None)
+    parser.add_argument("--metrics_json", type=str, default=None)
 
     parser.add_argument("--src_video", type=str, default=None)
     parser.add_argument("--src_mask", type=str, default=None)
@@ -1418,7 +1422,59 @@ def _timed_generate(task, callable_):
         if torch.cuda.is_available() else 0.0
     )
     logging.info("[Sampling] %s: %.4fs, peak allocated %.2f GiB", task, elapsed, peak)
+    LAST_RUN_STATS.update(sampling_seconds=elapsed, peak_allocated_gib=peak)
     return output
+
+
+def _write_runtime_metrics(args, model, save_path):
+    if not args.metrics_json:
+        return
+    layers = len(model.blocks)
+    step_total = args.sample_steps * 2
+    payload = {
+        "schema_version": 1,
+        "model": "Wan2.1-T2V-1.3B",
+        "method": "MagCache+InvarDiff" if args.use_finegrained_cache else "MagCache",
+        "task": args.task,
+        "size": args.size,
+        "frame_num": args.frame_num,
+        "sample_steps": args.sample_steps,
+        "sample_solver": args.sample_solver,
+        "sample_shift": args.sample_shift,
+        "sample_guide_scale": args.sample_guide_scale,
+        "seed": args.base_seed,
+        "prompt": args.prompt,
+        "sampling_seconds": [LAST_RUN_STATS.get("sampling_seconds")],
+        "peak_allocated_gib": LAST_RUN_STATS.get("peak_allocated_gib"),
+        "output_file": save_path,
+        "execution_ledger": {
+            "whole_step": {
+                "total_positions": step_total,
+                "effective_reuse": sum(model.step_hits),
+                "compute": sum(model.computed_steps),
+            },
+            **{
+                name: {
+                    "total_positions": sum(model.computed_steps) * layers,
+                    "effective_reuse": sum(model.module_hits[name]),
+                    "compute": sum(model.computed_steps) * layers - sum(model.module_hits[name]),
+                }
+                for name in WAN_CACHE_MODULES
+            },
+        },
+        "step_policy": {
+            "threshold": args.magcache_thresh,
+            "k": args.magcache_K,
+            "retention_ratio": args.retention_ratio,
+        },
+    }
+    path = os.path.abspath(args.metrics_json)
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    temporary = path + ".tmp"
+    with open(temporary, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+        handle.write("\n")
+    os.replace(temporary, path)
 
 
 def generate(args):
@@ -1492,6 +1548,7 @@ def generate(args):
             if rank == 0:
                 peak = torch.cuda.max_memory_allocated() / 1024**3 if torch.cuda.is_available() else 0.0
                 logging.info(f"[Sampling] {args.task}: {dt:.4f}s, peak allocated {peak:.2f} GiB")
+                LAST_RUN_STATS.update(sampling_seconds=dt, peak_allocated_gib=peak)
 
             return out
 
@@ -1730,6 +1787,7 @@ def generate(args):
                 f"{args.ulysses_size}_{args.ring_size}_{formatted_prompt}_{formatted_time}{suffix}"
             )
         save_path = os.path.abspath(args.save_file)
+        os.makedirs(os.path.dirname(save_path) or ".", exist_ok=True)
         if "t2i" in args.task:
             cache_image(
                 tensor=video.squeeze(1)[None],
@@ -1748,6 +1806,7 @@ def generate(args):
                 value_range=(-1, 1),
             )
         logging.info(f"Output will be saved to: {save_path}")
+        _write_runtime_metrics(args, pipeline.model, save_path)
 
     logging.info("Finished.")
 
