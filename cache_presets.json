@@ -58,7 +58,7 @@
     },
     "hunyuan_hybrid": {
       "presets": {
-        "hybrid": {"thresholds": {"double_img_attn_thres": 0.90, "double_txt_attn_thres": 0.20, "double_img_mlp_thres": 0.00, "double_txt_mlp_thres": 0.00, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}}
+        "hybrid": {"thresholds": {"double_img_attn_thres": 0.90, "double_txt_attn_thres": 0.80, "double_img_mlp_thres": 0.00, "double_txt_mlp_thres": 0.00, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}}
       }
     },
     "flux_magcache_hybrid": {
