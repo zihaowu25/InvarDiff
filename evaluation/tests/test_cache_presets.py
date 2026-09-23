@@ -142,6 +142,14 @@ def test_native_validated_hybrid_defaults_are_policy_specific():
             "single_attn_thres": 0.00,
             "single_mlp_thres": 0.00,
         },
+        "hunyuan_hybrid": {
+            "double_img_attn_thres": 0.90,
+            "double_txt_attn_thres": 0.80,
+            "double_img_mlp_thres": 0.00,
+            "double_txt_mlp_thres": 0.00,
+            "single_attn_thres": 0.00,
+            "single_mlp_thres": 0.00,
+        },
     }
     for policy, thresholds in expected.items():
         assert policies[policy]["presets"]["hybrid"]["thresholds"] == thresholds

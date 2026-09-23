@@ -2009,11 +2009,11 @@ def build_parser():
     parser.add_argument("--cache_book_path", default="./cache_books")
     parser.add_argument("--cache_book_file", default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    # hybrid (fixed module tier): img_attn=0.90, txt_attn=0.20,
-    # img_mlp=0.00, txt_mlp=0.00, single modules=0.00;
-    # MagCache external defaults remain thresh=0.03, K=2, retention=0.25.
+    # Hybrid module defaults selected by native 720p/121-frame visual tuning:
+    # img_attn=0.90, txt_attn=0.80; MLP and single-stream caching remain off.
+    # MagCache step defaults remain thresh=0.03, K=2, retention=0.25.
     parser.add_argument("--double_img_attn_thres", type=float, default=0.90)
-    parser.add_argument("--double_txt_attn_thres", type=float, default=0.20)
+    parser.add_argument("--double_txt_attn_thres", type=float, default=0.80)
     parser.add_argument("--double_img_mlp_thres", type=float, default=0.00)
     parser.add_argument("--double_txt_mlp_thres", type=float, default=0.00)
     parser.add_argument("--single_attn_thres", type=float, default=0.00)

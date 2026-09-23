@@ -139,6 +139,13 @@ Guidance-distilled models use one slot.
 | MagCache | threshold `0.03`, `K=2`, retention `0.25` | accumulated magnitude-ratio error | strict `<`; two independent semantic CFG slots |
 | SeaCache | threshold `0.20`, power `3.0`, dims `(-2,-3,-4)`, mean normalization | scheduler-aware spectral relative L1 | filtering/history update also occurs on first/last steps |
 
+For the MagCache hybrid, the default module thresholds are image attention
+`0.90` and text attention `0.80`; both double-stream MLP thresholds and
+single-stream thresholds are `0`. The first five steps of a 50-step run are
+protected by `--nonskip_rate 0.1`. These module defaults were selected by
+visual tuning at 720p and 121 frames; they are not MagCache's official
+HunyuanVideo-1.5 module parameters. SeaCache retains its separate preset.
+
 MagCache contains the official HunyuanVideo-1.5 20-step and 40-step ratio tables.
 `--magcache_ratio_source auto` selects them only for standard, non-distilled,
 non-sparse T2V at exactly 20 or 40 steps. I2V, other step counts, distilled
