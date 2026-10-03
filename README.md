@@ -70,7 +70,6 @@ Books are named by configuration. Recalibrate after changing thresholds,
 weights or sampling settings; the same configuration overwrites its existing
 book. To select another book, use `--cache-book-path` / `--cache-book-file`
 for DiT/FLUX, or `--cache_book_path` / `--cache_book_file` for video.
-Details and released configurations: [Cache Books](cache_books/README.md).
 
 ## Evaluation and visualization
 
