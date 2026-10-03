@@ -10,7 +10,7 @@ Step-layer caching and MagCache/SeaCache hybrid implementations are also include
 Use Python 3.11 and a CUDA-compatible PyTorch installation.
 
 ```bash
-git clone --branch dev-local https://github.com/zihaowu25/InvarDiff.git
+git clone https://github.com/zihaowu25/InvarDiff.git
 cd InvarDiff
 pip install -r requirements.txt
 ```
