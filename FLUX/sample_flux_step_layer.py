@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from cache_presets import add_preset_argument, apply_preset
+from cache_presets import add_preset_argument, apply_preset, same_execution_config
 
 import numpy as np
 import torch
@@ -761,20 +761,15 @@ def threshold_analyse(
     model,
     pipe,
     measure_prompts,
-    nonskip_rate=0.1,
-    # fast (default): step=0.50, attn=0.30, context_attn=0.20,
-    # single_attn=0.12, ff=0.10, context_ff=0.05, single_mlp=0.02;
-    # balanced: step=0.45, attn=0.25, context_attn=0.15,
-    # single_attn=0.10, ff=0.06, context_ff=0.04, single_mlp=0.01;
-    # slow: step=0.35, attn=0.20, context_attn=0.10,
-    # single_attn=0.08, ff=0.03, context_ff=0.02, single_mlp=0.01.
-    step_thres=0.50,
-    attn_thres=0.30,
-    context_attn_thres=0.20,
-    ff_thres=0.10,
-    context_ff_thres=0.05,
-    Single_attn_thres=0.12,
-    Single_mlp_thres=0.02,
+    nonskip_rate=0.08,
+    # Selected step-layer defaults at 1024 square and 28 denoising steps.
+    step_thres=0.52,
+    attn_thres=1.00,
+    context_attn_thres=1.00,
+    ff_thres=1.00,
+    context_ff_thres=1.00,
+    Single_attn_thres=1.00,
+    Single_mlp_thres=1.00,
     seed=42,
 ):
     """Run full step-level and layer-level resampling calibration."""
@@ -835,9 +830,8 @@ def threshold_analyse(
             context_ff_thres,
             Single_attn_thres,
             Single_mlp_thres,
-            # Preserve the baseline phase-1 behavior for a controlled
-            # comparison: only the first module step is forced to recompute.
-            num_reserved_steps=1,
+            # Use the same protected prefix in both calibration stages.
+            num_reserved_steps=num_nonskip,
             num_timesteps=num_timesteps,
             num_transformer_layers=num_transformer_layers,
             num_single_layers=num_single_layers,
@@ -1007,7 +1001,7 @@ def load_cache_books(
             f"expected {expected_rate_method!r}, found {saved_rate_method!r}."
         )
 
-    if expected_config is not None and cache_books.get("config") != expected_config:
+    if expected_config is not None and not same_execution_config(cache_books.get("config"), expected_config):
         raise ValueError(
             "Cache-book configuration mismatch: "
             f"expected {expected_config!r}, found {cache_books.get('config')!r}."
@@ -1071,13 +1065,7 @@ def main(args):
     )
     original_transformer = pipe.transformer
     # Default calibration uses two prompts (seed=42).  The following settings
-    # are the validated reference presets for the step + layer policy.
-    # fast (default): step=0.50, attn=0.30, context_attn=0.20,
-    # single_attn=0.12, ff=0.10, context_ff=0.05, single_mlp=0.02;
-    # balanced: step=0.45, attn=0.25, context_attn=0.15,
-    # single_attn=0.10, ff=0.06, context_ff=0.04, single_mlp=0.01;
-    # slow: step=0.35, attn=0.20, context_attn=0.10,
-    # single_attn=0.08, ff=0.03, context_ff=0.02, single_mlp=0.01.
+    # use the single step-layer default; explicit flags take precedence.
 
     # Experiment controls are local to this standalone comparison script.
     num_inference_steps = args.num_inference_steps
@@ -1124,7 +1112,7 @@ def main(args):
         single_attn_thres,
         single_mlp_thres,
     )
-    cache_config["cache_preset"] = getattr(args, "cache_preset_resolved", "fast")
+    cache_config["cache_preset"] = getattr(args, "cache_preset_resolved", "default")
     cache_config["resolved_thresholds"] = getattr(
         args,
         "cache_resolved_thresholds",
@@ -1197,6 +1185,10 @@ def main(args):
     )
 
     pipe.to("cuda")
+    # The wrapper stores a device hint at construction. A fresh inference
+    # process may construct it on CPU before moving the pipeline to CUDA.
+    # Keep that hint in sync so diffusers allocates sampling latents correctly.
+    dynamic_model.device = next(dynamic_model.base_model.parameters()).device
     dynamic_model.init_cache_book(
         transformer_cache_book,
         single_transformer_cache_book,
@@ -1281,20 +1273,16 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", default="images")
     parser.add_argument("--cache-book-path", default="./cache_books")
     parser.add_argument("--cache-book-file", default=None)
-    parser.add_argument("--nonskip-rate", type=float, default=0.1)
-    # fast (default): step=0.50, layer=(attn=0.30, context_attn=0.20,
-    #        ff=0.10, context_ff=0.05, single_attn=0.12, single_mlp=0.02);
-    # balanced: step=0.45, layer=(attn=0.25, context_attn=0.15,
-    #        ff=0.06, context_ff=0.04, single_attn=0.10, single_mlp=0.01);
-    # slow: step=0.35, layer=(attn=0.20, context_attn=0.10,
-    #        ff=0.03, context_ff=0.02, single_attn=0.08, single_mlp=0.01).
-    parser.add_argument("--step-thres", type=float, default=0.50)
-    parser.add_argument("--attn-thres", type=float, default=0.30)
-    parser.add_argument("--context-attn-thres", type=float, default=0.20)
-    parser.add_argument("--ff-thres", type=float, default=0.10)
-    parser.add_argument("--context-ff-thres", type=float, default=0.05)
-    parser.add_argument("--single-attn-thres", type=float, default=0.12)
-    parser.add_argument("--single-mlp-thres", type=float, default=0.02)
+    parser.add_argument("--nonskip-rate", type=float, default=0.08)
+    # Selected default: ~2.42x measured sampling speedup.
+    # Quantile one still respects invalid positions, protected steps and the final step.
+    parser.add_argument("--step-thres", type=float, default=0.52)
+    parser.add_argument("--attn-thres", type=float, default=1.00)
+    parser.add_argument("--context-attn-thres", type=float, default=1.00)
+    parser.add_argument("--ff-thres", type=float, default=1.00)
+    parser.add_argument("--context-ff-thres", type=float, default=1.00)
+    parser.add_argument("--single-attn-thres", type=float, default=1.00)
+    parser.add_argument("--single-mlp-thres", type=float, default=1.00)
     add_preset_argument(parser, "flux_step_layer")
     parser.add_argument("--guidance-scale", type=float, default=3.5)
     parser.add_argument("--generate-cache-books", action="store_true")

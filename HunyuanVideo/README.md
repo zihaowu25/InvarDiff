@@ -8,6 +8,10 @@ HunyuanVideo-1.5:
 | `sample_hunyuan.py` | Standalone module-level cache | `layer` |
 | `sample_hunyuan_step_layer.py` | Step and layer cache | `stplayer` |
 
+The module-only sampler uses one selected `default` configuration; hybrid
+policies each use one `hybrid` configuration. The step-layer sampler also uses
+one selected `default`; explicit threshold flags override individual values.
+
 Both scripts contain complete model-loading, sampling, two-stage calibration,
 Cache Book management, and video-saving workflows. They do not import
 implementation code from each other. Model components, pipelines, schedulers,
@@ -327,16 +331,23 @@ The number of main-model denoising passes depends on the selected mode:
 
 ### 4.2 Thresholds
 
-| Argument | Default | Script |
-| --- | ---: | --- |
-| `--nonskip_rate` | 0.1 | Both |
-| `--step_thres` | 0.5 | Step-and-layer only |
-| `--double_img_attn_thres` | 0.5 | Both |
-| `--double_txt_attn_thres` | 0.5 | Both |
-| `--double_img_mlp_thres` | 0.5 | Both |
-| `--double_txt_mlp_thres` | 0.5 | Both |
-| `--single_attn_thres` | 0.5 | Both |
-| `--single_mlp_thres` | 0.5 | Both |
+The selected module-only configuration at 720p, 121 frames, and 50 steps is:
+
+| Argument | Module-only default |
+| --- | ---: |
+| `--nonskip_rate` | 0.04 (two protected initial steps) |
+| `--double_img_attn_thres` | 0.90 |
+| `--double_txt_attn_thres` | 0.45 |
+| `--double_img_mlp_thres` | 0.04 |
+| `--double_txt_mlp_thres` | 0.12 |
+| `--single_attn_thres` | 0 |
+| `--single_mlp_thres` | 0 |
+
+It uses one calibration condition. The separate step-layer default at the same
+native protocol uses step quantile `.70`, module quantiles
+`.40/.01/.20/.32/0/0`, three protected steps (`--nonskip_rate .06`) and one
+calibration condition. It was checked on small visual and held-out sets;
+see Section 3.2 for calibration and generation commands.
 
 These thresholds are **quantile fractions**, not absolute rate cutoffs. For
 example, `0.5` uses the median of the valid scores. Selection uses a strict

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "status": "selected_module_configuration",
-  "description": "Standalone module-only policies have selected configurations. Native-validated MagCache and SeaCache hybrid policies use policy-specific module thresholds; unvalidated hybrids retain exploratory presets. Speedups depend on the measurement boundary.",
+  "status": "selected_cache_configurations",
+  "description": "Module-only and step-layer policies each use one selected default. Step-layer choices were checked on small visual and held-out sets under the documented native protocols. MagCache and SeaCache hybrids retain their policy-specific configurations. Speedups depend on the measurement boundary.",
   "policies": {
     "dit_module": {
       "presets": {
@@ -10,9 +10,7 @@
     },
     "dit_step_layer": {
       "presets": {
-        "fast": {"thresholds": {"step_thres": 0.50, "msa_thres": 0.30, "mlp_thres": 0.10}},
-        "balanced": {"thresholds": {"step_thres": 0.45, "msa_thres": 0.40, "mlp_thres": 0.00}},
-        "slow": {"thresholds": {"step_thres": 0.35, "msa_thres": 0.30, "mlp_thres": 0.00}}
+        "default": {"thresholds": {"step_thres": 0.55, "msa_thres": 0.50, "mlp_thres": 0.15}}
       }
     },
     "flux_module": {
@@ -22,9 +20,7 @@
     },
     "flux_step_layer": {
       "presets": {
-        "fast": {"thresholds": {"step_thres": 0.50, "attn_thres": 0.30, "context_attn_thres": 0.20, "ff_thres": 0.10, "context_ff_thres": 0.05, "single_attn_thres": 0.12, "single_mlp_thres": 0.02}},
-        "balanced": {"thresholds": {"step_thres": 0.45, "attn_thres": 0.25, "context_attn_thres": 0.15, "ff_thres": 0.06, "context_ff_thres": 0.04, "single_attn_thres": 0.10, "single_mlp_thres": 0.01}},
-        "slow": {"thresholds": {"step_thres": 0.35, "attn_thres": 0.20, "context_attn_thres": 0.10, "ff_thres": 0.03, "context_ff_thres": 0.02, "single_attn_thres": 0.08, "single_mlp_thres": 0.01}}
+        "default": {"thresholds": {"step_thres": 0.52, "attn_thres": 1.00, "context_attn_thres": 1.00, "ff_thres": 1.00, "context_ff_thres": 1.00, "single_attn_thres": 1.00, "single_mlp_thres": 1.00}}
       }
     },
     "wan_module": {
@@ -34,9 +30,7 @@
     },
     "wan_step_layer": {
       "presets": {
-        "fast": {"thresholds": {"step_thres": 0.50, "self_attn_thres": 0.25, "cross_attn_thres": 0.30, "ffn_thres": 0.35}},
-        "balanced": {"thresholds": {"step_thres": 0.40, "self_attn_thres": 0.10, "cross_attn_thres": 0.15, "ffn_thres": 0.20}},
-        "slow": {"thresholds": {"step_thres": 0.30, "self_attn_thres": 0.04, "cross_attn_thres": 0.05, "ffn_thres": 0.07}}
+        "default": {"thresholds": {"step_thres": 0.63, "self_attn_thres": 0.82, "cross_attn_thres": 1.00, "ffn_thres": 0.82}}
       }
     },
     "hunyuan_module": {
@@ -46,9 +40,7 @@
     },
     "hunyuan_step_layer": {
       "presets": {
-        "fast": {"thresholds": {"step_thres": 0.20, "double_img_attn_thres": 0.40, "double_txt_attn_thres": 0.01, "double_img_mlp_thres": 0.20, "double_txt_mlp_thres": 0.32, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}},
-        "balanced": {"thresholds": {"step_thres": 0.03, "double_img_attn_thres": 0.40, "double_txt_attn_thres": 0.01, "double_img_mlp_thres": 0.04, "double_txt_mlp_thres": 0.12, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}},
-        "slow": {"thresholds": {"step_thres": 0.02, "double_img_attn_thres": 0.40, "double_txt_attn_thres": 0.01, "double_img_mlp_thres": 0.00, "double_txt_mlp_thres": 0.00, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}}
+        "default": {"thresholds": {"step_thres": 0.70, "double_img_attn_thres": 0.40, "double_txt_attn_thres": 0.01, "double_img_mlp_thres": 0.20, "double_txt_mlp_thres": 0.32, "single_attn_thres": 0.00, "single_mlp_thres": 0.00}}
       }
     },
     "hunyuan_seacache_hybrid": {

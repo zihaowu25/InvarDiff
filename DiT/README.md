@@ -2,10 +2,15 @@
 
 [`sample_dit.py`](sample_dit.py) implements the standalone module-level
 Cache Book for DiT-XL/2. Its selected configuration uses MSA threshold
-`0.53`, MLP threshold `0.39`, and one calibration class at 512 × 512 with
-50 DDIM steps. These are model- and sampler-specific settings, not universal
+`0.55`, MLP threshold `0.55`, two protected initial steps (`--nonskip-rate 0.04`),
+and one calibration class at 512 × 512 with 50 DDIM steps.
+These are model- and sampler-specific settings, not universal
 thresholds. The separate [`sample_dit_step_layer.py`](sample_dit_step_layer.py)
-contains the cross-step/step-layer policy.
+combines whole-step and module reuse. Its single `default` configuration at
+512 × 512, DDIM-50 uses step/MSA/MLP quantiles `.55/.50/.15`, two protected
+initial steps and one calibration class. These defaults were checked on
+small visual and held-out sets. Use the same calibration/generation commands
+below with the step-layer entrypoint.
 
 ## Setup
 

@@ -33,12 +33,13 @@ def same_execution_config(saved: object, expected: dict) -> bool:
 def add_preset_argument(
     parser: argparse.ArgumentParser,
     policy: str,
-    tiers: Iterable[str] = ("fast", "balanced", "slow"),
+    tiers: Iterable[str] | None = None,
 ) -> None:
+    tiers = tuple(load_presets()[policy]["presets"] if tiers is None else tiers)
     parser.add_argument(
         "--cache-preset",
-        choices=tuple(tiers),
-        default="fast" if "fast" in tiers else next(iter(tiers)),
+        choices=tiers,
+        default="default" if "default" in tiers else tiers[0],
         help=f"Threshold preset from cache_presets.json for {policy}.",
     )
 

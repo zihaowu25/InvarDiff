@@ -352,7 +352,7 @@ def _cache_book_config(args, num_layers: int) -> Dict[str, object]:
         "self_attn": args.self_attn_thres,
         "cross_attn": args.cross_attn_thres,
         "ffn": args.ffn_thres,
-        "cache_preset": getattr(args, "cache_preset_resolved", "fast"),
+        "cache_preset": getattr(args, "cache_preset_resolved", "default"),
         "resolved_thresholds": getattr(args, "cache_resolved_thresholds", {
             "step_thres": args.step_thres,
             "self_attn_thres": args.self_attn_thres,
@@ -420,6 +420,11 @@ def _load_cache_books(
         "frame_num": args.frame_num,
         "steps": args.sample_steps,
         "num_layers": num_layers,
+        "nonskip": args.nonskip_rate,
+        "step": args.step_thres,
+        "self_attn": args.self_attn_thres,
+        "cross_attn": args.cross_attn_thres,
+        "ffn": args.ffn_thres,
     }
     for key, expected_value in expected_config.items():
         if config.get(key) != expected_value:
@@ -761,7 +766,7 @@ def _validate_args(args):
 def _parse_args(cli_args=None):
     parser = argparse.ArgumentParser(description="Generate image/video using Wan with Finegrained Cache acceleration")
     parser.add_argument("--task", type=str, default="t2v-1.3B", choices=list(WAN_CONFIGS.keys()))
-    parser.add_argument("--size", type=str, default="1280*720", choices=list(SIZE_CONFIGS.keys()))
+    parser.add_argument("--size", type=str, default="832*480", choices=list(SIZE_CONFIGS.keys()))
     parser.add_argument("--frame_num", type=int, default=None)
     parser.add_argument("--ckpt_dir", type=str, default=None)
     parser.add_argument("--offload_model", type=str2bool, default=None)
@@ -797,14 +802,12 @@ def _parse_args(cli_args=None):
     parser.add_argument("--invardiff_calibration", action="store_true", default=False)
     parser.add_argument("--cache_book_path", type=str, default="./cache_books")
     parser.add_argument("--cache_book_file", type=str, default=None)
-    parser.add_argument("--nonskip_rate", type=float, default=0.1)
-    # fast (default): step=0.50, self_attn=0.25, cross_attn=0.30, ffn=0.35;
-    # balanced: step=0.40, self_attn=0.10, cross_attn=0.15, ffn=0.20;
-    # slow: step=0.30, self_attn=0.04, cross_attn=0.05, ffn=0.07.
-    parser.add_argument("--step_thres", type=float, default=0.50)
-    parser.add_argument("--self_attn_thres", type=float, default=0.25)
-    parser.add_argument("--cross_attn_thres", type=float, default=0.30)
-    parser.add_argument("--ffn_thres", type=float, default=0.35)
+    parser.add_argument("--nonskip_rate", type=float, default=0.04)
+    # Selected defaults at 832x480, 81 frames and 50 steps (~2.72x measured sampling speedup).
+    parser.add_argument("--step_thres", type=float, default=0.63)
+    parser.add_argument("--self_attn_thres", type=float, default=0.82)
+    parser.add_argument("--cross_attn_thres", type=float, default=1.00)
+    parser.add_argument("--ffn_thres", type=float, default=0.82)
     add_preset_argument(parser, "wan_step_layer")
 
     args = parser.parse_args(cli_args)
@@ -1460,11 +1463,11 @@ if __name__ == "__main__":
     "--cache_book_path", "./cache_books",
     # "--cache_book_file", "cache_book_stplayer_t2v-1.3B_832x480_f81_steps30_ns0.1_stepth0.40_sattnth0.3_cattnth0.2_ffnth0.01.json",
 
-    "--nonskip_rate", "0.1",
-    "--step_thres", "0.40",
-    "--self_attn_thres", "0.30",
-    "--cross_attn_thres", "0.20",
-    "--ffn_thres", "0.01",
+    "--nonskip_rate", "0.04",
+    "--step_thres", "0.63",
+    "--self_attn_thres", "0.82",
+    "--cross_attn_thres", "1.00",
+    "--ffn_thres", "0.82",
     ]
     cli_args = _parse_args(debug_args if len(sys.argv) == 1 else None)
     generate(cli_args)

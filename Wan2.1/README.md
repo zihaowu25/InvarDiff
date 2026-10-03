@@ -4,10 +4,16 @@ Use the official Wan2.1 instructions to install dependencies and download model 
 
 [`sample_wan.py`](sample_wan.py) is the standalone module-only sampler.
 Its selected 832 × 480, 81-frame, 50-step configuration uses self-attention,
-cross-attention, and FFN thresholds `0.40/0.15/0.20`. The `default` module
+cross-attention, and FFN thresholds `0.50/0.35/0.20`, two protected initial
+steps (`--nonskip_rate 0.04`), and one calibration condition. The `default` module
 preset is selected automatically; explicitly supplied threshold flags take
 precedence. Calibrate a new Cache Book when the model or execution settings
-change.
+change. Hybrid policies each use one `hybrid` configuration. The separate
+[`sample_wan_step_layer.py`](sample_wan_step_layer.py) combines whole-step and
+module reuse. Its single `default` at 832 × 480, 81 frames and 50 steps uses
+step/self-attention/cross-attention/FFN quantiles `.63/.82/1/.82`, two protected
+steps and one calibration condition. These settings were checked on small
+visual and held-out sets; the same cache-generation flags apply.
 
 Inspect the available options from the repository root:
 

@@ -273,13 +273,11 @@ class FeatureChangeAnalyzer:
 
 def threshold_ananlyse(
     model, diffusion, class_labels, input_size,
-    # fast (default): step=0.50, msa=0.30, mlp=0.10;
-    # balanced: step=0.45, msa=0.40, mlp=0.00;
-    # slow: step=0.35, msa=0.30, mlp=0.00.
-    step_thres=0.50,
-    nonskip_rate=0,
-    msa_thres=0.30,
-    mlp_thres=0.10,
+    # Selected step-layer configuration at 512 square, DDIM-50.
+    step_thres=0.55,
+    nonskip_rate=0.04,
+    msa_thres=0.50,
+    mlp_thres=0.15,
     num_analysis=1, # single-image calibration by default
     ): 
 
@@ -492,7 +490,7 @@ def save_cache_books(
     mlp_thres,
     cache_book_path="./cache_books",
     calibration_classes=None,
-    preset_name="fast",
+    preset_name="default",
     resolved_thresholds=None,
 ):
     config = cache_book_config(
@@ -534,7 +532,7 @@ def save_cache_books(
     print(f"\nCache books saved: {cache_book_full_path}")
     return cache_book_file
 
-def load_cache_books(cache_book_path, cache_book_file):
+def load_cache_books(cache_book_path, cache_book_file, expected_config=None):
     with open(os.path.join(cache_book_path, cache_book_file), "r") as f:
         cache_books = json.load(f)
 
@@ -551,6 +549,8 @@ def load_cache_books(cache_book_path, cache_book_file):
             f"found {cache_books.get('rate_method')!r}."
         )
     
+    if expected_config is not None and cache_books.get("config") != expected_config:
+        raise ValueError("Cache-book configuration mismatch; re-run calibration.")
     step_cache_book = torch.tensor(cache_books["step_cache_book"], dtype=torch.bool)
     msa_cache_book = torch.tensor(cache_books["msa_cache_book"], dtype=torch.bool)
     mlp_cache_book = torch.tensor(cache_books["mlp_cache_book"], dtype=torch.bool)
@@ -637,7 +637,8 @@ def main(args):
         
         step_cache_book, msa_cache_book, mlp_cache_book = load_cache_books(
             cache_book_path=args.cache_book_path,
-            cache_book_file=cache_book_file
+            cache_book_file=cache_book_file,
+            expected_config=config,
         )
         print(f"Cache books loaded from: {os.path.join(args.cache_book_path, cache_book_file)}")
 
@@ -717,13 +718,13 @@ if __name__ == "__main__":
 
     parser.add_argument("--model", type=str, default="DiT-XL/2", 
                         help="Name of the DiT model.")
-    parser.add_argument("--image-size", type=int, default=256, 
+    parser.add_argument("--image-size", type=int, default=512,
                         help="Image size for the model.")
     parser.add_argument("--num-classes", type=int, default=1000, 
                         help="Number of classes in the dataset.")
-    parser.add_argument("--num-timesteps", type=int, default=250, 
+    parser.add_argument("--num-timesteps", type=int, default=50,
                         help="Number of diffusion timesteps for sampling.")
-    parser.add_argument("--dit-ckpt", type=str, default="./pretrained_models/DiT-XL-2-256x256.pt", 
+    parser.add_argument("--dit-ckpt", type=str, default="./pretrained_models/DiT-XL-2-512x512.pt",
                         help="Path to the pre-trained DiT model checkpoint.")
 
     parser.add_argument('--num-sample-classes', type=int, default=10, 
@@ -741,16 +742,14 @@ if __name__ == "__main__":
     parser.add_argument('--cache-book-path', type=str, default='./cache_books',
                     help='Path to save/load cache books.')
     
-    parser.add_argument('--nonskip-rate', type=float, default=0, # little effect on DiT
+    parser.add_argument('--nonskip-rate', type=float, default=0.04,
                         help="Proportion of initial timesteps that are forced not to be skipped")
-    # fast (default): step=0.50, msa=0.30, mlp=0.10;
-    # balanced: step=0.45, msa=0.40, mlp=0.00;
-    # slow: step=0.35, msa=0.30, mlp=0.00.
-    parser.add_argument('--step-thres', type=float, default=0.50,
+    # Selected step-layer defaults (~2.17x measured sampling speedup); explicit flags override.
+    parser.add_argument('--step-thres', type=float, default=0.55,
                         help="Quantile threshold for step skipping.")
-    parser.add_argument('--msa-thres', type=float, default=0.30,
+    parser.add_argument('--msa-thres', type=float, default=0.50,
                         help='Quantile threshold for MSA module skipping.')
-    parser.add_argument('--mlp-thres', type=float, default=0.10,
+    parser.add_argument('--mlp-thres', type=float, default=0.15,
                         help='Quantile threshold for MLP module skipping.')
     add_preset_argument(parser, 'dit_step_layer')
     parser.add_argument('--num-analysis', type=int, default=1,
@@ -778,10 +777,10 @@ if __name__ == "__main__":
         '--cfg-scale', '4.0',
         '--seed', '42',
         '--sample-times', '1',
-        '--nonskip-rate', '0',
-        '--step-thres', '0.50',
-        '--msa-thres', '0.30',
-        '--mlp-thres', '0.10',
+        '--nonskip-rate', '0.04',
+        '--step-thres', '0.55',
+        '--msa-thres', '0.50',
+        '--mlp-thres', '0.15',
         '--num-analysis', '1',
         # '--generate-cache-books', 
     ]

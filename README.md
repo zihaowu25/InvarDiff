@@ -1,4 +1,7 @@
-# InvarDiff
+# Fine-Grained Caching for Diffusion Transformers with Few Calibration Conditions
+
+This repository contains the open-source implementation of **Fine-Grained
+Caching for Diffusion Transformers with Few Calibration Conditions**.
 
 Training-free, fine-grained offline caching for diffusion transformers. The
 current standalone samplers construct a fixed **module-level Cache Book** from
@@ -36,12 +39,33 @@ transfer when these settings change.
 | Wan2.1-T2V-1.3B | [`Wan2.1/sample_wan.py`](Wan2.1/sample_wan.py) | 832 × 480, 81 frames, 50 steps |
 | HunyuanVideo-1.5 | [`HunyuanVideo/sample_hunyuan.py`](HunyuanVideo/sample_hunyuan.py) | 720p, 121 frames, 50 steps |
 
-Each module-only sampler has **one selected configuration**, named `default`
-in [`cache_presets.json`](cache_presets.json). The CLI selects it automatically;
-individual threshold flags still override its values. The selected settings
-were visually screened on limited conditions and are not universal quality
-guarantees. Other policies in the JSON file belong to separate step-layer or
-hybrid experiments and retain their own names.
+Module-only, step-layer and hybrid policies each use **one selected configuration**.
+Module-only and step-layer presets are named `default`, and hybrid presets are named `hybrid` in
+[`cache_presets.json`](cache_presets.json). Explicit threshold flags override
+individual values.
+
+| Module-only model | Module quantiles, in execution-group order | Protected steps | Calibration conditions |
+| --- | --- | ---: | ---: |
+| DiT | MSA / MLP: `.55 / .55` | 2 | 1 |
+| FLUX | Double attention / context attention / FF / context FF / single attention / single MLP: `.70 / .70 / .30 / .23 / .50 / .02` | 2 | 2 |
+| Wan | Self-attention / cross-attention / FFN: `.50 / .35 / .20` | 2 | 1 |
+| Hunyuan | Double image attention / text attention / image MLP / text MLP / single attention / single MLP: `.90 / .45 / .04 / .12 / 0 / 0` | 2 | 1 |
+
+These settings apply to the evaluated protocols above, not arbitrary samplers.
+The separate step-layer samplers combine whole-step reuse with module reuse.
+Their defaults were selected using small visual and held-out sets under the
+same protocols; these checks are not formal quality benchmarks.
+
+| Step-layer model | Step quantile | Module quantiles, in the order above | Protected steps | Calibration conditions |
+| --- | ---: | --- | ---: | ---: |
+| DiT | `.55` | `.50 / .15` | 2 | 1 |
+| FLUX | `.52` | `1 / 1 / 1 / 1 / 1 / 1` | 2 | 2 |
+| Wan | `.63` | `.82 / 1 / .82` | 2 | 1 |
+| Hunyuan | `.70` | `.40 / .01 / .20 / .32 / 0 / 0` | 3 | 1 |
+
+Use the corresponding `sample_*_step_layer.py` entrypoint and recalibrate its
+Cache Book before generation. Quantiles of one still respect protected and
+invalid positions and the final denoising step.
 
 ## Getting started
 
