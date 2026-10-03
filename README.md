@@ -8,9 +8,8 @@ current standalone samplers construct a fixed **module-level Cache Book** from
 a small calibration set and reuse selected module outputs during generation.
 They do not require retraining the denoiser or an online routing network.
 
-An [earlier InvarDiff preprint](https://arxiv.org/abs/2512.05134) describes
-cross-step and layer-level caching. This repository also retains separate
-step-layer and hybrid experiments; their schedules and reported speedups
+This repository also includes separate step-layer and hybrid implementations;
+their schedules and reported speedups
 should not be treated as direct module-only baselines.
 
 ## Repository guide
@@ -195,21 +194,7 @@ Tests do not download weights or launch a full generation benchmark.
 - The repository does not include pretrained model weights. Outputs and
   experiment reports are local artifacts, not source files.
 
-## Citation
-
-The earlier cross-scale InvarDiff preprint is available as:
-
-```bibtex
-@misc{wu2025invardiffcrossscaleinvariancecaching,
-  title={InvarDiff: Cross-Scale Invariance Caching for Accelerated Diffusion Models},
-  author={Zihao Wu},
-  year={2025},
-  eprint={2512.05134},
-  archivePrefix={arXiv},
-  primaryClass={cs.CV},
-  url={https://arxiv.org/abs/2512.05134}
-}
-```
+## Licenses
 
 Please follow the licenses and use restrictions of each upstream model and
 its weights. HunyuanVideo-specific license and attribution files are included
