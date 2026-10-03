@@ -15,7 +15,7 @@ import time
 from typing import Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from cache_presets import add_preset_argument, apply_preset
+from cache_presets import add_preset_argument, apply_preset, same_execution_config
 
 import numpy as np
 import torch
@@ -595,6 +595,7 @@ def save_cache_books(
     cache_book_path="./cache_books",
     preset_name="default",
     resolved_thresholds=None,
+    cache_book_file=None,
 ):
     config = cache_book_config(
         num_timesteps,
@@ -617,7 +618,7 @@ def save_cache_books(
         "mlp_cache_book": mlp_cache_book.tolist(),
     }
     os.makedirs(cache_book_path, exist_ok=True)
-    cache_book_file = cache_book_name(config)
+    cache_book_file = cache_book_file or cache_book_name(config)
     cache_book_full_path = os.path.join(cache_book_path, cache_book_file)
     with open(cache_book_full_path, "w") as file:
         json.dump(cache_books, file, indent=2)
@@ -626,7 +627,7 @@ def save_cache_books(
     return cache_book_file
 
 
-def load_cache_books(cache_book_path, cache_book_file):
+def load_cache_books(cache_book_path, cache_book_file, expected_config=None):
     cache_book_full_path = os.path.join(cache_book_path, cache_book_file)
     with open(cache_book_full_path, "r") as file:
         cache_books = json.load(file)
@@ -643,6 +644,8 @@ def load_cache_books(cache_book_path, cache_book_file):
             f"Expected rate method {RATE_METHOD!r}, "
             f"found {cache_books.get('rate_method')!r}."
         )
+    if expected_config is not None and not same_execution_config(cache_books.get("config"), expected_config):
+        raise ValueError("Cache-book configuration mismatch; re-run calibration.")
 
     step_cache_book = torch.tensor(
         cache_books["step_cache_book"],
@@ -711,7 +714,7 @@ def main(args):
         args.msa_thres,
         args.mlp_thres,
     )
-    cache_file = cache_book_name(cache_config)
+    cache_file = getattr(args, "cache_book_file", None) or cache_book_name(cache_config)
     if args.generate_cache_books:
         (
             step_cache_book,
@@ -740,6 +743,7 @@ def main(args):
             args.cache_book_path,
             args.cache_preset_resolved,
             args.cache_resolved_thresholds,
+            cache_book_file=getattr(args, "cache_book_file", None),
         )
         if args.calibration_only:
             return
@@ -747,6 +751,7 @@ def main(args):
         step_cache_book, msa_cache_book, mlp_cache_book = load_cache_books(
             args.cache_book_path,
             cache_file,
+            expected_config=cache_config,
         )
         print(
             "Cache books loaded from: "
@@ -899,20 +904,20 @@ if __name__ == "__main__":
         description="Sample images using layer-only DynamicDiT"
     )
     parser.add_argument("--model", type=str, default="DiT-XL/2")
-    parser.add_argument("--image-size", type=int, default=256)
+    parser.add_argument("--image-size", type=int, default=512)
     parser.add_argument("--num-classes", type=int, default=1000)
-    parser.add_argument("--num-timesteps", type=int, default=250)
+    parser.add_argument("--num-timesteps", type=int, default=50)
     parser.add_argument(
         "--dit-ckpt",
         type=str,
-        default="./pretrained_models/DiT-XL-2-256x256.pt",
+        default=os.path.join(os.path.dirname(__file__), "pretrained_models", "DiT-XL-2-512x512.pt"),
     )
-    parser.add_argument("--num-sample-classes", type=int, default=10)
+    parser.add_argument("--num-sample-classes", type=int, default=1)
     parser.add_argument("--class-label-file", default=None)
     parser.add_argument("--calibration-class-file", default=None)
     parser.add_argument("--cfg-scale", type=float, default=4.0)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--sample-times", type=int, default=6)
+    parser.add_argument("--sample-times", type=int, default=1)
     parser.add_argument(
         "--vae",
         type=str,
@@ -929,8 +934,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cache-book-path",
         type=str,
-        default="./cache_books",
+        default=None,
     )
+    parser.add_argument("--cache-book-file", default=None)
     parser.add_argument(
         "--nonskip-rate",
         type=float,
@@ -957,24 +963,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("--calibration-only", action="store_true")
 
-    debug_args = [
-        "--model", "DiT-XL/2",
-        "--image-size", "512",
-        "--num-classes", "1000",
-        "--num-timesteps", "50",
-        "--dit-ckpt", "./pretrained_models/DiT-XL-2-512x512.pt",
-        "--num-sample-classes", "1",
-        "--cfg-scale", "4.0",
-        "--seed", "0",
-        "--sample-times", "1",
-        "--nonskip-rate", "0.04",
-        "--msa-thres", "0.55",
-        "--mlp-thres", "0.55",
-        "--num-analysis", "1",
-        "--generate-cache-books",
-    ]
 
-    args = parser.parse_args() if len(sys.argv) > 1 else parser.parse_args(debug_args)
+    args = parser.parse_args()
     args = apply_preset(
         args,
         "dit_module",

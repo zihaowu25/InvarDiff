@@ -68,7 +68,7 @@ python sample_wan_seacache_hybrid.py \
   --task t2v-1.3B --size '832*480' \
   --ckpt_dir /path/to/Wan2.1-T2V-1.3B \
   --prompt 'Two cats box under stage lights.' \
-  --base_seed 42 --offload_model False
+  --base_seed 42 --offload_model False --no-use_finegrained_cache
 ```
 
 Two-pass Finegrained calibration only:
@@ -78,6 +78,7 @@ python sample_wan_magcache_hybrid.py \
   --task t2v-1.3B --size '832*480' \
   --ckpt_dir /path/to/Wan2.1-T2V-1.3B \
   --prompt 'Two cats box under stage lights.' \
+  --cache_book_path ./cache_books/Wan2.1/custom_magcache \
   --finegrained_calibration
 ```
 
@@ -88,7 +89,7 @@ python sample_wan_magcache_hybrid.py \
   --task t2v-1.3B --size '832*480' \
   --ckpt_dir /path/to/Wan2.1-T2V-1.3B \
   --prompt 'Two cats box under stage lights.' \
-  --use_finegrained_cache
+  --save_file outputs/wan_magcache_hybrid.mp4
 ```
 
 Calibrate and then generate in one process:
@@ -98,18 +99,25 @@ python sample_wan_seacache_hybrid.py \
   --task t2v-1.3B --size '832*480' \
   --ckpt_dir /path/to/Wan2.1-T2V-1.3B \
   --prompt 'Two cats box under stage lights.' \
+  --cache_book_path ./cache_books/Wan2.1/custom_seacache \
   --finegrained_calibration --use_finegrained_cache
 ```
 
-Use `--disable_step_cache` for a layer-only ablation. Set all three layer
-thresholds to zero for step-only parity. Calibration features default to
+Inference loads the matching configuration-named JSON in `cache_books/Wan2.1/`
+by default at 832 × 480, 81 frames, 50 steps. Custom inference uses
+`--cache_book_path` and `--cache_book_file` without the calibration flag.
+Calibration without a folder uses that same directory and filename. Different
+configurations coexist; recalibrating the same configuration updates its file.
+
+Use `--disable_step_cache` for a layer-only ablation and
+`--no-use_finegrained_cache` for step-only generation. Calibration features default to
 pinned CPU memory (`--calibration_feature_device cpu`); runtime layer/residual
 caches default to GPU. `--runtime_cache_device auto` moves newly stored cache
 tensors to pinned CPU once free GPU memory falls below
 `--runtime_cache_gpu_reserve_gib` (2 GiB by default).
 
-Cache Book filenames include task, size, frame count, sampling steps,
-non-skip rate, all layer thresholds, and method-specific parameters. They do
+Automatically derived Cache Book filenames include geometry, frame count, sampling steps,
+non-skip rate, all layer thresholds, method-specific parameters and a configuration hash. They do
 not contain the seed or trajectory-state labels. Loading strictly validates the
 method, formula, task, geometry, solver, shift, model dimensions, thresholds,
 and source commit.

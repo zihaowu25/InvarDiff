@@ -5,23 +5,39 @@ and obtain the model weights under the provider's terms. Make its `wan`
 package importable (for example, add the upstream checkout to `PYTHONPATH`).
 Set `WAN_MODEL` to your downloaded checkpoint directory.
 
-## Calibrate and generate
+## Load and generate
 
 Run from the repository root:
 
 ```bash
 python Wan2.1/sample_wan.py \
   --task t2v-1.3B --size '832*480' --ckpt_dir "$WAN_MODEL" \
-  --frame_num 81 --sample_steps 50 --base_seed 42 \
-  --prompt "Two cats boxing under bright stage lights" \
-  --invardiff_calibration --use_invardiff \
+  --frame_num 81 --sample_steps 50 --base_seed 3300 \
+  --prompt "A golden retriever runs along a beach while the camera pans smoothly to follow it." \
   --save_file outputs/wan.mp4
 ```
 
-This performs two full-compute calibration passes followed by accelerated
-generation. Omit `--use_invardiff` for calibration only; omit
-`--invardiff_calibration` to generate from an existing matching Cache Book.
-`--cache_book_path` and `--cache_book_file` select its location.
+This directly loads the matching configuration-named JSON in `cache_books/Wan2.1/`;
+the step-layer entrypoint uses the same folder with a different strategy filename. Use
+`--no-use_invardiff` for Full without caching.
+
+## Optional recalibration
+
+```bash
+python Wan2.1/sample_wan.py --ckpt_dir "$WAN_MODEL" \
+  --prompt "A red fox walks through a snowy forest while the camera tracks from the side." --base_seed 2027 \
+  --invardiff_calibration
+
+python Wan2.1/sample_wan.py --ckpt_dir "$WAN_MODEL" \
+  --prompt "Two cats boxing under bright stage lights" --base_seed 43 \
+  --save_file outputs/wan_custom.mp4
+```
+
+Calibration performs two full-compute passes. Explicitly add
+`--use_invardiff` to also generate immediately afterwards. Without an output
+folder it writes to `cache_books/Wan2.1/` using the
+same configuration-derived filename as inference. Different configurations
+coexist; recalibrating the same configuration updates its file.
 
 ## Defaults and overrides
 
@@ -34,9 +50,11 @@ and `--ffn_thres` flags override individual values.
 [`sample_wan_step_layer.py`](sample_wan_step_layer.py) combines whole-step
 and module reuse. Its single `default` uses step/self-attention/cross-attention/
 FFN quantiles `.63/.82/1/.82`, two protected steps, and one calibration
-condition. Use the same commands with the step-layer entrypoint and a newly
-calibrated book. These settings were screened on small visual/held-out sets,
+condition. Use the same commands with the step-layer entrypoint. These settings
+were screened on small visual/held-out sets,
 not a formal quality benchmark.
+For a checked step-layer demo, use `sample_wan_step_layer.py`, seed `3100`,
+and prompt `A bicyclist rides slowly past parked cars as the camera tracks smoothly from the side.`
 
 Recalibrate when changing weights, sampler, steps, resolution, frame count,
 guidance, precision, or thresholds. For MagCache/SeaCache compatibility,

@@ -29,28 +29,28 @@ saved as runtime policies.
 ## Common modes
 
 ```bash
-# Official whole-step method only
-python sample_flux_magcache_hybrid.py --prompt "a photo of a cat"
+# Whole-step method only (disable the default module cache)
+python sample_flux_magcache_hybrid.py --no-use-finegrained-cache --prompt "a photo of a cat"
 
 # Two calibration passes; save a Cache Book without decoding an image
 python sample_flux_magcache_hybrid.py \
   --finegrained-calibration \
+  --cache-book-path ./cache_books/FLUX/custom_magcache \
   --calibration-prompt "a cinematic photo of a raccoon"
 
 # Load a Cache Book and run hybrid generation
 python sample_flux_magcache_hybrid.py \
-  --use-finegrained-cache \
   --prompt "a photo of a cat"
 
 # Calibrate and immediately generate
 python sample_flux_magcache_hybrid.py \
   --finegrained-calibration \
   --use-finegrained-cache \
+  --cache-book-path ./cache_books/FLUX/custom_magcache \
   --prompt "a photo of a cat"
 
 # Layer-only ablation
 python sample_flux_magcache_hybrid.py \
-  --use-finegrained-cache \
   --disable-step-cache \
   --prompt "a photo of a cat"
 ```
@@ -61,12 +61,17 @@ Replace the script name with the SeaCache variant as needed. Run
 
 ## Cache-specific defaults
 
-- MagCache: threshold `0.24`, `K=5`, retention ratio `0.1`.
+- MagCache: threshold `0.24`, `K=4`, retention ratio `0.2`.
 - SeaCache: threshold `0.3`, scheduler-aware flow filter,
   `power_exp=2.0`, spatial dimensions `(-2, -3)`, mean normalization.
 
-Cache Books are saved below `./cache_books` by default and use
-`cache_book_hybrid_<method>_...` names.
+Supply `--model-path "$FLUX_MODEL"` for your downloaded model. Inference
+loads the configuration-named JSON in `cache_books/FLUX/` automatically. Calibration-only does not
+generate an image; without an explicit output folder it uses the same directory
+and configuration-derived filename as inference. Different configurations coexist;
+recalibrating the same configuration updates its file. An optional custom folder
+must be passed to both calibration and inference. Explicit module or cross-step parameter
+changes require recalibration, not editing a loaded policy.
 
 ## Initial compatibility boundary
 

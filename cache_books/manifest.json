@@ -1,0 +1,1410 @@
+{
+  "schema_version": 1,
+  "validation_source_revision": "0fd10ddb15917209e7e1419c2940586bbd906bf6",
+  "evaluation_scope": "Native-length, small-set paired Full/cached reload and direct visual checks; not a formal benchmark.",
+  "policies": {
+    "hunyuan_module": {
+      "file": "HunyuanVideo/cache_book_hunyuan_module_720p_16x9_f121_steps50_ns0.04_sattn0_smlp0_ia0.9_ta0.45_im0.04_tm0.12_2eddfcef32d5.json",
+      "sha256": "b5785ae9bd24adac1979e1f197e9caad7b7a508179e6c365ac601591fd6a5614",
+      "script": "HunyuanVideo/sample_hunyuan.py",
+      "release_sampler_sha256": "e9c2afab7d8cdce109b801d5fcfc955689957882c24e00e7cf486aa12639171b",
+      "calibration": {
+        "seed": 42,
+        "condition_count": 1,
+        "prompts": [
+          "A ceramic teapot on a wooden table under soft window light, nearly static camera."
+        ],
+        "classes": [],
+        "forward_protocol": {
+          "mode": "native_pipeline",
+          "guidance_scale": 6.0
+        }
+      },
+      "execution_args": {
+        "resolution": "720p",
+        "aspect_ratio": "16:9",
+        "num_inference_steps": 50,
+        "video_length": 121,
+        "cfg_distilled": false,
+        "enable_step_distill": false,
+        "sparse_attn": false,
+        "dtype": "bf16",
+        "deterministic_attention": true,
+        "nonskip_rate": 0.04,
+        "double_img_attn_thres": 0.9,
+        "double_txt_attn_thres": 0.45,
+        "double_img_mlp_thres": 0.04,
+        "double_txt_mlp_thres": 0.12,
+        "single_attn_thres": 0.0,
+        "single_mlp_thres": 0.0
+      },
+      "book_true_counts": {
+        "module_cache_book.double.img_attn": 2278,
+        "module_cache_book.double.txt_attn": 1128,
+        "module_cache_book.double.img_mlp": 102,
+        "module_cache_book.double.txt_mlp": 311,
+        "module_cache_book.single.attn": 0,
+        "module_cache_book.single.mlp": 0
+      },
+      "visual_status": "pass",
+      "visual_reason": "Native 720p/121-frame dog-running and chef-plating demos remain coherent across uniform and twelve consecutive frames; identity and motion are preserved. Framing and background details differ from Full, which is allowed for demo acceptance.",
+      "limitations": [
+        "Small-set usable-demo and runtime check; not a formal benchmark or a guarantee for all inputs."
+      ],
+      "preview_sha256": {
+        "beach_uniform.png": "1fda361b4c12f7af46a83ea89e7bb8c4aae78be3b0e5bce722a806f888dfbd0c",
+        "beach_continuous.png": "a35a9b199a5b3c11ff7878bf8b49deca6e6b9063c62bfec2a453772ac34cac06",
+        "chef_uniform.png": "5beceeb5239887e1860da5d31edef93742027029f417333c9f3c95dae05c7c9e",
+        "chef_continuous.png": "37ace8ddc9b3ecc8c37a249e918765504644d477db7850280743d7406b33aad3"
+      },
+      "evaluation_conditions": null,
+      "evidence": [
+        {
+          "condition": "beach",
+          "seed": 4101,
+          "method": "full",
+          "sampling_seconds": 2017.95,
+          "media_sha256": [
+            "f388c8f106da6eeac106d719a96b21e6d0aa753aedf82298590dd21a6cada9f0"
+          ]
+        },
+        {
+          "condition": "beach",
+          "seed": 4101,
+          "method": "cached",
+          "sampling_seconds": 1312.02,
+          "media_sha256": [
+            "025679210f7196778e00ccc5934769ced738f990d5cff91f339dbb9b994d9f59"
+          ]
+        },
+        {
+          "condition": "chef",
+          "seed": 4102,
+          "method": "full",
+          "sampling_seconds": 1916.89,
+          "media_sha256": [
+            "251728f0fbc51964638e5cc5e2437cd40dc5161c824c96aba29a95a3518a27de"
+          ]
+        },
+        {
+          "condition": "chef",
+          "seed": 4102,
+          "method": "cached",
+          "sampling_seconds": 1268.18,
+          "media_sha256": [
+            "1fe5bac3e7fa8e25b8eb194a4272bfd5cda622df6c57bf81d086b30054cd9454"
+          ]
+        }
+      ],
+      "sampling_seconds": {
+        "full": 1967.42,
+        "cached": 1290.1
+      },
+      "diagnostic_speedup": 1.525013564839935,
+      "device": "NVIDIA H800",
+      "timing_scope": "fresh-process native sampling; excludes model loading; diagnostic two-condition check"
+    },
+    "hunyuan_step_layer": {
+      "file": "HunyuanVideo/cache_book_hunyuan_step_layer_720p_16x9_f121_steps50_ns0.06_stepth0.7_sattn0_smlp0_ia0.4_ta0.01_im0.2_tm0.32_054d5e13c176.json",
+      "sha256": "fade001e0af0e06457107c044fb104285062343c2bafc8def396b747b36526e5",
+      "script": "HunyuanVideo/sample_hunyuan_step_layer.py",
+      "release_sampler_sha256": "1b7dc81fd4de0c30a89069c6fdbd671e7347e25acd4cc6fa94cb87e4f135c02b",
+      "calibration": {
+        "seed": 42,
+        "condition_count": 1,
+        "prompts": [
+          "A ceramic teapot on a wooden table under soft window light, nearly static camera."
+        ],
+        "classes": [],
+        "forward_protocol": {
+          "mode": "native_pipeline",
+          "guidance_scale": 6.0
+        }
+      },
+      "execution_args": {
+        "resolution": "720p",
+        "aspect_ratio": "16:9",
+        "num_inference_steps": 50,
+        "video_length": 121,
+        "cfg_distilled": false,
+        "enable_step_distill": false,
+        "sparse_attn": false,
+        "dtype": "bf16",
+        "deterministic_attention": true,
+        "nonskip_rate": 0.06,
+        "step_thres": 0.7,
+        "double_img_attn_thres": 0.4,
+        "double_txt_attn_thres": 0.01,
+        "double_img_mlp_thres": 0.2,
+        "double_txt_mlp_thres": 0.32,
+        "single_attn_thres": 0.0,
+        "single_mlp_thres": 0.0
+      },
+      "book_true_counts": {
+        "step_cache_book": 31,
+        "module_cache_book.double.img_attn": 1674,
+        "module_cache_book.double.txt_attn": 1674,
+        "module_cache_book.double.img_mlp": 1674,
+        "module_cache_book.double.txt_mlp": 1748,
+        "module_cache_book.single.attn": 0,
+        "module_cache_book.single.mlp": 0
+      },
+      "visual_status": "pass",
+      "visual_reason": "Both native demos preserve dog running and chef plating with coherent subjects and continuous motion. Texture/detail softness and changed background are visible; passes usable-demo acceptance, not a claim of Full-equivalent fidelity.",
+      "limitations": [
+        "Small-set usable-demo and runtime check; not a formal benchmark or a guarantee for all inputs.",
+        "Changed composition and visible detail softness are allowed by the demo-scoped acceptance criterion."
+      ],
+      "preview_sha256": {
+        "beach_uniform.png": "aedb3e955ce94711588e9ad6b0375c8c39b0185405eed2f300b853814b3f39d5",
+        "beach_continuous.png": "95c30563da881a299b5bf1c39c07f511c6f2b407d65d7cbe741e5967fbfde4f3",
+        "chef_uniform.png": "7f572794801cbfd0d57fb27cba545b6601db0f7212aeb45a1aca4a39919253fc",
+        "chef_continuous.png": "58ed7676d0e45d79f828900af6ac5cee5365d9c82e1ba2580d2414d0d7a53092"
+      },
+      "evaluation_conditions": null,
+      "evidence": [
+        {
+          "condition": "beach",
+          "seed": 4101,
+          "method": "full",
+          "sampling_seconds": 1920.57,
+          "media_sha256": [
+            "f388c8f106da6eeac106d719a96b21e6d0aa753aedf82298590dd21a6cada9f0"
+          ]
+        },
+        {
+          "condition": "beach",
+          "seed": 4101,
+          "method": "cached",
+          "sampling_seconds": 812.77,
+          "media_sha256": [
+            "8b56f23793dc568e4af4a5264b191823e81693ef0e97439417c42e8081cd83b4"
+          ]
+        },
+        {
+          "condition": "chef",
+          "seed": 4102,
+          "method": "full",
+          "sampling_seconds": 2048.92,
+          "media_sha256": [
+            "251728f0fbc51964638e5cc5e2437cd40dc5161c824c96aba29a95a3518a27de"
+          ]
+        },
+        {
+          "condition": "chef",
+          "seed": 4102,
+          "method": "cached",
+          "sampling_seconds": 862.5,
+          "media_sha256": [
+            "cf584d75503efd3cb6b4d2747ba40423c076b5201e2efc35030aa7acc5364132"
+          ]
+        }
+      ],
+      "sampling_seconds": {
+        "full": 1984.745,
+        "cached": 837.635
+      },
+      "diagnostic_speedup": 2.3694628328567933,
+      "device": "NVIDIA H800",
+      "timing_scope": "fresh-process native sampling; excludes model loading; diagnostic two-condition check"
+    },
+    "wan_module": {
+      "file": "Wan2.1/cache_book_wan_module_832x480_f81_steps50_ns0.04_sattn0.5_cross0.35_ffn0.2_e95219769753.json",
+      "sha256": "7bd8a0172c621eae2486a903e8cb3f410529b04153d51b13d7db58c713ae2436",
+      "script": "Wan2.1/sample_wan.py",
+      "release_sampler_sha256": "68ffee553423ca6c533b251bc3b9427b47e9d52ab57e2501c5c839150da4b0c5",
+      "calibration": {
+        "seed": 2027,
+        "condition_count": 1,
+        "prompts": [
+          "A red fox walks through a snowy forest while the camera tracks from the side."
+        ],
+        "classes": [],
+        "forward_protocol": {
+          "mode": "native_pipeline",
+          "guidance_scale": 5.0
+        }
+      },
+      "execution_args": {
+        "task": "t2v-1.3B",
+        "size": "832*480",
+        "frame_num": 81,
+        "sample_solver": "unipc",
+        "sample_steps": 50,
+        "sample_shift": 5.0,
+        "sample_guide_scale": 5.0,
+        "nonskip_rate": 0.04,
+        "self_attn_thres": 0.5,
+        "cross_attn_thres": 0.35,
+        "ffn_thres": 0.2
+      },
+      "book_true_counts": {
+        "module_cache_book.self_attn": 690,
+        "module_cache_book.cross_attn": 476,
+        "module_cache_book.ffn": 258
+      },
+      "visual_status": "pass",
+      "visual_reason": "Usable-demo acceptance is established by the native 81-frame beach dog: recognizable anatomy, texture and continuous running across uniform and consecutive frames. Chef case remains recorded with hand transparency/ghosting and is not a passing fidelity example.",
+      "limitations": [
+        "Small-set usable-demo and runtime check; not a formal benchmark or a guarantee for all inputs.",
+        "Acceptance demo: beach dog. Chef test has hand transparency/ghosting; this unfavorable case is retained in the evidence."
+      ],
+      "preview_sha256": {
+        "beach_uniform.png": "c2017400e2aebec80dce5c1f8c911446c2603830c43e29da0af2b4d3afc86c29",
+        "beach_continuous.png": "d0d88695c4cf738e24e4695e38b36001cb4de7b2bdb8bb6724fcf591d8e1b1ee",
+        "chef_uniform.png": "9f6f69cd6a206d9aa53664a2ca53d5451882175632705e4e4580d60919e0592b",
+        "chef_continuous.png": "700ff117b7d39d8a5ce59cf3b1416fe1b788916b7fce20c06564c4e8fe9b2490"
+      },
+      "evaluation_conditions": [
+        [
+          "beach",
+          "A golden retriever runs along a beach while the camera pans smoothly to follow it.",
+          3300
+        ],
+        [
+          "chef",
+          "A chef in a white jacket carefully plates a colorful dish in a bright kitchen.",
+          3301
+        ]
+      ],
+      "evidence": [
+        {
+          "condition": "beach",
+          "seed": 3300,
+          "method": "full",
+          "sampling_seconds": 110.06801598146558,
+          "media_sha256": [
+            "95a36227f8817111f1b9e6862142e091c7b210303b72feb9fc940c3361429d94"
+          ]
+        },
+        {
+          "condition": "beach",
+          "seed": 3300,
+          "method": "cached",
+          "sampling_seconds": 70.48242884874344,
+          "media_sha256": [
+            "16642bf3d681e957561eb8c42d316109afd4ee1ec3b3ee0fc0015e64ba413927"
+          ]
+        },
+        {
+          "condition": "chef",
+          "seed": 3301,
+          "method": "full",
+          "sampling_seconds": 110.36058641597629,
+          "media_sha256": [
+            "00e46c1e47e1e38117c8ff97f1999456697cad539ef64f1328a8566d61f12c35"
+          ]
+        },
+        {
+          "condition": "chef",
+          "seed": 3301,
+          "method": "cached",
+          "sampling_seconds": 73.96773425489664,
+          "media_sha256": [
+            "8963af4070589fb340142c7bd2779d26b9dab9aa9d689a4cf71541b6f556f87f"
+          ]
+        }
+      ],
+      "sampling_seconds": {
+        "full": 110.21430119872093,
+        "cached": 72.22508155182004
+      },
+      "diagnostic_speedup": 1.5259837556520361,
+      "device": "NVIDIA H800",
+      "timing_scope": "fresh-process native sampling; excludes model loading; diagnostic two-condition check"
+    },
+    "wan_step_layer": {
+      "file": "Wan2.1/cache_book_wan_step_layer_832x480_f81_steps50_ns0.04_stepth0.63_sattn0.82_cross1_ffn0.82_e7725ccc92a2.json",
+      "sha256": "4091ad605a34df97dda0f4eb688d4ee9921fbf8d2a710099f72e7ee388b8392a",
+      "script": "Wan2.1/sample_wan_step_layer.py",
+      "release_sampler_sha256": "8b05f7ff5c28b506aa649c801f6033ebee5d4536930a386041162b12889b6471",
+      "calibration": {
+        "seed": 2027,
+        "condition_count": 1,
+        "prompts": [
+          "A red fox walks through a snowy forest while the camera tracks from the side."
+        ],
+        "classes": [],
+        "historical_origin": "R39",
+        "historical_source_book_sha256": "94edc18b0feb25a91dd5f6386ba9e31182364b42dc2b97c6c731dad305442173",
+        "recalibrated_in_release_run": false,
+        "forward_protocol": {
+          "mode": "native_pipeline",
+          "guidance_scale": 5.0
+        }
+      },
+      "execution_args": {
+        "task": "t2v-1.3B",
+        "size": "832*480",
+        "frame_num": 81,
+        "sample_solver": "unipc",
+        "sample_steps": 50,
+        "sample_shift": 5.0,
+        "sample_guide_scale": 5.0,
+        "nonskip_rate": 0.04,
+        "step_thres": 0.63,
+        "self_attn_thres": 0.82,
+        "cross_attn_thres": 1.0,
+        "ffn_thres": 0.82
+      },
+      "book_true_counts": {
+        "step_cache_book": 29,
+        "module_cache_book.self_attn": 1030,
+        "module_cache_book.cross_attn": 1290,
+        "module_cache_book.ffn": 1030
+      },
+      "visual_status": "pass",
+      "visual_reason": "Unmodified R39 Book loads on current runtime and produces a coherent bicyclist/bicycle and recognizable red-coat woman with continuous movement. Background blur and appearance changes remain; usable-demo acceptance, not Full-equivalent fidelity.",
+      "limitations": [
+        "Small-set usable-demo and runtime check; not a formal benchmark or a guarantee for all inputs.",
+        "Reuses unchanged R39 Book with native-length current-runtime reload and timing checks. Backgrounds are softened."
+      ],
+      "preview_sha256": {
+        "motion_uniform.png": "3bee0cdf2db6b1cc607cd137db1c22fb437449318cd03e5833c3f572ce52c084",
+        "identity_continuous.png": "4823e0fdbf5ddff161bdbacfd6a44225b013b6ab8790d1c0f70cfd12442a2c46",
+        "identity_uniform.png": "b8cf846d9e354983ef185d663f9e0c39d87b1900f78c0a0f2c0f329ac63d7205",
+        "motion_continuous.png": "129193585cf63519f985a5f7e923745ad1b7666230246bb40f6cb1545750efe0"
+      },
+      "evaluation_conditions": [
+        [
+          "motion",
+          "A bicyclist rides slowly past parked cars as the camera tracks smoothly from the side.",
+          3100
+        ],
+        [
+          "identity",
+          "A woman in a red coat walks through a quiet market while the camera follows at a steady distance.",
+          3101
+        ]
+      ],
+      "evidence": [
+        {
+          "condition": "motion",
+          "seed": 3100,
+          "method": "full",
+          "sampling_seconds": 110.6446,
+          "media_sha256": [
+            "29007508847b701fecab0d042f9538500460d65e0e18e4ab0aef12c35f0592af"
+          ]
+        },
+        {
+          "condition": "motion",
+          "seed": 3100,
+          "method": "cached",
+          "sampling_seconds": 43.1356,
+          "media_sha256": [
+            "bd349e73baf82ec4f04f4151166569f77b53f691ac72553f8a5612cfd12ccbc3"
+          ]
+        },
+        {
+          "condition": "identity",
+          "seed": 3101,
+          "method": "full",
+          "sampling_seconds": 110.8419,
+          "media_sha256": [
+            "a4d675c7c88f7f428a1a932819866136755b400dce90184905112145c4c394e2"
+          ]
+        },
+        {
+          "condition": "identity",
+          "seed": 3101,
+          "method": "cached",
+          "sampling_seconds": 42.0339,
+          "media_sha256": [
+            "68539026d78f01172e9fba718d550e4529c88743dc96415817e262fa8283e36c"
+          ]
+        }
+      ],
+      "sampling_seconds": {
+        "full": 110.74324999999999,
+        "cached": 42.58475
+      },
+      "diagnostic_speedup": 2.600537751190273,
+      "device": "NVIDIA H800",
+      "timing_scope": "fresh-process native sampling; excludes model loading; diagnostic two-condition check"
+    },
+    "flux_module": {
+      "file": "FLUX/cache_book_flux_module_1024x1024_steps28_ns0.1_attn0.7_cattn0.7_ff0.3_cff0.23_sattn0.5_smlp0.02_ad8cca1d9ed5.json",
+      "sha256": "7567e5a7fd8a8d1eb716fa2f9b9b745e03fe408ff4bb52508c32e1484a99909f",
+      "script": "FLUX/sample_flux.py",
+      "release_sampler_sha256": "0ca197a2d506ba64afe325b267f6195ac9c974b473d9ae1123759c0031826c2a",
+      "calibration": {
+        "seed": 42,
+        "condition_count": 2,
+        "prompts": [
+          "A red ceramic teapot beside two blue cups on a wooden table.",
+          "An elderly violinist performing beneath warm stage lights."
+        ],
+        "classes": [],
+        "forward_protocol": {
+          "mode": "native_pipeline",
+          "guidance_scale": 3.5
+        }
+      },
+      "execution_args": {
+        "num_inference_steps": 28,
+        "height": 1024,
+        "width": 1024,
+        "nonskip_rate": 0.1,
+        "attn_thres": 0.7,
+        "context_attn_thres": 0.7,
+        "ff_thres": 0.3,
+        "context_ff_thres": 0.23,
+        "single_attn_thres": 0.5,
+        "single_mlp_thres": 0.02,
+        "guidance_scale": 3.5
+      },
+      "book_true_counts": {
+        "step_cache_book": 0,
+        "transformer_cache_book.attn": 327,
+        "transformer_cache_book.context_attn": 327,
+        "transformer_cache_book.ff": 129,
+        "transformer_cache_book.context_ff": 95,
+        "transformer_cache_book.ip_attn": 327,
+        "single_transformer_cache_book.attn": 456,
+        "single_transformer_cache_book.mlp": 20
+      },
+      "visual_status": "pass",
+      "visual_reason": "Two matched still images retain correct subject semantics and sharp, coherent vase/fruit and bird anatomy; brightness/framing differ.",
+      "limitations": [
+        "Small-set usable-demo and runtime check; not a formal benchmark or a guarantee for all inputs."
+      ],
+      "preview_sha256": {
+        "stilllife.png": "101ff446a872685ad940109352e8951d0d981e626f468d9b0efc484832c09673",
+        "animal.png": "16827ec26d4fb1319cccd084c74ceb600e3f1eb64be846eb23aa5cb22d180435"
+      },
+      "evaluation_conditions": null,
+      "evidence": [
+        {
+          "condition": "stilllife",
+          "seed": 4101,
+          "method": "full",
+          "sampling_seconds": 7.896191835403442,
+          "media_sha256": [
+            "de9bf5e95cf6d02dd5ed7bf0630c8b232fc64b391817831175907bf5068d9899"
+          ]
+        },
+        {
+          "condition": "stilllife",
+          "seed": 4101,
+          "method": "cached",
+          "sampling_seconds": 5.563635349273682,
+          "media_sha256": [
+            "00f89c5403a6c3b4923aee8727269855b2f45cbd958deaee83cdad86e83b66eb"
+          ]
+        },
+        {
+          "condition": "animal",
+          "seed": 4102,
+          "method": "full",
+          "sampling_seconds": 7.738033771514893,
+          "media_sha256": [
+            "b540b85d7ece76057cc51843782f4a5c0d7574ac864856b0b3567840964cdf3c"
+          ]
+        },
+        {
+          "condition": "animal",
+          "seed": 4102,
+          "method": "cached",
+          "sampling_seconds": 5.852197647094727,
+          "media_sha256": [
+            "3097465a1544aa42203de67f0c37f0cfbc79046b19487a61ae5b3db1e93be517"
+          ]
+        }
+      ],
+      "sampling_seconds": {
+        "full": 7.8171128034591675,
+        "cached": 5.707916498184204
+      },
+      "diagnostic_speedup": 1.3695212265186323,
+      "device": "NVIDIA H800",
+      "timing_scope": "fresh-process native sampling; excludes model loading; diagnostic two-condition check"
+    },
+    "flux_step_layer": {
+      "file": "FLUX/cache_book_flux_step_layer_1024x1024_steps28_ns0.08_stepth0.52_attn1_cattn1_ff1_cff1_sattn1_smlp1_c7b3cbb80c73.json",
+      "sha256": "9b4f11b5b543a643bf8546c0e4514e71365f42bfc97f4389e6aef7714b148e59",
+      "script": "FLUX/sample_flux_step_layer.py",
+      "release_sampler_sha256": "ca0741b5ce4e88bb8f2bcfb711f1d6526140c76cce6892f54e3bab66b6b07dea",
+      "calibration": {
+        "seed": 42,
+        "condition_count": 2,
+        "prompts": [
+          "A red ceramic teapot beside two blue cups on a wooden table.",
+          "An elderly violinist performing beneath warm stage lights."
+        ],
+        "classes": [],
+        "forward_protocol": {
+          "mode": "native_pipeline",
+          "guidance_scale": 3.5
+        }
+      },
+      "execution_args": {
+        "num_inference_steps": 28,
+        "nonskip_rate": 0.08,
+        "step_thres": 0.52,
+        "attn_thres": 1.0,
+        "context_attn_thres": 1.0,
+        "ff_thres": 1.0,
+        "context_ff_thres": 1.0,
+        "single_attn_thres": 1.0,
+        "single_mlp_thres": 1.0,
+        "guidance_scale": 3.5
+      },
+      "book_true_counts": {
+        "step_cache_book": 12,
+        "transformer_cache_book.attn": 361,
+        "transformer_cache_book.context_attn": 360,
+        "transformer_cache_book.ff": 360,
+        "transformer_cache_book.context_ff": 360,
+        "transformer_cache_book.ip_attn": 361,
+        "single_transformer_cache_book.attn": 721,
+        "single_transformer_cache_book.mlp": 721
+      },
+      "visual_status": "pass",
+      "visual_reason": "Both matched images remain coherent and detailed, without visible structural corruption; composition changes are allowed.",
+      "limitations": [
+        "Small-set usable-demo and runtime check; not a formal benchmark or a guarantee for all inputs."
+      ],
+      "preview_sha256": {
+        "stilllife.png": "f623881248bacef059e74b7b84a8d0d60524fc15d0ffcba4e806e5af299a8743",
+        "animal.png": "d51598aaeaf077003037ab1a48d39d37f131f547044015b4627e2960c9ab8e0d"
+      },
+      "evaluation_conditions": null,
+      "evidence": [
+        {
+          "condition": "stilllife",
+          "seed": 4101,
+          "method": "full",
+          "sampling_seconds": 7.6979,
+          "media_sha256": [
+            "de9bf5e95cf6d02dd5ed7bf0630c8b232fc64b391817831175907bf5068d9899"
+          ]
+        },
+        {
+          "condition": "stilllife",
+          "seed": 4101,
+          "method": "cached",
+          "sampling_seconds": 3.4456,
+          "media_sha256": [
+            "a9e0b54e8c13d384b63ef61f71b4b6fa816ac52bd074f53276e5bf2f72c59bce"
+          ]
+        },
+        {
+          "condition": "animal",
+          "seed": 4102,
+          "method": "full",
+          "sampling_seconds": 7.8712,
+          "media_sha256": [
+            "b540b85d7ece76057cc51843782f4a5c0d7574ac864856b0b3567840964cdf3c"
+          ]
+        },
+        {
+          "condition": "animal",
+          "seed": 4102,
+          "method": "cached",
+          "sampling_seconds": 3.4133,
+          "media_sha256": [
+            "a65b92bf90adfad220fc459aac467d20b05c1039b57ac49289bf99cca93a87fc"
+          ]
+        }
+      ],
+      "sampling_seconds": {
+        "full": 7.784549999999999,
+        "cached": 3.42945
+      },
+      "diagnostic_speedup": 2.2699120850282113,
+      "device": "NVIDIA H800",
+      "timing_scope": "fresh-process native sampling; excludes model loading; diagnostic two-condition check"
+    },
+    "dit_module": {
+      "file": "DiT/cache_book_dit_module_512x512_steps50_ns0.04_msa0.55_mlp0.55_kcal1_437da0d97a68.json",
+      "sha256": "239bd5d4325dff7ecd5f587db7e67a227584c47efef7c3124bbc727a55ac9c01",
+      "script": "DiT/sample_dit.py",
+      "release_sampler_sha256": "c3b695488ad2aff7381538adf1c2d7db1742514c0750fad771cd1a8e4386b7b5",
+      "calibration": {
+        "seed": 2027,
+        "condition_count": 1,
+        "prompts": [],
+        "classes": [
+          207
+        ],
+        "forward_protocol": {
+          "mode": "conditional_only",
+          "guidance_scale": 1.0
+        }
+      },
+      "execution_args": {
+        "model": "DiT-XL/2",
+        "image_size": 512,
+        "num_classes": 1000,
+        "num_timesteps": 50,
+        "cfg_scale": 4.0,
+        "nonskip_rate": 0.04,
+        "msa_thres": 0.55,
+        "mlp_thres": 0.55
+      },
+      "book_true_counts": {
+        "step_cache_book": 0,
+        "msa_cache_book": 711,
+        "mlp_cache_book": 712
+      },
+      "visual_status": "pass",
+      "visual_reason": "Historical calibration seed2027 reproduces the prior accepted boolean decisions exactly. Lizard demo retains clear anatomy and texture; retriever remains recognizable with a changed pose and smoothed muzzle. Passes usable-demo screening, not pixel fidelity.",
+      "limitations": [
+        "Small-set usable-demo and runtime check; not a formal benchmark or a guarantee for all inputs.",
+        "Changed composition and visible detail softness are allowed by the demo-scoped acceptance criterion."
+      ],
+      "preview_sha256": {
+        "class207.png": "41f84f0835b2b35ca00fa063aceda18add73622a82da023856bfa8beca57b628",
+        "class42.png": "bad8e0d379e9696822a921fe26ae7dc40cf883f1673c8ff26e30a4cc3aa72c97"
+      },
+      "evaluation_conditions": [
+        [
+          "class42",
+          "42",
+          3500
+        ],
+        [
+          "class207",
+          "207",
+          3501
+        ]
+      ],
+      "evidence": [
+        {
+          "condition": "class42",
+          "seed": 3500,
+          "method": "full",
+          "sampling_seconds": 1.3007795810699463,
+          "media_sha256": [
+            "9f84c1daca4005215ef0de0a1de14cbec47154bbf332d08074b271784d459b8d"
+          ]
+        },
+        {
+          "condition": "class42",
+          "seed": 3500,
+          "method": "cached",
+          "sampling_seconds": 0.755876382191976,
+          "media_sha256": [
+            "738dbd68fdfb9e68e60c24bad6013280b80948243fc9d74f6d1b7be821140616"
+          ]
+        },
+        {
+          "condition": "class207",
+          "seed": 3501,
+          "method": "full",
+          "sampling_seconds": 1.3101040522257488,
+          "media_sha256": [
+            "605457a3348bca5ed329731c23917f562b594e878f2eccc333302697f023f0c3"
+          ]
+        },
+        {
+          "condition": "class207",
+          "seed": 3501,
+          "method": "cached",
+          "sampling_seconds": 0.7559366226196289,
+          "media_sha256": [
+            "edbd097225d8f8b87bb15faec14bf21365cb15132ca3d1c0a5d3b1b3e3039e53"
+          ]
+        }
+      ],
+      "sampling_seconds": {
+        "full": 1.3054418166478476,
+        "cached": 0.7559065024058025
+      },
+      "diagnostic_speedup": 1.7269884734329637,
+      "device": "NVIDIA H800",
+      "timing_scope": "fresh-process native sampling; excludes model loading; diagnostic two-condition check"
+    },
+    "dit_step_layer": {
+      "file": "DiT/cache_book_dit_step_layer_512x512_steps50_ns0.04_stepth0.55_msa0.5_mlp0.15_kcal1_ebf267c508ce.json",
+      "sha256": "6cc2432127f153f7f9fd3a1c30bb84527d9ec7aecb392262f9c7fb7226527d80",
+      "script": "DiT/sample_dit_step_layer.py",
+      "release_sampler_sha256": "dd4800ed97aa78209f9cee17047ebcad03993136ac8d31e7327121af73a7965f",
+      "calibration": {
+        "seed": 2027,
+        "condition_count": 1,
+        "prompts": [],
+        "classes": [
+          207
+        ],
+        "forward_protocol": {
+          "mode": "conditional_only",
+          "guidance_scale": 1.0
+        }
+      },
+      "execution_args": {
+        "model": "DiT-XL/2",
+        "image_size": 512,
+        "num_classes": 1000,
+        "num_timesteps": 50,
+        "cfg_scale": 4.0,
+        "nonskip_rate": 0.04,
+        "step_thres": 0.55,
+        "msa_thres": 0.5,
+        "mlp_thres": 0.15
+      },
+      "book_true_counts": {
+        "step_cache_book": 25,
+        "msa_cache_book": 844,
+        "mlp_cache_book": 747
+      },
+      "visual_status": "pass",
+      "visual_reason": "Car and cup demos have coherent object geometry and plausible surfaces; composition and cup markings change without obvious collapse. Historical seed/config retained.",
+      "limitations": [
+        "Small-set usable-demo and runtime check; not a formal benchmark or a guarantee for all inputs."
+      ],
+      "preview_sha256": {
+        "class511.png": "7b547e47a47e50f8eb81e993e71577e1c21812a6d0df7190f1cfe75303596647",
+        "class504.png": "db4b4d4e437d27b9c78f5c1114699113c6e2df16ed7f48a15a8e9876100bd483"
+      },
+      "evaluation_conditions": [
+        [
+          "class511",
+          "511",
+          3100
+        ],
+        [
+          "class504",
+          "504",
+          3100
+        ]
+      ],
+      "evidence": [
+        {
+          "condition": "class511",
+          "seed": 3100,
+          "method": "full",
+          "sampling_seconds": 1.297,
+          "media_sha256": [
+            "ea785484d7e767e50afaba6c7ba7ad566a9b588920df09a5ca11013a7f18d718"
+          ]
+        },
+        {
+          "condition": "class511",
+          "seed": 3100,
+          "method": "cached",
+          "sampling_seconds": 0.608,
+          "media_sha256": [
+            "863fddb1f6495432b695d8a48b0ac89145c9fddca77de53478d0aec1b87ca66d"
+          ]
+        },
+        {
+          "condition": "class504",
+          "seed": 3100,
+          "method": "full",
+          "sampling_seconds": 1.303,
+          "media_sha256": [
+            "6c4e67f8beeec54cdbb94aaef7b758552e9cb897b80cf854c66d2c3573a8d5fc"
+          ]
+        },
+        {
+          "condition": "class504",
+          "seed": 3100,
+          "method": "cached",
+          "sampling_seconds": 0.609,
+          "media_sha256": [
+            "b43d683de6d21000f9113f69fffe49763e2a5276f76a463dea0786d27b819398"
+          ]
+        }
+      ],
+      "sampling_seconds": {
+        "full": 1.2999999999999998,
+        "cached": 0.6085
+      },
+      "diagnostic_speedup": 2.136400986031224,
+      "device": "NVIDIA H800",
+      "timing_scope": "fresh-process native sampling; excludes model loading; diagnostic two-condition check"
+    },
+    "hunyuan_magcache_hybrid": {
+      "file": "HunyuanVideo/cache_book_hunyuan_magcache_hybrid_720p_16x9_f121_steps50_ns0.1_sattn0_smlp0_ia0.9_ta0.8_im0_tm0_mag0.03_mk2_r0.25_c986e16e67d1.json",
+      "sha256": "4ce99c3f51955a12b41cdef35151ba6e4cac8464b3b1f01c3175ab8c34414f47",
+      "script": "HunyuanVideo/hybrid_cache/sample_hunyuan_magcache_hybrid.py",
+      "release_sampler_sha256": "c1b576126446fec79a08a55a90eb5b8ed60507974f68c5e5a29599c8a8f6ded5",
+      "calibration": {
+        "seed": 42,
+        "condition_count": 1,
+        "prompts": [
+          "A ceramic teapot on a wooden table under soft window light, nearly static camera."
+        ],
+        "classes": [],
+        "forward_protocol": {
+          "mode": "native_pipeline",
+          "guidance_scale": 6.0
+        }
+      },
+      "execution_args": {
+        "resolution": "720p",
+        "aspect_ratio": "16:9",
+        "num_inference_steps": 50,
+        "video_length": 121,
+        "cfg_distilled": false,
+        "enable_step_distill": false,
+        "sparse_attn": false,
+        "dtype": "bf16",
+        "magcache_thresh": 0.03,
+        "magcache_K": 2,
+        "retention_ratio": 0.25,
+        "magcache_ratio_source": "auto",
+        "nonskip_rate": 0.1,
+        "double_img_attn_thres": 0.9,
+        "double_txt_attn_thres": 0.8,
+        "double_img_mlp_thres": 0.0,
+        "double_txt_mlp_thres": 0.0,
+        "single_attn_thres": 0.0,
+        "single_mlp_thres": 0.0
+      },
+      "book_true_counts": {
+        "finegrained_cache.module_cache_book.double.img_attn": 2116,
+        "finegrained_cache.module_cache_book.double.txt_attn": 1857,
+        "finegrained_cache.module_cache_book.double.img_mlp": 0,
+        "finegrained_cache.module_cache_book.double.txt_mlp": 0,
+        "finegrained_cache.module_cache_book.single.attn": 0,
+        "finegrained_cache.module_cache_book.single.mlp": 0
+      },
+      "visual_status": "pass",
+      "visual_reason": "At native 720p/121 frames, both dog-running and chef-plating videos retain plausible anatomy, identity and continuous movement across uniform and twelve consecutive frames; framing/background differ slightly from Full.",
+      "limitations": [
+        "Small-set usable-demo and runtime check; not a formal benchmark or a guarantee for all inputs."
+      ],
+      "preview_sha256": {
+        "beach_uniform.png": "fc97d570e4f13a9f8389e18e93121fc2fe591e6d4119f5f550ea2f56cf7c45f9",
+        "beach_continuous.png": "58f2e307bac68ef6a47c14dbc94b9a005e189220d4c6068e59b4bca5b23cb2c7",
+        "chef_uniform.png": "b1e3afcb2cc20e0a449309ddf9b5cd9a8afe1910ae9bb70bce1c79c20a554a03",
+        "chef_continuous.png": "4d87659bde8f8644e506ea8da2531068508b333155a42403cfdae58aacb1c0a8"
+      },
+      "evaluation_conditions": null,
+      "evidence": [
+        {
+          "condition": "beach",
+          "seed": 4101,
+          "method": "full",
+          "sampling_seconds": 1891.43,
+          "media_sha256": [
+            "f388c8f106da6eeac106d719a96b21e6d0aa753aedf82298590dd21a6cada9f0"
+          ]
+        },
+        {
+          "condition": "beach",
+          "seed": 4101,
+          "method": "cached",
+          "sampling_seconds": 764.69,
+          "media_sha256": [
+            "7426cc1df011befc0cbba562ea235cfeddc856a6dabc50e704d7f5c4184d12a6"
+          ]
+        },
+        {
+          "condition": "chef",
+          "seed": 4102,
+          "method": "full",
+          "sampling_seconds": 1907.39,
+          "media_sha256": [
+            "251728f0fbc51964638e5cc5e2437cd40dc5161c824c96aba29a95a3518a27de"
+          ]
+        },
+        {
+          "condition": "chef",
+          "seed": 4102,
+          "method": "cached",
+          "sampling_seconds": 774.3,
+          "media_sha256": [
+            "6058675bd6c085daefdb7d29fea80666a17ecab0de582b2c541d93fc2acccd1e"
+          ]
+        }
+      ],
+      "sampling_seconds": {
+        "full": 1899.41,
+        "cached": 769.495
+      },
+      "diagnostic_speedup": 2.468385109714813,
+      "device": "NVIDIA H800",
+      "timing_scope": "fresh-process native sampling; excludes model loading; diagnostic two-condition check"
+    },
+    "hunyuan_seacache_hybrid": {
+      "file": "HunyuanVideo/cache_book_hunyuan_seacache_hybrid_720p_16x9_f121_steps50_ns0.1_sattn0_smlp0_ia0.6_ta0.5_im0_tm0_sea0.2_7245ac0ff5f1.json",
+      "sha256": "a4bcb23283c785b7b09af557b04274ad0775aab8a5734cca2c155f43b5ed23ed",
+      "script": "HunyuanVideo/hybrid_cache/sample_hunyuan_seacache_hybrid.py",
+      "release_sampler_sha256": "92e0f64f2fe9c0b43cd0ffe4b994c4840aacd397645a304132925e99f11b422b",
+      "calibration": {
+        "seed": 42,
+        "condition_count": 1,
+        "prompts": [
+          "A ceramic teapot on a wooden table under soft window light, nearly static camera."
+        ],
+        "classes": [],
+        "forward_protocol": {
+          "mode": "native_pipeline",
+          "guidance_scale": 6.0
+        }
+      },
+      "execution_args": {
+        "resolution": "720p",
+        "aspect_ratio": "16:9",
+        "num_inference_steps": 50,
+        "video_length": 121,
+        "cfg_distilled": false,
+        "enable_step_distill": false,
+        "sparse_attn": false,
+        "dtype": "bf16",
+        "seacache_thresh": 0.2,
+        "nonskip_rate": 0.1,
+        "double_img_attn_thres": 0.6,
+        "double_txt_attn_thres": 0.5,
+        "double_img_mlp_thres": 0.0,
+        "double_txt_mlp_thres": 0.0,
+        "single_attn_thres": 0.0,
+        "single_mlp_thres": 0.0
+      },
+      "book_true_counts": {
+        "finegrained_cache.module_cache_book.double.img_attn": 1339,
+        "finegrained_cache.module_cache_book.double.txt_attn": 1084,
+        "finegrained_cache.module_cache_book.double.img_mlp": 0,
+        "finegrained_cache.module_cache_book.double.txt_mlp": 0,
+        "finegrained_cache.module_cache_book.single.attn": 0,
+        "finegrained_cache.module_cache_book.single.mlp": 0
+      },
+      "visual_status": "pass",
+      "visual_reason": "Native dog and chef demos retain recognizable structure, identity and continuous movement in uniform and consecutive-frame checks; no clear persistent ghost subjects or motion freeze.",
+      "limitations": [
+        "Small-set usable-demo and runtime check; not a formal benchmark or a guarantee for all inputs."
+      ],
+      "preview_sha256": {
+        "beach_uniform.png": "fc7aad4f03b1b19987e48cc4b58916af49bfbff78c076d7bb16b2a6efab6faee",
+        "beach_continuous.png": "b2fe5d7996968d3cfa17ac726eb4689ea609effa47d5425d23c94a4404f1ee45",
+        "chef_uniform.png": "6f56cc07e675bcf7d4500666dedc2d9b177d04a87f058f67a7efbea0003a1156",
+        "chef_continuous.png": "72f08dce34fb0711c503bdab60563620e9a2f0ebba0d7a8cf1fadfbecbf4c89f"
+      },
+      "evaluation_conditions": null,
+      "evidence": [
+        {
+          "condition": "beach",
+          "seed": 4101,
+          "method": "full",
+          "sampling_seconds": 1925.86,
+          "media_sha256": [
+            "f388c8f106da6eeac106d719a96b21e6d0aa753aedf82298590dd21a6cada9f0"
+          ]
+        },
+        {
+          "condition": "beach",
+          "seed": 4101,
+          "method": "cached",
+          "sampling_seconds": 832.25,
+          "media_sha256": [
+            "f35d5eb32d7b40460473e3ab5c1a8e891b5e815125ced458b9c06310d85a0075"
+          ]
+        },
+        {
+          "condition": "chef",
+          "seed": 4102,
+          "method": "full",
+          "sampling_seconds": 2073.29,
+          "media_sha256": [
+            "251728f0fbc51964638e5cc5e2437cd40dc5161c824c96aba29a95a3518a27de"
+          ]
+        },
+        {
+          "condition": "chef",
+          "seed": 4102,
+          "method": "cached",
+          "sampling_seconds": 902.79,
+          "media_sha256": [
+            "2b015750d2af1ab5828827415ab2e79f05d3f85d6d6f6063ac86a4ac4e571fcd"
+          ]
+        }
+      ],
+      "sampling_seconds": {
+        "full": 1999.5749999999998,
+        "cached": 867.52
+      },
+      "diagnostic_speedup": 2.3049324511250457,
+      "device": "NVIDIA H800",
+      "timing_scope": "fresh-process native sampling; excludes model loading; diagnostic two-condition check"
+    },
+    "wan_magcache_hybrid": {
+      "file": "Wan2.1/cache_book_wan_magcache_hybrid_832x480_f81_steps50_ns0.1_sattn0.3_cross0.3_ffn0_mag0.12_mk4_r0.2_b5f3942c71bb.json",
+      "sha256": "466d6ea4e4ef2e0eda6847bde2fc60ad717432cb665bbe1e77c2b4da320f39e8",
+      "script": "Wan2.1/hybrid_cache/sample_wan_magcache_hybrid.py",
+      "release_sampler_sha256": "6587e30a0caec762b2d724a1f8679891ee5aef5aff66d9b0e42735ffd4c5231f",
+      "calibration": {
+        "seed": 42,
+        "condition_count": 1,
+        "prompts": [
+          "A red fox walks through a snowy forest while the camera tracks from the side."
+        ],
+        "classes": [],
+        "forward_protocol": {
+          "mode": "native_pipeline",
+          "guidance_scale": 5.0
+        }
+      },
+      "execution_args": {
+        "task": "t2v-1.3B",
+        "size": "832*480",
+        "frame_num": 81,
+        "sample_solver": "unipc",
+        "sample_steps": 50,
+        "sample_shift": 5.0,
+        "sample_guide_scale": 5.0,
+        "nonskip_rate": 0.1,
+        "self_attn_thres": 0.3,
+        "cross_attn_thres": 0.3,
+        "ffn_thres": 0.0,
+        "magcache_thresh": 0.12,
+        "magcache_K": 4,
+        "retention_ratio": 0.2
+      },
+      "book_true_counts": {
+        "finegrained_cache.module_cache_book.self_attn": 334,
+        "finegrained_cache.module_cache_book.cross_attn": 321,
+        "finegrained_cache.module_cache_book.ffn": 0
+      },
+      "visual_status": "pass",
+      "visual_reason": "Six uniform frames and twelve consecutive frames for dog running and chef plating show plausible anatomy and continuous motion, without clear freezes or persistent fragments.",
+      "limitations": [
+        "Small-set usable-demo and runtime check; not a formal benchmark or a guarantee for all inputs."
+      ],
+      "preview_sha256": {
+        "beach_uniform.png": "a827dac0153ca18f0f80aaae238cbda5cca4a1fdd637f8bd37d06230b197bd0e",
+        "beach_continuous.png": "3c5839e909172edefe3fc702b5571918b5604a7a1c7aa8c9741fda7c6f7e91e4",
+        "chef_uniform.png": "a3250c1745294fe935f11dbfcd95eaab2be61e0dd07ae69664cb4c94a54ad318",
+        "chef_continuous.png": "93253b51aa583a2eef7fa05ce2ebc52eca70cecaeb09b4aa8c1e0a9eeddd1499"
+      },
+      "evaluation_conditions": null,
+      "evidence": [
+        {
+          "condition": "beach",
+          "seed": 4101,
+          "method": "full",
+          "sampling_seconds": 110.42049602046609,
+          "media_sha256": [
+            "5fc546c4f7e1876188897214f83fdb9dcc87b8da8eb3b92a6d71dce46276e2be"
+          ]
+        },
+        {
+          "condition": "beach",
+          "seed": 4101,
+          "method": "cached",
+          "sampling_seconds": 49.780968613922596,
+          "media_sha256": [
+            "d5d74f3408df1d57ba8f2570d88c69caa1cdecbc102937774bba6894bfe6f8b7"
+          ]
+        },
+        {
+          "condition": "chef",
+          "seed": 4102,
+          "method": "full",
+          "sampling_seconds": 109.16775637120008,
+          "media_sha256": [
+            "da327964a592c0e08ac5354339b881fff19216045df2dbbeafb80827bb9f5abc"
+          ]
+        },
+        {
+          "condition": "chef",
+          "seed": 4102,
+          "method": "cached",
+          "sampling_seconds": 48.80167420208454,
+          "media_sha256": [
+            "59c5fe8bb414679ddac24b091534f2e381959394821ba104dcdc2187345b740f"
+          ]
+        }
+      ],
+      "sampling_seconds": {
+        "full": 109.79412619583309,
+        "cached": 49.29132140800357
+      },
+      "diagnostic_speedup": 2.2274534960632137,
+      "device": "NVIDIA H800",
+      "timing_scope": "fresh-process native sampling; excludes model loading; diagnostic two-condition check"
+    },
+    "wan_seacache_hybrid": {
+      "file": "Wan2.1/cache_book_wan_seacache_hybrid_832x480_f81_steps50_ns0.1_sattn0.3_cross0.3_ffn0_sea0.2_0afd043613a6.json",
+      "sha256": "0feadf1dfc3a962d5db30eeddf358230b57ac6e8efdb2452d284490014903650",
+      "script": "Wan2.1/hybrid_cache/sample_wan_seacache_hybrid.py",
+      "release_sampler_sha256": "5947fa580682122f0eac0648fd3a7aab06c29cbc061c39dd17129d13ee495b70",
+      "calibration": {
+        "seed": 42,
+        "condition_count": 1,
+        "prompts": [
+          "A red fox walks through a snowy forest while the camera tracks from the side."
+        ],
+        "classes": [],
+        "forward_protocol": {
+          "mode": "native_pipeline",
+          "guidance_scale": 5.0
+        }
+      },
+      "execution_args": {
+        "task": "t2v-1.3B",
+        "size": "832*480",
+        "frame_num": 81,
+        "sample_solver": "unipc",
+        "sample_steps": 50,
+        "sample_shift": 5.0,
+        "sample_guide_scale": 5.0,
+        "nonskip_rate": 0.1,
+        "self_attn_thres": 0.3,
+        "cross_attn_thres": 0.3,
+        "ffn_thres": 0.0,
+        "seacache_thresh": 0.2
+      },
+      "book_true_counts": {
+        "finegrained_cache.module_cache_book.self_attn": 335,
+        "finegrained_cache.module_cache_book.cross_attn": 324,
+        "finegrained_cache.module_cache_book.ffn": 0
+      },
+      "visual_status": "pass",
+      "visual_reason": "Uniform and twelve consecutive matched frames retain coherent dog running and chef/utensil motion; modest composition changes, no obvious identity breaks.",
+      "limitations": [
+        "Small-set usable-demo and runtime check; not a formal benchmark or a guarantee for all inputs."
+      ],
+      "preview_sha256": {
+        "beach_uniform.png": "0d7aab094e075df2da1d5a74a161f7d926acba90f0f0f9fb04131410f2fbcff9",
+        "beach_continuous.png": "3413c0968c5b59e6025841d16d7ba190566d2955b757a143f74b2116757035d7",
+        "chef_uniform.png": "132331fb59d0a6fefddccc38a4894837807cc10ad4ec04d4030b9d55bac313da",
+        "chef_continuous.png": "62988220c8c55c2b2b7fe5c0c5d258fe760eeae561d25e5b56eef102f9405c76"
+      },
+      "evaluation_conditions": null,
+      "evidence": [
+        {
+          "condition": "beach",
+          "seed": 4101,
+          "method": "full",
+          "sampling_seconds": 109.5088,
+          "media_sha256": [
+            "5fc546c4f7e1876188897214f83fdb9dcc87b8da8eb3b92a6d71dce46276e2be"
+          ]
+        },
+        {
+          "condition": "beach",
+          "seed": 4101,
+          "method": "cached",
+          "sampling_seconds": 55.0571,
+          "media_sha256": [
+            "99c5f9c0d540191149496e8c149dd0a47ee1ec084e49dfb1422c0b59cb8ba3a4"
+          ]
+        },
+        {
+          "condition": "chef",
+          "seed": 4102,
+          "method": "full",
+          "sampling_seconds": 109.1878,
+          "media_sha256": [
+            "da327964a592c0e08ac5354339b881fff19216045df2dbbeafb80827bb9f5abc"
+          ]
+        },
+        {
+          "condition": "chef",
+          "seed": 4102,
+          "method": "cached",
+          "sampling_seconds": 57.1906,
+          "media_sha256": [
+            "9ac4b101168380e4040c5f6109be9fe77b51fd6f4cd214c3458958b0693b789d"
+          ]
+        }
+      ],
+      "sampling_seconds": {
+        "full": 109.3483,
+        "cached": 56.123850000000004
+      },
+      "diagnostic_speedup": 1.948339253276459,
+      "device": "NVIDIA H800",
+      "timing_scope": "fresh-process native sampling; excludes model loading; diagnostic two-condition check"
+    },
+    "flux_magcache_hybrid": {
+      "file": "FLUX/cache_book_flux_magcache_hybrid_1024x1024_steps28_ns0.1_attn0.3_cattn0.3_ff0_cff0_sattn0.3_smlp0_mag0.24_mk4_r0.2_6d3e1db13511.json",
+      "sha256": "504b38e953e7ab9086fe8e8f1d710b4b1d25707819a176bd5686fe657bf698d3",
+      "script": "FLUX/hybrid_cache/sample_flux_magcache_hybrid.py",
+      "release_sampler_sha256": "fed23e1ae96f2aed5f26cc5cd684420b4e794eea465375cc133f609838c95153",
+      "calibration": {
+        "seed": 42,
+        "condition_count": 1,
+        "prompts": [
+          "A red ceramic teapot beside two blue cups on a wooden table."
+        ],
+        "classes": [],
+        "forward_protocol": {
+          "mode": "native_pipeline",
+          "guidance_scale": 3.5
+        }
+      },
+      "execution_args": {
+        "height": 1024,
+        "width": 1024,
+        "num_inference_steps": 28,
+        "guidance_scale": 3.5,
+        "nonskip_rate": 0.1,
+        "attn_thres": 0.3,
+        "context_attn_thres": 0.3,
+        "ff_thres": 0.0,
+        "context_ff_thres": 0.0,
+        "single_attn_thres": 0.3,
+        "single_mlp_thres": 0.0,
+        "magcache_thresh": 0.24,
+        "retention_ratio": 0.2
+      },
+      "book_true_counts": {
+        "step_policy_artifacts.step_cache_book": 17,
+        "layer_cache_book.double.attn": 354,
+        "layer_cache_book.double.context_attn": 353,
+        "layer_cache_book.double.ff": 323,
+        "layer_cache_book.double.context_ff": 323,
+        "layer_cache_book.single.attn": 717,
+        "layer_cache_book.single.mlp": 646,
+        "layer_cache_book.double.ip_attn": 354
+      },
+      "visual_status": "pass",
+      "visual_reason": "Still-life objects and toucan remain sharp and semantically correct in both matched conditions.",
+      "limitations": [
+        "Small-set usable-demo and runtime check; not a formal benchmark or a guarantee for all inputs."
+      ],
+      "preview_sha256": {
+        "stilllife.png": "6992f7aa0e9bfe932bc4aa3653987989bb53695821d6e71ed9ae70255281e186",
+        "animal.png": "c578e6babdf871c2f786d68411e3d4542aba6b371a8936f295d4bc718f3eb2e4"
+      },
+      "evaluation_conditions": null,
+      "evidence": [
+        {
+          "condition": "stilllife",
+          "seed": 4101,
+          "method": "full",
+          "sampling_seconds": 8.004310220479965,
+          "media_sha256": [
+            "de9bf5e95cf6d02dd5ed7bf0630c8b232fc64b391817831175907bf5068d9899"
+          ]
+        },
+        {
+          "condition": "stilllife",
+          "seed": 4101,
+          "method": "cached",
+          "sampling_seconds": 3.3560644313693047,
+          "media_sha256": [
+            "dfa4955fb8270ab2dd0562d8f25ed67a0ddea64fe3ead98f546fe5c106f66188"
+          ]
+        },
+        {
+          "condition": "animal",
+          "seed": 4102,
+          "method": "full",
+          "sampling_seconds": 7.85185806080699,
+          "media_sha256": [
+            "b540b85d7ece76057cc51843782f4a5c0d7574ac864856b0b3567840964cdf3c"
+          ]
+        },
+        {
+          "condition": "animal",
+          "seed": 4102,
+          "method": "cached",
+          "sampling_seconds": 3.3682560361921787,
+          "media_sha256": [
+            "7155f2e04ce2ff6c79c60d951a5466e66505756f54234fd1fe88a97cfad52345"
+          ]
+        }
+      ],
+      "sampling_seconds": {
+        "full": 7.928084140643477,
+        "cached": 3.3621602337807417
+      },
+      "diagnostic_speedup": 2.3580328090813105,
+      "device": "NVIDIA H800",
+      "timing_scope": "fresh-process native sampling; excludes model loading; diagnostic two-condition check"
+    },
+    "flux_seacache_hybrid": {
+      "file": "FLUX/cache_book_flux_seacache_hybrid_1024x1024_steps28_ns0.1_attn0.3_cattn0.3_ff0.2_cff0.2_sattn0.3_smlp0.2_sea0.3_d88ab0430b57.json",
+      "sha256": "af97187f84840de390bbfb40608afd366a06eec953eef0c9aecd239ba141702b",
+      "script": "FLUX/hybrid_cache/sample_flux_seacache_hybrid.py",
+      "release_sampler_sha256": "d674c3eddd36163d5700c5c933db08dff10db004b1c6fcc31c092bddf01fc8b4",
+      "calibration": {
+        "seed": 42,
+        "condition_count": 1,
+        "prompts": [
+          "A red ceramic teapot beside two blue cups on a wooden table."
+        ],
+        "classes": [],
+        "forward_protocol": {
+          "mode": "native_pipeline",
+          "guidance_scale": 3.5
+        }
+      },
+      "execution_args": {
+        "height": 1024,
+        "width": 1024,
+        "num_inference_steps": 28,
+        "guidance_scale": 3.5,
+        "nonskip_rate": 0.1,
+        "attn_thres": 0.3,
+        "context_attn_thres": 0.3,
+        "ff_thres": 0.2,
+        "context_ff_thres": 0.2,
+        "single_attn_thres": 0.3,
+        "single_mlp_thres": 0.2,
+        "seacache_thresh": 0.3
+      },
+      "book_true_counts": {
+        "layer_cache_book.double.attn": 142,
+        "layer_cache_book.double.context_attn": 136,
+        "layer_cache_book.double.ff": 93,
+        "layer_cache_book.double.context_ff": 90,
+        "layer_cache_book.single.attn": 293,
+        "layer_cache_book.single.mlp": 196,
+        "layer_cache_book.double.ip_attn": 142
+      },
+      "visual_status": "pass",
+      "visual_reason": "Both matched image conditions retain plausible structure and fine detail; no obvious corrupted outlines.",
+      "limitations": [
+        "Small-set usable-demo and runtime check; not a formal benchmark or a guarantee for all inputs."
+      ],
+      "preview_sha256": {
+        "stilllife.png": "dac18df699b27a1b60a70fc7e0d2994f17dd5ececa30ca4fb9efe943d23a04a5",
+        "animal.png": "ad918014d330689b94288d0746fccc91dcbf1fe15a12794e692b042c0927b2bc"
+      },
+      "evaluation_conditions": null,
+      "evidence": [
+        {
+          "condition": "stilllife",
+          "seed": 4101,
+          "method": "full",
+          "sampling_seconds": 7.7534,
+          "media_sha256": [
+            "de9bf5e95cf6d02dd5ed7bf0630c8b232fc64b391817831175907bf5068d9899"
+          ]
+        },
+        {
+          "condition": "stilllife",
+          "seed": 4101,
+          "method": "cached",
+          "sampling_seconds": 4.5759,
+          "media_sha256": [
+            "8b787769929c3ddcaf65db51970221dd2658389ebaa831f480a17c53d7ccd6fd"
+          ]
+        },
+        {
+          "condition": "animal",
+          "seed": 4102,
+          "method": "full",
+          "sampling_seconds": 7.7662,
+          "media_sha256": [
+            "b540b85d7ece76057cc51843782f4a5c0d7574ac864856b0b3567840964cdf3c"
+          ]
+        },
+        {
+          "condition": "animal",
+          "seed": 4102,
+          "method": "cached",
+          "sampling_seconds": 4.4743,
+          "media_sha256": [
+            "40507842718bf3f00748a1109e3f8c4a88ef11d66e75f7be230f558e90039f53"
+          ]
+        }
+      ],
+      "sampling_seconds": {
+        "full": 7.7598,
+        "cached": 4.5251
+      },
+      "diagnostic_speedup": 1.7148350312700271,
+      "device": "NVIDIA H800",
+      "timing_scope": "fresh-process native sampling; excludes model loading; diagnostic two-condition check"
+    }
+  },
+  "filename_scheme": "configuration-v1"
+}

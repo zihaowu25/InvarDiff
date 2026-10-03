@@ -191,12 +191,20 @@ Execution modes:
 
 | Flags | Behavior |
 |---|---|
-| neither Finegrained flag | whole-step cache only |
+| neither Finegrained flag | load bundled book, perform hybrid generation |
+| `--no-use_finegrained_cache` | whole-step cache only; MagCache requires upstream-supported 20/40-step ratios |
 | `--finegrained_calibration` | two calibration passes, save Cache Book, no video |
 | `--use_finegrained_cache` | load Cache Book, perform one hybrid generation |
 | both flags | two calibration passes, then one hybrid generation |
 | use + `--disable_step_cache` | layer-only ablation |
-| all six layer thresholds set to zero | step-only parity configuration |
+| all six layer thresholds set to zero and recalibrated | step-only parity configuration |
+
+The released MagCache book uses 50-step joint-calibrated ratios. For step-only
+generation at that protocol, calibrate a custom book with all six module
+quantiles zero and keep `--use_finegrained_cache` enabled when loading it;
+this loads the ratio artifacts while the module masks remain all-compute.
+The bundled hybrid book is not a new layer-only calibration: use a custom
+book for such ablations and validate its visual quality separately.
 
 `--runtime_cache_device auto` keeps a new tensor on GPU unless doing so would
 reduce free memory below `--runtime_cache_gpu_reserve_gib` (default 2 GiB);
@@ -219,6 +227,7 @@ PROMPT='A cinematic tracking shot of a sailboat crossing a luminous bay.'
 python sample_hunyuan_magcache_hybrid.py \
   --model_path "$MODEL" --resolution 720p --prompt "$PROMPT" \
   --num_inference_steps 20 --seed 123 --sr false \
+  --no-use_finegrained_cache \
   --output_path "$OUT/magcache_step_only.mp4"
 ```
 
@@ -238,8 +247,7 @@ python "sample_hunyuan_${METHOD}_hybrid.py" \
 ```bash
 python sample_hunyuan_seacache_hybrid.py \
   --model_path "$MODEL" --resolution 720p --prompt "$PROMPT" \
-  --num_inference_steps 20 --seed 123 --sr false \
-  --cache_book_path "$BOOKS" --use_finegrained_cache \
+  --num_inference_steps 50 --video_length 121 --seed 123 --sr false \
   --output_path "$OUT/seacache_hybrid.mp4"
 ```
 
@@ -286,6 +294,15 @@ policy thresholds. Without `--output_path`, the official timestamped output
 convention is used under `./outputs`.
 
 ## Cache Book format
+
+At the released 720p T2V, 121-frame, 50-step protocol, generation defaults to
+the configuration-named JSON in `cache_books/HunyuanVideo/`. No calibration flag is
+needed. Other step counts, I2V tasks, weights, or cache parameters require a
+separate calibration; the bundled books are not interchangeable across those
+settings. Calibration without a folder writes to the same directory and
+configuration-derived filename as inference. Different configurations coexist;
+recalibrating the same configuration updates its file. Optional custom folders
+and explicit filenames must be used consistently for calibration and inference.
 
 All books contain:
 

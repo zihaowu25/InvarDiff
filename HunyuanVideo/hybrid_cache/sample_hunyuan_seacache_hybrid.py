@@ -1783,7 +1783,7 @@ def build_parser():
     )
     parser.add_argument("--model_path", required=True)
     parser.add_argument("--aspect_ratio", default="16:9")
-    parser.add_argument("--num_inference_steps", type=int, default=None)
+    parser.add_argument("--num_inference_steps", type=int, default=50)
     parser.add_argument("--video_length", type=int, default=121)
     parser.add_argument(
         "--sr", type=str_to_bool, nargs="?", const=True, default=True
@@ -1897,12 +1897,12 @@ def build_parser():
     parser.add_argument("--quant_type", default="fp8-per-token-sgl")
     parser.add_argument("--include_patterns", default="double_blocks")
 
-    parser.add_argument("--use_finegrained_cache", action="store_true")
+    parser.add_argument("--use_finegrained_cache", action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument("--finegrained_calibration", action="store_true")
     parser.add_argument("--disable_step_cache", action="store_true")
     parser.add_argument("--disable_progress_bar", action="store_true")
     parser.add_argument("--seacache_thresh", type=float, default=0.20)
-    parser.add_argument("--cache_book_path", default="./cache_books")
+    parser.add_argument("--cache_book_path", default=None)
     parser.add_argument("--cache_book_file", default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
     # Native HunyuanVideo-1.5 121-frame hybrid setting. Joint attention is

@@ -1081,10 +1081,10 @@ def parse_args():
     parser.add_argument("--max-sequence-length", type=int, default=512)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--finegrained-calibration", action="store_true")
-    parser.add_argument("--use-finegrained-cache", action="store_true")
+    parser.add_argument("--use-finegrained-cache", action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument(
         "--cache-book-path",
-        default=str(script_dir / "cache_books"),
+        default=None,
     )
     parser.add_argument("--cache-book-file")
     parser.add_argument("--nonskip-rate", type=float, default=0.1)

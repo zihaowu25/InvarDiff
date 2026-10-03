@@ -16,12 +16,26 @@ under the provider's terms. From the repository root, after setting
 
 ```bash
 python FLUX/sample_flux.py --model-path "$FLUX_MODEL" \
+  --prompt "A colorful toucan perched on a mossy branch in a sunlit tropical forest, photorealistic, crisp feathers and soft background." --seed 4102 \
+  --output-dir outputs/flux
+```
+
+Inference loads the matching configuration-named JSON in `cache_books/FLUX/`
+automatically. The step-layer entrypoint uses the same folder with a different
+strategy filename.
+To recalibrate and then use the resulting book without changing paths:
+
+```bash
+python FLUX/sample_flux.py --model-path "$FLUX_MODEL" \
   --generate-cache-books --calibration-only
 
 python FLUX/sample_flux.py --model-path "$FLUX_MODEL" \
-  --prompt "A blue kingfisher perched above a river in morning light" \
-  --output-dir outputs/flux
+  --prompt "A blue kingfisher perched above a river in morning light"
 ```
+
+Calibration and inference use the same configuration-derived filename in
+`cache_books/FLUX/`. Different configurations coexist; recalibrating the same
+configuration updates its existing file.
 
 The module-only preset is `default` and is selected automatically. Explicit
 threshold flags override its individual values. Cache Books are compatible

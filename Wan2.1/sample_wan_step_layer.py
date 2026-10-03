@@ -767,7 +767,7 @@ def _parse_args(cli_args=None):
     parser = argparse.ArgumentParser(description="Generate image/video using Wan with Finegrained Cache acceleration")
     parser.add_argument("--task", type=str, default="t2v-1.3B", choices=list(WAN_CONFIGS.keys()))
     parser.add_argument("--size", type=str, default="832*480", choices=list(SIZE_CONFIGS.keys()))
-    parser.add_argument("--frame_num", type=int, default=None)
+    parser.add_argument("--frame_num", type=int, default=81)
     parser.add_argument("--ckpt_dir", type=str, default=None)
     parser.add_argument("--offload_model", type=str2bool, default=None)
     parser.add_argument("--ulysses_size", type=int, default=1)
@@ -793,14 +793,14 @@ def _parse_args(cli_args=None):
     parser.add_argument("--last_frame", type=str, default=None)
 
     parser.add_argument("--sample_solver", type=str, default="unipc", choices=["unipc", "dpm++"])
-    parser.add_argument("--sample_steps", type=int, default=None)
-    parser.add_argument("--sample_shift", type=float, default=None)
+    parser.add_argument("--sample_steps", type=int, default=50)
+    parser.add_argument("--sample_shift", type=float, default=5.0)
     parser.add_argument("--sample_guide_scale", type=float, default=5.0)
 
     # Finegrained Cache options (existing flag names are kept for compatibility).
-    parser.add_argument("--use_invardiff", action="store_true", default=False)
+    parser.add_argument("--use_invardiff", action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument("--invardiff_calibration", action="store_true", default=False)
-    parser.add_argument("--cache_book_path", type=str, default="./cache_books")
+    parser.add_argument("--cache_book_path", type=str, default=None)
     parser.add_argument("--cache_book_file", type=str, default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.04)
     # Selected defaults at 832x480, 81 frames and 50 steps (~2.72x measured sampling speedup).
@@ -1387,6 +1387,7 @@ def generate(args):
                 f"{args.ulysses_size}_{args.ring_size}_{formatted_prompt}_{formatted_time}{suffix}"
             )
         save_path = os.path.abspath(args.save_file)
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
         if "t2i" in args.task:
             cache_image(
                 tensor=video.squeeze(1)[None],
@@ -1423,51 +1424,5 @@ if __name__ == "__main__":
             )
         ),
     )
-    debug_args = [
-    ## Core task/model
-    "--task", "t2v-1.3B",
-    "--ckpt_dir", default_ckpt_dir,
-
-    ## Output controls
-    "--size", "832*480",
-    "--frame_num", "81",
-    # "--save_file", "debug_t2v_1_3b.mp4",
-
-    ## Sampling controls
-    "--sample_solver", "unipc",      # or dpm++
-    "--sample_steps", "30",
-    "--sample_shift", "5.0",
-    "--sample_guide_scale", "5.0",
-    "--base_seed", "42",
-
-    ## Prompt
-    "--prompt", "A red fox walks slowly through a snowy forest at dawn. The camera tracks smoothly from left to right, its breath is visible, gentle snow is falling, and the lighting remains natural and cinematic.",
-    # "--use_prompt_extend",
-    # "--prompt_extend_method", "local_qwen",   # or dashscope
-    # "--prompt_extend_model", "Qwen2.5-7B-Instruct",
-    # "--prompt_extend_target_lang", "en",
-
-    ## Runtime / parallel
-    "--offload_model", "False",       # Keep model on GPU by default.
-    "--ulysses_size", "1",
-    "--ring_size", "1",
-    # "--t5_fsdp",
-    # "--dit_fsdp",
-    # "--t5_cpu",
-
-    ## Finegrained Cache controls (existing flag names are kept for compatibility).
-
-    "--invardiff_calibration",
-    "--use_invardiff",
-
-    "--cache_book_path", "./cache_books",
-    # "--cache_book_file", "cache_book_stplayer_t2v-1.3B_832x480_f81_steps30_ns0.1_stepth0.40_sattnth0.3_cattnth0.2_ffnth0.01.json",
-
-    "--nonskip_rate", "0.04",
-    "--step_thres", "0.63",
-    "--self_attn_thres", "0.82",
-    "--cross_attn_thres", "1.00",
-    "--ffn_thres", "0.82",
-    ]
-    cli_args = _parse_args(debug_args if len(sys.argv) == 1 else None)
+    cli_args = _parse_args()
     generate(cli_args)

@@ -1305,7 +1305,7 @@ if __name__ == "__main__":
     parser.add_argument("--output-file", default=None)
     parser.add_argument("--save-individual-dir", default=None)
     parser.add_argument("--metrics-json", default=None)
-    parser.add_argument("--cache-book-path", default="./cache_books")
+    parser.add_argument("--cache-book-path", default=None)
     parser.add_argument("--cache-book-file", default=None)
     parser.add_argument("--nonskip-rate", type=float, default=0.1)
     # Selected module-only setting (two calibration prompts and two protected

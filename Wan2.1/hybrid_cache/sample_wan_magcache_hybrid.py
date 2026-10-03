@@ -1016,8 +1016,8 @@ def _parse_args(cli_args=None):
         description="Standalone Wan2.1 MagCache + Finegrained Cache hybrid sampler"
     )
     parser.add_argument("--task", type=str, default="t2v-1.3B", choices=list(WAN_CONFIGS.keys()))
-    parser.add_argument("--size", type=str, default="1280*720", choices=list(SIZE_CONFIGS.keys()))
-    parser.add_argument("--frame_num", type=int, default=None)
+    parser.add_argument("--size", type=str, default="832*480", choices=list(SIZE_CONFIGS.keys()))
+    parser.add_argument("--frame_num", type=int, default=81)
     parser.add_argument("--ckpt_dir", type=str, default=None)
     parser.add_argument("--offload_model", type=str2bool, default=None)
     parser.add_argument("--ulysses_size", type=int, default=1)
@@ -1044,14 +1044,14 @@ def _parse_args(cli_args=None):
     parser.add_argument("--last_frame", type=str, default=None)
 
     parser.add_argument("--sample_solver", type=str, default="unipc", choices=["unipc", "dpm++"])
-    parser.add_argument("--sample_steps", type=int, default=None)
-    parser.add_argument("--sample_shift", type=float, default=None)
+    parser.add_argument("--sample_steps", type=int, default=50)
+    parser.add_argument("--sample_shift", type=float, default=5.0)
     parser.add_argument("--sample_guide_scale", type=float, default=5.0)
 
     # Finegrained Cache options
-    parser.add_argument("--use_finegrained_cache", action="store_true", default=False)
+    parser.add_argument("--use_finegrained_cache", action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument("--finegrained_calibration", action="store_true", default=False)
-    parser.add_argument("--cache_book_path", type=str, default="./cache_books")
+    parser.add_argument("--cache_book_path", type=str, default=None)
     parser.add_argument("--cache_book_file", type=str, default=None)
     parser.add_argument("--nonskip_rate", type=float, default=0.1)
     # Native Wan-81 hybrid setting: fixed MagCache policy and attention-only
@@ -1787,6 +1787,7 @@ def generate(args):
                 f"{args.ulysses_size}_{args.ring_size}_{formatted_prompt}_{formatted_time}{suffix}"
             )
         save_path = os.path.abspath(args.save_file)
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
         os.makedirs(os.path.dirname(save_path) or ".", exist_ok=True)
         if "t2i" in args.task:
             cache_image(

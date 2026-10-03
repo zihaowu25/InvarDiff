@@ -182,127 +182,77 @@ all ranks.
 
 ## 3. Quick start
 
-Set `MODEL_PATH` to the downloaded model directory. For text-to-video,
-set `IMAGE_PATH` to `none`; for image-conditioned tasks, set it to the
-input image. Then, from the repository root:
+Run from the repository root with `MODEL_PATH` pointing to the downloaded
+720p T2V HunyuanVideo-1.5 model. The corresponding released Cache Book is
+loaded automatically; there is no per-prompt calibration.
+
+### 3.1 Load and generate
 
 ```bash
-cd HunyuanVideo
+python HunyuanVideo/sample_hunyuan.py \
+  --model_path "$MODEL_PATH" --resolution 720p \
+  --video_length 121 --num_inference_steps 50 --sr false --rewrite false \
+  --prompt "A golden retriever runs along a sunny beach while the camera pans smoothly to follow it." --seed 4101 \
+  --output_path outputs/hunyuan_module.mp4
 ```
 
-### 3.1 Layer-only calibration and generation
+`sample_hunyuan.py` loads the matching configuration-named JSON in
+`cache_books/HunyuanVideo/`; replace it with `sample_hunyuan_step_layer.py`
+to load its separate strategy file from the same folder. Use `--no-use_invardiff` for Full.
+Calibration seeds record provenance and do not restrict generation seeds.
+
+### 3.2 Optional two-stage recalibration
 
 ```bash
-python sample_hunyuan.py \
-  --prompt "A cinematic shot of a cat walking through a rainy city." \
-  --negative_prompt "" \
-  --resolution 720p \
-  --model_path "$MODEL_PATH" \
-  --image_path "$IMAGE_PATH" \
-  --video_length 121 \
-  --num_inference_steps 50 \
-  --sr false \
-  --invardiff_calibration \
-  --use_invardiff \
-  --cache_book_path ./cache_books \
-  --output_path ./outputs/hunyuan_layer.mp4
+python HunyuanVideo/sample_hunyuan.py \
+  --model_path "$MODEL_PATH" --resolution 720p --sr false --rewrite false \
+  --prompt "A ceramic teapot under soft window light" --seed 42 \
+  --invardiff_calibration
 ```
 
-This command performs three main-model denoising passes:
+This performs two full-compute passes, without decoding or saving a video.
+Explicitly add `--use_invardiff` for calibration followed by generation.
+Without an output folder, calibration and inference use the same configuration-derived
+filename in `cache_books/HunyuanVideo/`. Different
+configurations coexist; recalibrating the same configuration updates its file.
 
-```text
-raw calibration + correction calibration + final accelerated generation
-```
-
-Only the final pass is decoded and saved as a video.
-
-### 3.2 Step-and-layer calibration and generation
+### 3.3 Load a custom book
 
 ```bash
-python sample_hunyuan_step_layer.py \
-  --prompt "A cinematic shot of a cat walking through a rainy city." \
-  --resolution 720p \
-  --model_path "$MODEL_PATH" \
-  --image_path "$IMAGE_PATH" \
-  --video_length 121 \
-  --num_inference_steps 50 \
-  --sr false \
-  --invardiff_calibration \
-  --use_invardiff \
-  --cache_book_path ./cache_books \
-  --output_path ./outputs/hunyuan_step_layer.mp4
+python HunyuanVideo/sample_hunyuan.py \
+  --model_path "$MODEL_PATH" --resolution 720p --sr false --rewrite false \
+  --prompt "A different prompt for evaluation" --seed 43 \
+  --cache_book_path cache_books/HunyuanVideo/custom \
+  --output_path outputs/hunyuan_custom.mp4
 ```
 
-### 3.3 Calibration only
+To use this optional folder, also pass it to the recalibration command. The
+filename is derived automatically unless explicitly overridden.
 
-Omit `--use_invardiff`:
+Changed model weights, task (including I2V), geometry, steps, guidance,
+precision, or thresholds require a separate matching calibration. Explicit
+threshold flags do not modify a loaded boolean policy.
 
-```bash
-python sample_hunyuan_step_layer.py \
-  --prompt "A cinematic shot of a cat walking through a rainy city." \
-  --resolution 720p \
-  --model_path "$MODEL_PATH" \
-  --image_path "$IMAGE_PATH" \
-  --sr false \
-  --invardiff_calibration \
-  --cache_book_path ./cache_books
-```
-
-This mode performs only the raw and correction passes. It does not decode
-latents, run super-resolution, or save a video.
-
-### 3.4 Generate from an existing Cache Book
-
-Use the automatically derived file name:
-
-```bash
-python sample_hunyuan_step_layer.py \
-  --prompt "A different prompt for evaluation." \
-  --resolution 720p \
-  --model_path "$MODEL_PATH" \
-  --image_path "$IMAGE_PATH" \
-  --num_inference_steps 50 \
-  --sr false \
-  --use_invardiff \
-  --cache_book_path ./cache_books \
-  --output_path ./outputs/hunyuan_cached.mp4
-```
-
-Or select an explicit file:
-
-```bash
---cache_book_path ./cache_books \
---cache_book_file cache_book_stplayer_720p_i2v_1280x720_f121_steps50_....json
-```
-
-When `--cache_book_file` is supplied, the boolean policy stored in that file
-is used directly. Threshold arguments in the current command do not rebuild or
-alter that policy.
-
-### 3.5 T2V and multi-GPU execution
+### 3.4 T2V and multi-GPU execution
 
 For text-to-video generation, omit `--image_path`:
 
 ```bash
-python sample_hunyuan.py \
+python HunyuanVideo/sample_hunyuan.py \
   --prompt "Ocean waves under the moonlight." \
   --resolution 720p \
   --model_path "$MODEL_PATH" \
-  --sr false \
-  --invardiff_calibration \
-  --use_invardiff
+  --sr false --rewrite false
 ```
 
 Example with two sequence-parallel workers:
 
 ```bash
-torchrun --nproc_per_node=2 sample_hunyuan_step_layer.py \
+torchrun --nproc_per_node=2 HunyuanVideo/sample_hunyuan_step_layer.py \
   --prompt "Ocean waves under the moonlight." \
   --resolution 720p \
   --model_path "$MODEL_PATH" \
-  --sr false \
-  --invardiff_calibration \
-  --use_invardiff
+  --sr false --rewrite false
 ```
 
 ## 4. Finegrained Cache arguments
@@ -316,7 +266,7 @@ feature as Finegrained Cache.
 | Argument | Default | Description |
 | --- | --- | --- |
 | `--invardiff_calibration` | Disabled | Run raw and correction calibration and save a Cache Book |
-| `--use_invardiff` | Disabled | Load or reuse the newly calibrated Cache Book for accelerated generation |
+| `--use_invardiff` | Enabled for inference | Load a matching book; explicitly opt in to generation after calibration |
 | `--cache_book_path` | `./cache_books` | Cache Book directory, relative to the current working directory |
 | `--cache_book_file` | Automatically derived | Explicit Cache Book file name |
 
@@ -324,7 +274,8 @@ The number of main-model denoising passes depends on the selected mode:
 
 | Mode | Denoising passes | Saves a video |
 | --- | ---: | --- |
-| Neither flag | 1 baseline pass | Yes |
+| Neither flag | 1 accelerated pass using the bundled book | Yes |
+| `--no-use_invardiff` | 1 baseline pass | Yes |
 | `--invardiff_calibration` only | 2 calibration passes | No |
 | `--use_invardiff` only | 1 accelerated pass | Yes |
 | Both flags | 2 calibration passes and 1 accelerated pass | Yes |

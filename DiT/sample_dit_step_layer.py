@@ -492,6 +492,7 @@ def save_cache_books(
     calibration_classes=None,
     preset_name="default",
     resolved_thresholds=None,
+    cache_book_file=None,
 ):
     config = cache_book_config(
         num_timesteps,
@@ -523,7 +524,7 @@ def save_cache_books(
     }
     
     os.makedirs(cache_book_path, exist_ok=True)
-    cache_book_file = cache_book_name(config)
+    cache_book_file = cache_book_file or cache_book_name(config)
     cache_book_full_path = os.path.join(cache_book_path, cache_book_file)
     
     with open(cache_book_full_path, "w") as f:
@@ -578,7 +579,13 @@ def main(args):
     base_DiT.eval()
     all_classes = list(range(args.num_classes))
     # class_labels = random.sample(all_classes, args.num_sample_classes)
-    class_labels = [207, 992, 387, 37, 142, 979, 417, 279][:args.num_sample_classes]
+    if args.class_label_file:
+        with open(args.class_label_file, encoding="utf-8") as file:
+            class_labels = [int(line.strip()) for line in file if line.strip()]
+        if not class_labels or any(label < 0 or label >= args.num_classes for label in class_labels):
+            raise ValueError("--class-label-file must contain valid class IDs")
+    else:
+        class_labels = [207, 992, 387, 37, 142, 979, 417, 279][:args.num_sample_classes]
 
     # class_labels = [11, 96, 130, 285, 208, 388, 323, 14]
     # class_labels = [970, 972, 975, 977, 980, 937, 947, 919]
@@ -622,6 +629,7 @@ def main(args):
             calibration_classes=measure_labels,
             preset_name=args.cache_preset_resolved,
             resolved_thresholds=args.cache_resolved_thresholds,
+            cache_book_file=getattr(args, 'cache_book_file', None),
         )
         if args.calibration_only:
             return
@@ -633,7 +641,7 @@ def main(args):
             args.msa_thres,
             args.mlp_thres,
         )
-        cache_book_file = cache_book_name(config)
+        cache_book_file = getattr(args, 'cache_book_file', None) or cache_book_name(config)
         
         step_cache_book, msa_cache_book, mlp_cache_book = load_cache_books(
             cache_book_path=args.cache_book_path,
@@ -644,7 +652,7 @@ def main(args):
 
     Dynamic_DiT = DynamicDiT(base_DiT, msa_cache_book, mlp_cache_book, step_cache_book)
     Dynamic_DiT.eval()
-    vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
+    vae = AutoencoderKL.from_pretrained(getattr(args, 'vae_path', None) or f"stabilityai/sd-vae-ft-{args.vae}").to(device)
     
     n = len(class_labels)
     z = torch.randn(n, 4, input_size, input_size, device=device)
@@ -724,23 +732,27 @@ if __name__ == "__main__":
                         help="Number of classes in the dataset.")
     parser.add_argument("--num-timesteps", type=int, default=50,
                         help="Number of diffusion timesteps for sampling.")
-    parser.add_argument("--dit-ckpt", type=str, default="./pretrained_models/DiT-XL-2-512x512.pt",
+    parser.add_argument("--dit-ckpt", type=str, default=os.path.join(os.path.dirname(__file__), 'pretrained_models', 'DiT-XL-2-512x512.pt'),
                         help="Path to the pre-trained DiT model checkpoint.")
 
-    parser.add_argument('--num-sample-classes', type=int, default=10, 
+    parser.add_argument('--num-sample-classes', type=int, default=1, 
                         help='Number of classes to sample, which also determines the number of sampled images.')
+    parser.add_argument('--class-label-file', default=None,
+                        help='UTF-8 file with one generation class ID per line.')
     parser.add_argument('--cfg-scale', type=float, default=4.0, 
                         help='Classifier-free guidance scale.')
     parser.add_argument('--seed', type=int, default=42, 
                         help='Random seed for reproducibility.')
-    parser.add_argument('--sample-times', type=int, default=6, 
+    parser.add_argument('--sample-times', type=int, default=1, 
                         help='Number of times to run sampling for timing.')
     parser.add_argument('--vae', type=str, default='ema', choices=['mse', 'ema'], 
                         help='VAE model variant to use for decoding.')
     parser.add_argument('--generate-cache-books', action='store_true',
                     help='Whether to perform threshold analysis and save cache books.')
-    parser.add_argument('--cache-book-path', type=str, default='./cache_books',
+    parser.add_argument('--cache-book-path', type=str, default=None,
                     help='Path to save/load cache books.')
+    parser.add_argument('--cache-book-file', default=None)
+    parser.add_argument('--vae-path', default=None, help='Optional local VAE directory.')
     
     parser.add_argument('--nonskip-rate', type=float, default=0.04,
                         help="Proportion of initial timesteps that are forced not to be skipped")
@@ -767,25 +779,8 @@ if __name__ == "__main__":
     parser.add_argument('--output-dir', type=str, default='images')
     parser.add_argument('--calibration-only', action='store_true')
     
-    debug_args = [
-        '--model', 'DiT-XL/2',
-        '--image-size', '512',
-        '--num-classes', '1000',
-        '--num-timesteps', '50',
-        '--dit-ckpt', './pretrained_models/DiT-XL-2-512x512.pt',
-        '--num-sample-classes', '1',
-        '--cfg-scale', '4.0',
-        '--seed', '42',
-        '--sample-times', '1',
-        '--nonskip-rate', '0.04',
-        '--step-thres', '0.55',
-        '--msa-thres', '0.50',
-        '--mlp-thres', '0.15',
-        '--num-analysis', '1',
-        # '--generate-cache-books', 
-    ]
     
-    args = parser.parse_args() if len(sys.argv) > 1 else parser.parse_args(debug_args)
+    args = parser.parse_args()
     args = apply_preset(
         args,
         'dit_step_layer',

@@ -1271,7 +1271,7 @@ if __name__ == "__main__":
         help="UTF-8 text file with one calibration prompt per non-empty line.",
     )
     parser.add_argument("--output-dir", default="images")
-    parser.add_argument("--cache-book-path", default="./cache_books")
+    parser.add_argument("--cache-book-path", default=None)
     parser.add_argument("--cache-book-file", default=None)
     parser.add_argument("--nonskip-rate", type=float, default=0.08)
     # Selected default: ~2.42x measured sampling speedup.

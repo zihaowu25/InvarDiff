@@ -42,6 +42,8 @@ and personal notes are intentionally excluded from Git.
    does not mix conditional and unconditional CFG features.
 
 The score prioritizes reuse; it is **not** a bound on image or video error.
+DiT follows the original conditional-only calibration protocol; inference
+applies the same schedule to both CFG branches, with separate feature values.
 Cache Books are tied to the model, scheduler, step count, resolution/frame
 count, guidance, precision, and module partition. Recalibrate or validate
 transfer when these settings change.
@@ -79,8 +81,8 @@ same protocols; these checks are not formal quality benchmarks.
 | Wan | `.63` | `.82 / 1 / .82` | 2 | 1 |
 | Hunyuan | `.70` | `.40 / .01 / .20 / .32 / 0 / 0` | 3 | 1 |
 
-Use the corresponding `sample_*_step_layer.py` entrypoint and recalibrate its
-Cache Book before generation. Quantiles of one still respect protected and
+Use the corresponding `sample_*_step_layer.py` entrypoint. Its matching bundled
+Cache Book is loaded automatically. Quantiles of one still respect protected and
 invalid positions and the final denoising step.
 
 ## Getting started
@@ -99,25 +101,74 @@ python Wan2.1/sample_wan.py --help
 python HunyuanVideo/sample_hunyuan.py --help
 ```
 
-Calibrate before generation. For example, after setting `DIT_CKPT` to a DiT
-checkpoint and installing its VAE:
+## Bundled Cache Books: inference and calibration
+
+Each supported module-only, step-layer, and hybrid entrypoint loads its own
+`cache_books/<model>/cache_book_<configuration>.json` by default.
+The model folders are `DiT`, `FLUX`, `Wan2.1` and `HunyuanVideo`; strategies
+are distinguished by their filenames. No per-prompt calibration
+is needed for the matching released protocol. Model weights are not included.
+The [release manifest](cache_books/manifest.json) records the calibration
+conditions, configuration, checksums, and small-set reload/visual/timing checks.
+These checks are not a formal benchmark or a guarantee for every prompt.
+
+After setting `DIT_CKPT` to the 512-resolution DiT checkpoint and installing its VAE:
 
 ```bash
 python DiT/sample_dit.py \
   --dit-ckpt "$DIT_CKPT" --image-size 512 --num-timesteps 50 \
-  --num-analysis 1 --generate-cache-books --calibration-only
-
-python DiT/sample_dit.py \
-  --dit-ckpt "$DIT_CKPT" --image-size 512 --num-timesteps 50 \
+  --class-label-file assets/demo/dit_module_class.txt --seed 3500 \
   --sample-times 1 --output-dir outputs/dit
+
+# Optional: calibrate the current configuration into its default filename.
+python DiT/sample_dit.py \
+  --dit-ckpt "$DIT_CKPT" --num-analysis 1 --seed 2027 \
+  --generate-cache-books --calibration-only
+
+# The same configuration loads that book automatically; no path change is needed.
+python DiT/sample_dit.py --dit-ckpt "$DIT_CKPT" \
+  --sample-times 1 --output-dir outputs/dit_custom
 ```
+
+`--cache-book-path`/`--cache-book-file` (DiT/FLUX) or
+`--cache_book_path`/`--cache_book_file` (video) select a folder and filename.
+Default folders are resolved relative to this repository, not the working
+directory. Both calibration and inference use `cache_books/<model>/` and the
+same configuration-derived filename. Names include geometry, steps, protected
+prefix, cache thresholds and a short configuration hash for additional settings
+such as guidance and precision. Different configurations
+produce different filenames; generation prompts and seeds do not change them.
+Recalibrating the identical configuration updates its existing file, so copy
+that file first if you want to preserve multiple calibrations of one configuration.
+Optional custom folders use the same automatic naming; an explicit filename
+overrides it. Only the shipped files are included in Git; other generated books
+are ignored. The manifest describes the original shipped files, not later recalibrations.
+
+| Entry type | Load bundled book | Calibrate only | Disable module cache |
+| --- | --- | --- | --- |
+| DiT/FLUX module or step-layer | Default | `--generate-cache-books --calibration-only` | Use an explicitly calibrated all-zero policy |
+| Wan/Hunyuan module or step-layer | Default | `--invardiff_calibration` | `--no-use_invardiff` |
+| FLUX hybrid | Default | `--finegrained-calibration` | `--no-use-finegrained-cache` |
+| Wan/Hunyuan hybrid | Default | `--finegrained_calibration` | `--no-use_finegrained_cache` |
+
+For video or hybrid calibration followed by generation, explicitly add the
+positive `--use_invardiff` or `--use_finegrained_cache` flag. A hybrid opt-out
+keeps its cross-step method; additionally disable step caching for Full.
+At 50 steps, Hunyuan MagCache needs joint-calibrated ratio artifacts: for a
+step-only run, recalibrate a custom hybrid book with all module quantiles zero
+and load it with the positive cache flag. Its simple opt-out mode applies to
+the upstream-supported 20/40-step ratio tables.
 
 The FLUX sampler defaults to two calibration prompts; use
 `--calibration-prompt` more than once or `--calibration-prompt-file` to choose
 another calibration set. Video samplers require the corresponding official
 model repository and checkpoint; see their model-specific READMEs. Generated
-media, Cache Books, model weights, environments, and experiment runs are
-ignored by Git.
+media, custom Cache Books, model weights, environments, and experiment runs are
+ignored by Git; the verified release books are included. Changed thresholds
+do not modify a loaded boolean policy: recalibrate after changing thresholds,
+weights, scheduler, geometry, guidance, precision, or model partition. Bundled
+books reject mismatched recorded execution settings. Their calibration seed
+is provenance, not a restriction on generation seeds.
 
 ## Tests
 
