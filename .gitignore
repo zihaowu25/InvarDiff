@@ -12,6 +12,9 @@ venv/
 .env
 .env.local
 .DS_Store
+._*
+.env.*
+!.env.example
 
 # Generated media, experiments, model weights, and local reports
 outputs/
@@ -20,13 +23,17 @@ logs/
 images/
 checkpoints/
 weights/
+pretrained_models/
 *.safetensors
 *.pt
+*.pth
 *.ckpt
 /report/
 /agent_skills/
 /assets/venvs/
 /assets/paper_main_tools/
+/assets/local_backups/
+/assets/backup*/
 **/cache_books/
 raw_cache_books/
 models--black-forest-labs--FLUX.1-dev/
@@ -45,9 +52,13 @@ models--black-forest-labs--FLUX.1-dev/
 /HunyuanVideo/debug_cache_books/
 /HunyuanVideo/debug_outputs/
 
-# Regenerated CCMR exploratory copies; audited formal inputs remain tracked
-/assets/ccmr_formal/data/combined/dit_only/
-/assets/ccmr_formal/figures/appendix/
-/assets/ccmr_formal/figures/paper/
-/assets/ccmr_formal/figures/exploration/dit_only/
-/assets/ccmr_formal/figures/exploration/final_pilot/
+# Keep reproducible visualization source/configs, not generated run artifacts.
+/assets/ccmr_formal/data/
+/assets/ccmr_formal/figures/
+/assets/ccmr_formal/logs_v2/
+/assets/ccmr_formal/tables/
+/assets/ccmr_formal/*manifest*.json
+/assets/visualization/ccmr/data/
+/assets/visualization/ccmr/figures/
+/assets/visualization/ccmr/reports/
+CACHEDIR.TAG

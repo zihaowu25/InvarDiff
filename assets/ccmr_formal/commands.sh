@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd /root/autodl-tmp/InvarDiff
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$ROOT"
 
 python -m pytest assets/visualization/ccmr/code/tests -q
 
-# Formal DiT: completed on the RTX 4090 host.
+# Legacy DiT-256 exploratory protocol (not the DiT-512 formal protocol).
 python assets/visualization/ccmr/code/collect_dit_ccmr.py \
   --config assets/ccmr_formal/configs/dit_final.yaml \
   --output-dir assets/ccmr_formal/data/runs/dit_final --resume

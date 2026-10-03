@@ -13,6 +13,22 @@ cross-step and layer-level caching. This repository also retains separate
 step-layer and hybrid experiments; their schedules and reported speedups
 should not be treated as direct module-only baselines.
 
+## Repository guide
+
+- **Sampling:** model-specific setup and runnable examples in
+  [DiT](DiT/README.md), [FLUX](FLUX/README.md), [Wan2.1](Wan2.1/README.md),
+  and [HunyuanVideo](HunyuanVideo/README.md).
+- **Compatibility:** separate MagCache and SeaCache integrations for
+  [FLUX](FLUX/hybrid_cache/README.md), [Wan2.1](Wan2.1/hybrid_cache/README.md),
+  and [HunyuanVideo](HunyuanVideo/hybrid_cache/README.md).
+- **Visualization:** [CCMR collectors and plotting](assets/visualization/ccmr/README.md)
+  and [reproducible protocols](assets/ccmr_formal/README.md).
+- **Evaluation:** [paired image/video metrics and validation](evaluation/README.md).
+
+Source, configuration files, prompt/class banks, tests, and license notices
+are included. Model weights, generated experiment artifacts, local tools,
+and personal notes are intentionally excluded from Git.
+
 ## How it works
 
 1. Run the pretrained denoiser on deterministic calibration trajectories and
@@ -102,6 +118,18 @@ another calibration set. Video samplers require the corresponding official
 model repository and checkpoint; see their model-specific READMEs. Generated
 media, Cache Books, model weights, environments, and experiment runs are
 ignored by Git.
+
+## Tests
+
+Install `pytest`, NumPy, pandas, PyYAML, matplotlib, and the relevant model
+dependencies, then run from the repository root:
+
+```bash
+python -m pytest -q
+```
+
+Some integration tests require the corresponding upstream model package.
+Tests do not download weights or launch a full generation benchmark.
 
 ## Reproducibility and scope
 

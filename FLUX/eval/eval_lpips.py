@@ -78,7 +78,7 @@ def main():
     # pipe = FluxPipeline.from_pretrained(
     #     "black-forest-labs/FLUX.1-dev",
     #     torch_dtype=torch.bfloat16, 
-    #     cache_dir="/root/autodl-tmp/InvarDiff/FLUX"
+    #     cache_dir="./models"
     # )
     # original_transformer = pipe.transformer
     

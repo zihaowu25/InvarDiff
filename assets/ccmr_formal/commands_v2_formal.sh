@@ -6,7 +6,7 @@ if [[ "${CCMR_FORMAL_APPROVED:-}" != "YES" ]]; then
   exit 2
 fi
 
-ROOT="/root/autodl-tmp/InvarDiff"
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 mkdir -p assets/ccmr_formal/logs_v2
 

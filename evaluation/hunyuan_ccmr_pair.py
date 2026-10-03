@@ -23,7 +23,7 @@ import torch
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE_ROOT = REPO_ROOT.parent
-OFFICIAL_ROOT = WORKSPACE_ROOT / "open-source" / "HunyuanVideo-1.5"
+OFFICIAL_ROOT = Path(os.environ.get("HUNYUAN_REPO", WORKSPACE_ROOT / "HunyuanVideo-1.5"))
 for path in (OFFICIAL_ROOT, REPO_ROOT / "HunyuanVideo"):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))

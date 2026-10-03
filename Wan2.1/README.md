@@ -1,48 +1,48 @@
 # Wan2.1 module-level caching
 
-Use the official Wan2.1 instructions to install dependencies and download model checkpoints first.
+Install the [official Wan2.1](https://github.com/Wan-Video/Wan2.1) dependencies
+and obtain the model weights under the provider's terms. Make its `wan`
+package importable (for example, add the upstream checkout to `PYTHONPATH`).
+Set `WAN_MODEL` to your downloaded checkpoint directory.
 
-[`sample_wan.py`](sample_wan.py) is the standalone module-only sampler.
-Its selected 832 × 480, 81-frame, 50-step configuration uses self-attention,
-cross-attention, and FFN thresholds `0.50/0.35/0.20`, two protected initial
-steps (`--nonskip_rate 0.04`), and one calibration condition. The `default` module
-preset is selected automatically; explicitly supplied threshold flags take
-precedence. Calibrate a new Cache Book when the model or execution settings
-change. Hybrid policies each use one `hybrid` configuration. The separate
-[`sample_wan_step_layer.py`](sample_wan_step_layer.py) combines whole-step and
-module reuse. Its single `default` at 832 × 480, 81 frames and 50 steps uses
-step/self-attention/cross-attention/FFN quantiles `.63/.82/1/.82`, two protected
-steps and one calibration condition. These settings were checked on small
-visual and held-out sets; the same cache-generation flags apply.
+## Calibrate and generate
 
-Inspect the available options from the repository root:
+Run from the repository root:
+
+```bash
+python Wan2.1/sample_wan.py \
+  --task t2v-1.3B --size '832*480' --ckpt_dir "$WAN_MODEL" \
+  --frame_num 81 --sample_steps 50 --base_seed 42 \
+  --prompt "Two cats boxing under bright stage lights" \
+  --invardiff_calibration --use_invardiff \
+  --save_file outputs/wan.mp4
+```
+
+This performs two full-compute calibration passes followed by accelerated
+generation. Omit `--use_invardiff` for calibration only; omit
+`--invardiff_calibration` to generate from an existing matching Cache Book.
+`--cache_book_path` and `--cache_book_file` select its location.
+
+## Defaults and overrides
+
+[`sample_wan.py`](sample_wan.py) uses one `default` module-only configuration
+at 832 × 480, 81 frames, and 50 steps: self-attention/cross-attention/FFN
+quantiles `.50/.35/.20`, two protected steps (`--nonskip_rate .04`), and one
+calibration condition. Explicit `--self_attn_thres`, `--cross_attn_thres`,
+and `--ffn_thres` flags override individual values.
+
+[`sample_wan_step_layer.py`](sample_wan_step_layer.py) combines whole-step
+and module reuse. Its single `default` uses step/self-attention/cross-attention/
+FFN quantiles `.63/.82/1/.82`, two protected steps, and one calibration
+condition. Use the same commands with the step-layer entrypoint and a newly
+calibrated book. These settings were screened on small visual/held-out sets,
+not a formal quality benchmark.
+
+Recalibrate when changing weights, sampler, steps, resolution, frame count,
+guidance, precision, or thresholds. For MagCache/SeaCache compatibility,
+see [`hybrid_cache/README.md`](hybrid_cache/README.md). Inspect all options:
 
 ```bash
 python Wan2.1/sample_wan.py --help
+python Wan2.1/sample_wan_step_layer.py --help
 ```
-
-You can change parameters in the script (for example in `debug_args`) or pass them from command line.
-
-Common parameters you may want to modify:
-
-- `--task`: model/task type, such as `t2v-1.3B`, `t2v-14B`, `i2v-14B`.
-- `--ckpt_dir`: checkpoint folder.
-- `--size`: output resolution, such as `832*480` or `1280*720`.
-- `--frame_num`: number of output frames.
-- `--sample_steps`: number of sampling steps.
-- `--sample_shift`: sampling shift value.
-- `--sample_guide_scale`: CFG guidance scale.
-- `--base_seed`: random seed for reproducibility.
-- `--save_file`: output path and filename.
-
-Module-level cache controls (the `--use_invardiff` and
-`--invardiff_calibration` spellings are retained as command-line compatibility
-aliases):
-
-- `--use_invardiff`: enable Finegrained Cache acceleration.
-- `--invardiff_calibration`: run Finegrained Cache calibration before acceleration.
-- `--cache_book_path`: directory for cache books.
-- `--cache_book_file`: specific cache book filename.
-- `--nonskip_rate`, `--self_attn_thres`, `--cross_attn_thres`,
-  `--ffn_thres`: module cache policy thresholds. Whole-step reuse is not
-  enabled by this sampler; step-layer and hybrid implementations are separate.

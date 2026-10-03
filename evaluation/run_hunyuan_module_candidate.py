@@ -9,16 +9,17 @@ import os
 import re
 import socket
 import subprocess
+import sys
 import time
 from pathlib import Path
 
 
 REPO = Path(__file__).resolve().parents[1]
 WORKSPACE = REPO.parent
-HUNYUAN_PYTHON = WORKSPACE / ".venvs" / "hunyuan15" / "bin" / "python"
-METRIC_PYTHON = WORKSPACE / "miniforge3" / "bin" / "python"
-MODEL = WORKSPACE / "models" / "HunyuanVideo-1.5"
-OFFICIAL = WORKSPACE / "open-source" / "HunyuanVideo-1.5"
+HUNYUAN_PYTHON = Path(os.environ.get("HUNYUAN_PYTHON", sys.executable))
+METRIC_PYTHON = Path(os.environ.get("METRIC_PYTHON", sys.executable))
+MODEL = Path(os.environ.get("HUNYUAN_MODEL", WORKSPACE / "models" / "HunyuanVideo-1.5"))
+OFFICIAL = Path(os.environ.get("HUNYUAN_REPO", WORKSPACE / "HunyuanVideo-1.5"))
 MODULE_FLAGS = {
     "double.img_attn": "--double_img_attn_thres",
     "double.txt_attn": "--double_txt_attn_thres",
