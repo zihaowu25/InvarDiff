@@ -143,4 +143,4 @@ and source commit.
 - SeaCache source: [`jiwoogit/SeaCache@8dcf490`](https://github.com/jiwoogit/SeaCache/tree/8dcf490/Wan2.1). No LICENSE or NOTICE file exists at that commit; attribution does not itself grant redistribution permission.
 
 The Wan orchestration follows [`Wan-Video/Wan2.1@9737cba`](https://github.com/Wan-Video/Wan2.1/tree/9737cba9c1c3c4d04b33fcad41c111989865d315), licensed under Apache-2.0.
-See [third-party notices](../../THIRD_PARTY_NOTICES.md) for the release boundary.
+See [third-party notices](../../NOTICE) for the release boundary.

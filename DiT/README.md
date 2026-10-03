@@ -21,7 +21,7 @@ provided with `--vae-path`.
 
 DiT-derived code and pretrained weights retain the upstream
 [CC-BY-NC-4.0 license](LICENSE-DIT); see the repository's
-[third-party notices](../THIRD_PARTY_NOTICES.md).
+[third-party notices](../NOTICE).
 
 ## Load and generate
 

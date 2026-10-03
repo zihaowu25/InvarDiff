@@ -1,0 +1,22 @@
+# Tested DiT / FLUX / Wan runtime; Python 3.11.
+# HunyuanVideo-1.5 uses its upstream requirements in a separate environment.
+torch==2.4.1
+torchvision==0.19.1
+diffusers==0.31.0
+transformers==4.49.0
+accelerate==1.15.0
+numpy==1.26.4
+timm==1.0.15
+safetensors>=0.4.3
+huggingface-hub>=0.23.2,<1.0
+Pillow>=10.0
+tqdm>=4.64
+sentencepiece>=0.2.0
+protobuf>=3.20
+einops>=0.8.0
+imageio>=2.37.0
+imageio-ffmpeg>=0.6.0
+opencv-python==4.10.0.84
+ftfy>=6.0
+easydict>=1.9
+dashscope>=1.14

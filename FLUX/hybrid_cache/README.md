@@ -97,4 +97,4 @@ source commit identifier in generated Cache Books.
 The inspected SeaCache checkout did not contain a visible license file.
 Confirm its redistribution terms before publishing or redistributing the
 SeaCache-derived script.
-See [third-party notices](../../THIRD_PARTY_NOTICES.md) for the release boundary.
+See [third-party notices](../../NOTICE) for the release boundary.

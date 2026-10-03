@@ -40,7 +40,10 @@ checkout and model directory. Optional `HUNYUAN_PYTHON` and `METRIC_PYTHON`
 select separate Python environments; both default to the current interpreter.
 See [`../HunyuanVideo/README.md`](../HunyuanVideo/README.md) for model setup.
 
+Install the optional test and plotting dependencies:
+
 ```bash
+pip install pytest pandas PyYAML matplotlib
 python -m pytest evaluation/tests -q
 ```
 

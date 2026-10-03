@@ -4,9 +4,11 @@ import ast
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 
 import pytest
+from packaging.requirements import Requirement
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -67,3 +69,31 @@ def test_hunyuan_docs_use_current_book_directory_and_name():
     hybrid = (ROOT / "HunyuanVideo/hybrid_cache/README.md").read_text()
     assert "cache_book_hunyuan_<method>_hybrid_" in hybrid
     assert "cache_book_hybrid_<method>_" not in hybrid
+
+
+def test_runtime_requirements_keep_the_tested_base_versions():
+    requirements = {}
+    for line in (ROOT / "requirements.txt").read_text().splitlines():
+        if not line.strip() or line.startswith("#"):
+            continue
+        requirement = Requirement(line)
+        assert requirement.name not in requirements
+        requirements[requirement.name] = str(requirement.specifier)
+    assert requirements["torch"] == "==2.4.1"
+    assert requirements["torchvision"] == "==0.19.1"
+    assert requirements["diffusers"] == "==0.31.0"
+    assert requirements["transformers"] == "==4.49.0"
+    assert requirements["numpy"] == "==1.26.4"
+
+
+def test_root_readme_links_and_installation_files_exist():
+    readme = (ROOT / "README.md").read_text()
+    assert "pip install -r requirements.txt" in readme
+    assert "Hunyuan" in readme and "separate environment" in readme
+    for target in re.findall(r"\]\(([^)]+)\)", readme):
+        if "://" in target or target.startswith("#"):
+            continue
+        assert (ROOT / target.split("#", 1)[0]).exists(), target
+    documents = sorted(path.name for path in ROOT.glob("*.md")
+                       if not path.name.startswith("."))
+    assert documents == ["README.md"]
