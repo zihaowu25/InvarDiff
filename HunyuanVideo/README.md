@@ -38,8 +38,9 @@ official HunyuanVideo-1.5 instructions. The default directory layout is:
         └── README.md
 ```
 
-The scripts automatically add the sibling
-`<workspace>/HunyuanVideo-1.5` repository to the Python import path.
+All four standalone and hybrid scripts automatically add the sibling
+`<workspace>/HunyuanVideo-1.5` repository to the Python import path. For another
+location, set `HUNYUAN_REPO` to the official checkout directory.
 `--model_path` must point to a complete official model directory, which
 normally contains the Transformer, VAE, scheduler, and text-encoder
 components.
@@ -267,7 +268,7 @@ feature as Finegrained Cache.
 | --- | --- | --- |
 | `--invardiff_calibration` | Disabled | Run raw and correction calibration and save a Cache Book |
 | `--use_invardiff` | Enabled for inference | Load a matching book; explicitly opt in to generation after calibration |
-| `--cache_book_path` | `./cache_books` | Cache Book directory, relative to the current working directory |
+| `--cache_book_path` | `cache_books/HunyuanVideo/` | Default resolved relative to this repository; explicit relative paths use the working directory |
 | `--cache_book_file` | Automatically derived | Explicit Cache Book file name |
 
 The number of main-model denoising passes depends on the selected mode:

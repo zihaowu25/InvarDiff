@@ -19,6 +19,10 @@ Download the DiT checkpoint with [`download.py`](download.py), or supply your
 own checkpoint using `--dit-ckpt`. The VAE can be loaded from its model ID or
 provided with `--vae-path`.
 
+DiT-derived code and pretrained weights retain the upstream
+[CC-BY-NC-4.0 license](LICENSE-DIT); see the repository's
+[third-party notices](../THIRD_PARTY_NOTICES.md).
+
 ## Load and generate
 
 Run from the repository root after setting `DIT_CKPT` to the checkpoint file:

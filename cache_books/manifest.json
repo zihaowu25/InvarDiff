@@ -7,7 +7,7 @@
       "file": "HunyuanVideo/cache_book_hunyuan_module_720p_16x9_f121_steps50_ns0.04_sattn0_smlp0_ia0.9_ta0.45_im0.04_tm0.12_2eddfcef32d5.json",
       "sha256": "b5785ae9bd24adac1979e1f197e9caad7b7a508179e6c365ac601591fd6a5614",
       "script": "HunyuanVideo/sample_hunyuan.py",
-      "release_sampler_sha256": "e9c2afab7d8cdce109b801d5fcfc955689957882c24e00e7cf486aa12639171b",
+      "release_sampler_sha256": "f159c1c6c3aadf7f135b38763d332e53e943984cc5bf7ea692bb17f4c6c8a851",
       "calibration": {
         "seed": 42,
         "condition_count": 1,
@@ -108,7 +108,7 @@
       "file": "HunyuanVideo/cache_book_hunyuan_step_layer_720p_16x9_f121_steps50_ns0.06_stepth0.7_sattn0_smlp0_ia0.4_ta0.01_im0.2_tm0.32_054d5e13c176.json",
       "sha256": "fade001e0af0e06457107c044fb104285062343c2bafc8def396b747b36526e5",
       "script": "HunyuanVideo/sample_hunyuan_step_layer.py",
-      "release_sampler_sha256": "1b7dc81fd4de0c30a89069c6fdbd671e7347e25acd4cc6fa94cb87e4f135c02b",
+      "release_sampler_sha256": "1b77c73881e61f8cca1da76b0cc654d41b6e7a45da1426f4f817090a80a65ae5",
       "calibration": {
         "seed": 42,
         "condition_count": 1,
@@ -427,7 +427,7 @@
       "file": "FLUX/cache_book_flux_module_1024x1024_steps28_ns0.1_attn0.7_cattn0.7_ff0.3_cff0.23_sattn0.5_smlp0.02_ad8cca1d9ed5.json",
       "sha256": "7567e5a7fd8a8d1eb716fa2f9b9b745e03fe408ff4bb52508c32e1484a99909f",
       "script": "FLUX/sample_flux.py",
-      "release_sampler_sha256": "0ca197a2d506ba64afe325b267f6195ac9c974b473d9ae1123759c0031826c2a",
+      "release_sampler_sha256": "fc6d4ff3c61ac827ab82d07f81aab67874be02ef24eb0794b1915e43e2b9ceb7",
       "calibration": {
         "seed": 42,
         "condition_count": 2,
@@ -524,7 +524,7 @@
       "file": "FLUX/cache_book_flux_step_layer_1024x1024_steps28_ns0.08_stepth0.52_attn1_cattn1_ff1_cff1_sattn1_smlp1_c7b3cbb80c73.json",
       "sha256": "9b4f11b5b543a643bf8546c0e4514e71365f42bfc97f4389e6aef7714b148e59",
       "script": "FLUX/sample_flux_step_layer.py",
-      "release_sampler_sha256": "ca0741b5ce4e88bb8f2bcfb711f1d6526140c76cce6892f54e3bab66b6b07dea",
+      "release_sampler_sha256": "3a7a155eddf15fc54b6ef43464115f977f3ca83b46b252d94afaf92b82e190fc",
       "calibration": {
         "seed": 42,
         "condition_count": 2,
@@ -820,7 +820,7 @@
       "file": "HunyuanVideo/cache_book_hunyuan_magcache_hybrid_720p_16x9_f121_steps50_ns0.1_sattn0_smlp0_ia0.9_ta0.8_im0_tm0_mag0.03_mk2_r0.25_c986e16e67d1.json",
       "sha256": "4ce99c3f51955a12b41cdef35151ba6e4cac8464b3b1f01c3175ab8c34414f47",
       "script": "HunyuanVideo/hybrid_cache/sample_hunyuan_magcache_hybrid.py",
-      "release_sampler_sha256": "c1b576126446fec79a08a55a90eb5b8ed60507974f68c5e5a29599c8a8f6ded5",
+      "release_sampler_sha256": "b267c908bc757ad875030da3fb9de4297747ace0acde354392f4c08bd703e83c",
       "calibration": {
         "seed": 42,
         "condition_count": 1,
@@ -924,7 +924,7 @@
       "file": "HunyuanVideo/cache_book_hunyuan_seacache_hybrid_720p_16x9_f121_steps50_ns0.1_sattn0_smlp0_ia0.6_ta0.5_im0_tm0_sea0.2_7245ac0ff5f1.json",
       "sha256": "a4bcb23283c785b7b09af557b04274ad0775aab8a5734cca2c155f43b5ed23ed",
       "script": "HunyuanVideo/hybrid_cache/sample_hunyuan_seacache_hybrid.py",
-      "release_sampler_sha256": "92e0f64f2fe9c0b43cd0ffe4b994c4840aacd397645a304132925e99f11b422b",
+      "release_sampler_sha256": "568949a512b10c40183303d893b0b055e0f19edae40b79ca874abe98d3f61e9d",
       "calibration": {
         "seed": 42,
         "condition_count": 1,

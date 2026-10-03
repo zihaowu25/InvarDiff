@@ -38,7 +38,9 @@ except ImportError:
     loguru_compat.logger = _logger
     sys.modules["loguru"] = loguru_compat
 
-OFFICIAL_ROOT = Path(__file__).resolve().parents[2] / "HunyuanVideo-1.5"
+OFFICIAL_ROOT = Path(os.environ.get(
+    "HUNYUAN_REPO", Path(__file__).resolve().parents[2] / "HunyuanVideo-1.5"
+)).expanduser().resolve()
 if str(OFFICIAL_ROOT) not in sys.path:
     sys.path.insert(0, str(OFFICIAL_ROOT))
 

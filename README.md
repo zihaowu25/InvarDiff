@@ -9,8 +9,8 @@ a small calibration set and reuse selected module outputs during generation.
 They do not require retraining the denoiser or an online routing network.
 
 This repository also includes separate step-layer and hybrid implementations;
-their schedules and reported speedups
-should not be treated as direct module-only baselines.
+their schedules and reported speedups should not be treated as direct
+module-only baselines.
 
 ## Repository guide
 
@@ -86,6 +86,13 @@ invalid positions and the final denoising step.
 
 ## Getting started
 
+The current release implementation is on `dev-local`:
+
+```bash
+git clone --branch dev-local https://github.com/zihaowu25/InvarDiff.git
+cd InvarDiff
+```
+
 Install PyTorch and the dependencies of the model you intend to run, then
 obtain its pretrained weights under the model provider's terms. Model-specific
 setup and arguments are documented in [`DiT/README.md`](DiT/README.md),
@@ -99,6 +106,10 @@ python FLUX/sample_flux.py --help
 python Wan2.1/sample_wan.py --help
 python HunyuanVideo/sample_hunyuan.py --help
 ```
+
+Tested environments and optional evaluation dependencies are listed in
+[`ENVIRONMENT.md`](ENVIRONMENT.md). FLUX respects the Hugging Face endpoint
+configured by the user; the scripts do not select a mirror automatically.
 
 ## Bundled Cache Books: inference and calibration
 
@@ -196,6 +207,11 @@ Tests do not download weights or launch a full generation benchmark.
 
 ## Licenses
 
-Please follow the licenses and use restrictions of each upstream model and
-its weights. HunyuanVideo-specific license and attribution files are included
-in [`HunyuanVideo/`](HunyuanVideo/).
+Our original contributions use [Apache-2.0](LICENSE.txt). Third-party portions
+retain their upstream licenses: the DiT-derived code and weights use
+[CC-BY-NC-4.0](DiT/LICENSE-DIT), and the Hunyuan-derived integration is subject
+to its [community license](HunyuanVideo/LICENSE-HUNYUAN) and
+[NOTICE](HunyuanVideo/NOTICE). Model access and weight terms also apply.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for source attribution
+and the unresolved SeaCache redistribution-permission boundary; a repository
+license does not grant rights to third-party code without an upstream license.

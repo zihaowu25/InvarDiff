@@ -28,29 +28,39 @@ saved as runtime policies.
 
 ## Common modes
 
+Run from the repository root after setting `FLUX_MODEL` to your downloaded
+model directory or accessible model ID:
+
 ```bash
 # Whole-step method only (disable the default module cache)
-python sample_flux_magcache_hybrid.py --no-use-finegrained-cache --prompt "a photo of a cat"
+python FLUX/hybrid_cache/sample_flux_magcache_hybrid.py \
+  --model-path "$FLUX_MODEL" --no-use-finegrained-cache --prompt "a photo of a cat"
 
 # Two calibration passes; save a Cache Book without decoding an image
-python sample_flux_magcache_hybrid.py \
+python FLUX/hybrid_cache/sample_flux_magcache_hybrid.py \
+  --model-path "$FLUX_MODEL" \
   --finegrained-calibration \
   --cache-book-path ./cache_books/FLUX/custom_magcache \
   --calibration-prompt "a cinematic photo of a raccoon"
 
 # Load a Cache Book and run hybrid generation
-python sample_flux_magcache_hybrid.py \
+python FLUX/hybrid_cache/sample_flux_magcache_hybrid.py \
+  --model-path "$FLUX_MODEL" \
   --prompt "a photo of a cat"
 
 # Calibrate and immediately generate
-python sample_flux_magcache_hybrid.py \
+python FLUX/hybrid_cache/sample_flux_magcache_hybrid.py \
+  --model-path "$FLUX_MODEL" \
   --finegrained-calibration \
   --use-finegrained-cache \
   --cache-book-path ./cache_books/FLUX/custom_magcache \
   --prompt "a photo of a cat"
 
-# Layer-only ablation
-python sample_flux_magcache_hybrid.py \
+# Layer-only ablation: calibrate its own policy first, then generate.
+python FLUX/hybrid_cache/sample_flux_magcache_hybrid.py \
+  --model-path "$FLUX_MODEL" \
+  --cache-book-path ./cache_books/FLUX/custom_layer_only \
+  --finegrained-calibration --use-finegrained-cache \
   --disable-step-cache \
   --prompt "a photo of a cat"
 ```
@@ -87,3 +97,4 @@ source commit identifier in generated Cache Books.
 The inspected SeaCache checkout did not contain a visible license file.
 Confirm its redistribution terms before publishing or redistributing the
 SeaCache-derived script.
+See [third-party notices](../../THIRD_PARTY_NOTICES.md) for the release boundary.

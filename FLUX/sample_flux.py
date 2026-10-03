@@ -25,7 +25,6 @@ from tqdm import tqdm
 from dynamic_flux import DynamicFluxTransformer2DModel, flux_sample_loop_progressive
 
 
-os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 
 TRANSFORMER_MODULES = (
     "attn",

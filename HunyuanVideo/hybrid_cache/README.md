@@ -212,19 +212,21 @@ otherwise it stores the tensor in pinned CPU memory.
 
 ## Usage examples
 
-Set paths once:
+Run from the repository root. Install the official model dependencies and
+place its source checkout beside this repository, or set `HUNYUAN_REPO` to
+another location; see [model setup](../README.md). Set paths once:
 
 ```bash
 MODEL=/path/to/HunyuanVideo-1.5
 OUT=./outputs
-BOOKS=./cache_books
+BOOKS=./cache_books/HunyuanVideo/custom
 PROMPT='A cinematic tracking shot of a sailboat crossing a luminous bay.'
 ```
 
 ### MagCache step-only, official 20-step T2V
 
 ```bash
-python sample_hunyuan_magcache_hybrid.py \
+python HunyuanVideo/hybrid_cache/sample_hunyuan_magcache_hybrid.py \
   --model_path "$MODEL" --resolution 720p --prompt "$PROMPT" \
   --num_inference_steps 20 --seed 123 --sr false \
   --no-use_finegrained_cache \
@@ -236,7 +238,7 @@ python sample_hunyuan_magcache_hybrid.py \
 Replace `METHOD` with `magcache` or `seacache`:
 
 ```bash
-python "sample_hunyuan_${METHOD}_hybrid.py" \
+python "HunyuanVideo/hybrid_cache/sample_hunyuan_${METHOD}_hybrid.py" \
   --model_path "$MODEL" --resolution 720p --prompt "$PROMPT" \
   --num_inference_steps 20 --seed 123 --sr false \
   --cache_book_path "$BOOKS" --finegrained_calibration
@@ -245,7 +247,7 @@ python "sample_hunyuan_${METHOD}_hybrid.py" \
 ### Load and generate a hybrid result
 
 ```bash
-python sample_hunyuan_seacache_hybrid.py \
+python HunyuanVideo/hybrid_cache/sample_hunyuan_seacache_hybrid.py \
   --model_path "$MODEL" --resolution 720p --prompt "$PROMPT" \
   --num_inference_steps 50 --video_length 121 --seed 123 --sr false \
   --output_path "$OUT/seacache_hybrid.mp4"
@@ -254,7 +256,7 @@ python sample_hunyuan_seacache_hybrid.py \
 ### Calibrate and immediately generate
 
 ```bash
-python sample_hunyuan_seacache_hybrid.py \
+python HunyuanVideo/hybrid_cache/sample_hunyuan_seacache_hybrid.py \
   --model_path "$MODEL" --resolution 720p --prompt "$PROMPT" \
   --num_inference_steps 20 --seed 123 --sr false \
   --cache_book_path "$BOOKS" \
@@ -264,11 +266,14 @@ python sample_hunyuan_seacache_hybrid.py \
 
 ### Layer-only ablation
 
+Calibrate the ablation policy before generation; do not load the bundled
+hybrid policy with this flag alone:
+
 ```bash
-python sample_hunyuan_magcache_hybrid.py \
+python HunyuanVideo/hybrid_cache/sample_hunyuan_magcache_hybrid.py \
   --model_path "$MODEL" --resolution 720p --prompt "$PROMPT" \
   --num_inference_steps 20 --seed 123 --sr false \
-  --cache_book_path "$BOOKS" --use_finegrained_cache \
+  --cache_book_path "$BOOKS" --finegrained_calibration --use_finegrained_cache \
   --disable_step_cache --output_path "$OUT/layer_only.mp4"
 ```
 
@@ -278,7 +283,7 @@ I2V has no official HunyuanVideo-1.5 ratio table in the pinned MagCache source,
 so joint calibration is mandatory:
 
 ```bash
-python sample_hunyuan_magcache_hybrid.py \
+python HunyuanVideo/hybrid_cache/sample_hunyuan_magcache_hybrid.py \
   --model_path "$MODEL" --resolution 720p --prompt "$PROMPT" \
   --image_path /path/to/reference.png --num_inference_steps 20 \
   --magcache_ratio_source calibrated --seed 123 --sr false \
@@ -289,7 +294,7 @@ python sample_hunyuan_magcache_hybrid.py \
 
 Cache Books and output videos use their explicit paths. Without
 `--cache_book_file`, the book name starts with
-`cache_book_hybrid_<method>_` and includes model geometry, frames, steps and all
+`cache_book_hunyuan_<method>_hybrid_` and includes model geometry, frames, steps and all
 policy thresholds. Without `--output_path`, the official timestamped output
 convention is used under `./outputs`.
 

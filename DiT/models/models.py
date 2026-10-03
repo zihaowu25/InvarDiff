@@ -1,8 +1,8 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
 
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
+# Original DiT portions retain the upstream CC-BY-NC-4.0 license;
+# see LICENSE-DIT in the DiT directory of this source tree.
 # --------------------------------------------------------
 # References:
 # GLIDE: https://github.com/openai/glide-text2im

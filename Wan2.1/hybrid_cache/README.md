@@ -61,10 +61,13 @@ diagnostics only and are not saved as runtime policies.
 
 ## Usage
 
+Run from the repository root with the official `wan` package importable,
+as described in [model setup](../README.md).
+
 Step-cache-only generation (no layer Cache Book):
 
 ```bash
-python sample_wan_seacache_hybrid.py \
+python Wan2.1/hybrid_cache/sample_wan_seacache_hybrid.py \
   --task t2v-1.3B --size '832*480' \
   --ckpt_dir /path/to/Wan2.1-T2V-1.3B \
   --prompt 'Two cats box under stage lights.' \
@@ -74,7 +77,7 @@ python sample_wan_seacache_hybrid.py \
 Two-pass Finegrained calibration only:
 
 ```bash
-python sample_wan_magcache_hybrid.py \
+python Wan2.1/hybrid_cache/sample_wan_magcache_hybrid.py \
   --task t2v-1.3B --size '832*480' \
   --ckpt_dir /path/to/Wan2.1-T2V-1.3B \
   --prompt 'Two cats box under stage lights.' \
@@ -85,7 +88,7 @@ python sample_wan_magcache_hybrid.py \
 Load a Cache Book and generate with both cache scales:
 
 ```bash
-python sample_wan_magcache_hybrid.py \
+python Wan2.1/hybrid_cache/sample_wan_magcache_hybrid.py \
   --task t2v-1.3B --size '832*480' \
   --ckpt_dir /path/to/Wan2.1-T2V-1.3B \
   --prompt 'Two cats box under stage lights.' \
@@ -95,7 +98,7 @@ python sample_wan_magcache_hybrid.py \
 Calibrate and then generate in one process:
 
 ```bash
-python sample_wan_seacache_hybrid.py \
+python Wan2.1/hybrid_cache/sample_wan_seacache_hybrid.py \
   --task t2v-1.3B --size '832*480' \
   --ckpt_dir /path/to/Wan2.1-T2V-1.3B \
   --prompt 'Two cats box under stage lights.' \
@@ -109,8 +112,20 @@ by default at 832 × 480, 81 frames, 50 steps. Custom inference uses
 Calibration without a folder uses that same directory and filename. Different
 configurations coexist; recalibrating the same configuration updates its file.
 
-Use `--disable_step_cache` for a layer-only ablation and
-`--no-use_finegrained_cache` for step-only generation. Calibration features default to
+For a layer-only ablation, add `--disable_step_cache` to both calibration and
+inference and use the same custom folder. The bundled hybrid book is not a
+layer-only book. For example:
+
+```bash
+python Wan2.1/hybrid_cache/sample_wan_magcache_hybrid.py \
+  --ckpt_dir /path/to/Wan2.1-T2V-1.3B \
+  --prompt 'Two cats box under stage lights.' \
+  --cache_book_path ./cache_books/Wan2.1/custom_layer_only \
+  --disable_step_cache --finegrained_calibration --use_finegrained_cache \
+  --save_file outputs/wan_layer_only.mp4
+```
+
+Use `--no-use_finegrained_cache` for step-only generation. Calibration features default to
 pinned CPU memory (`--calibration_feature_device cpu`); runtime layer/residual
 caches default to GPU. `--runtime_cache_device auto` moves newly stored cache
 tensors to pinned CPU once free GPU memory falls below
@@ -128,6 +143,4 @@ and source commit.
 - SeaCache source: [`jiwoogit/SeaCache@8dcf490`](https://github.com/jiwoogit/SeaCache/tree/8dcf490/Wan2.1). No LICENSE or NOTICE file exists at that commit; attribution does not itself grant redistribution permission.
 
 The Wan orchestration follows [`Wan-Video/Wan2.1@9737cba`](https://github.com/Wan-Video/Wan2.1/tree/9737cba9c1c3c4d04b33fcad41c111989865d315), licensed under Apache-2.0.
-Later Wan/Hunyuan ports should use their corresponding model-specific source
-constants and CFG layouts rather than reusing the values in these FLUX/Wan
-scripts.
+See [third-party notices](../../THIRD_PARTY_NOTICES.md) for the release boundary.
