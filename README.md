@@ -1,5 +1,9 @@
 # Fine-Grained Caching for Diffusion Transformers with Few Calibration Conditions
 
+<p align="center">
+  <strong>Paper:</strong> <a href="https://arxiv.org/abs/2512.05134">arXiv:2512.05134</a> &middot; <a href="https://arxiv.org/pdf/2512.05134">PDF</a>
+</p>
+
 Open-source implementation of **Fine-Grained Caching for Diffusion Transformers
 with Few Calibration Conditions**. A few offline calibration trajectories
 produce a fixed module-level Cache Book for training-free inference.
